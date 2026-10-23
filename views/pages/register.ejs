@@ -1,0 +1,73 @@
+<%- include('../partials/header') %>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="card-header bg-primary text-white text-center py-4">
+          <div class="brand-icon bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-xs" style="width: 48px; height: 48px;">
+            <i class="bi bi-person-plus fs-4"></i>
+          </div>
+          <h4 class="fw-bold mb-1">Create Campus Account</h4>
+          <p class="fs-xs text-white-80 mb-0">Join Project HANAP - Campus Item Tracking</p>
+        </div>
+        <div class="card-body p-4 p-md-5">
+          <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 fs-sm" role="alert">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <div><%= error %></div>
+              <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          <% } %>
+
+          <form action="/auth/register" method="POST" novalidate>
+            <div class="mb-3">
+              <label for="name" class="form-label fw-semibold fs-sm">Full Name</label>
+              <input type="text" class="form-control" id="name" name="name" value="<%= typeof formData !== 'undefined' && formData.name ? formData.name : '' %>" placeholder="e.g. Juan Dela Cruz" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label fw-semibold fs-sm">Institutional Email</label>
+              <input type="email" class="form-control" id="email" name="email" value="<%= typeof formData !== 'undefined' && formData.email ? formData.email : '' %>" placeholder="e.g. jdelacruz@campus.edu" required>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label for="role" class="form-label fw-semibold fs-sm">System Role</label>
+                <select class="form-select" id="role" name="role" required>
+                  <option value="Student" <%= typeof formData !== 'undefined' && formData.role === 'Student' ? 'selected' : '' %>>Student</option>
+                  <option value="Staff" <%= typeof formData !== 'undefined' && formData.role === 'Staff' ? 'selected' : '' %>>Faculty / Staff</option>
+                  <option value="Admin" <%= typeof formData !== 'undefined' && formData.role === 'Admin' ? 'selected' : '' %>>Administrator</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="department" class="form-label fw-semibold fs-sm">Department / College</label>
+                <input type="text" class="form-control" id="department" name="department" value="<%= typeof formData !== 'undefined' && formData.department ? formData.department : '' %>" placeholder="e.g. College of Science" required>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-4">
+              <div class="col-md-6">
+                <label for="password" class="form-label fw-semibold fs-sm">Password (min 8 chars)</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
+              </div>
+              <div class="col-md-6">
+                <label for="confirmPassword" class="form-label fw-semibold fs-sm">Confirm Password</label>
+                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm mb-3">
+              <i class="bi bi-person-check me-1"></i> Register Account
+            </button>
+          </form>
+        </div>
+        <div class="card-footer bg-light text-center py-3 border-0">
+          <small class="text-muted">Already registered? <a href="/auth/login" class="fw-semibold text-primary">Sign in here</a></small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
