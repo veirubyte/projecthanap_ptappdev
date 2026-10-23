@@ -106,10 +106,76 @@ html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navb
   color: #ffffff !important;
 }
 
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card {
+  background-image: none !important;
+  background-color: #10272b !important;
+  border-color: #34766e !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-glow {
+  background-color: rgba(45, 212, 191, 0.1) !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card .text-teal-800 {
+  color: #99f6e4 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-badge {
+  background-color: #174a46 !important;
+  color: #ccfbf1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-date {
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-title {
+  color: #f8fafc !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card > div a {
+  background-color: #0f766e !important;
+  color: #ffffff !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card > div a:hover {
+  background-color: #0d9488 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card .text-teal-100 {
+  color: #285d58 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card .text-teal-600 {
+  color: #2dd4bf !important;
+}
+
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card {
   background-image: none !important;
   background-color: #10272b !important;
   border-color: #28645f !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .claim-question-card {
+  background-color: #17283a !important;
+  border-color: #3b5875 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .claim-question-icon {
+  background-color: #2563a6 !important;
+  color: #ffffff !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .claim-question-label {
+  color: #a9bfd8 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .claim-question-prompt {
+  color: #f8fafc !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .claim-question-help {
+  color: #cbd5e1 !important;
 }
 
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card > div:first-child {
