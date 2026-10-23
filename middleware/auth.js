@@ -21,8 +21,8 @@ function requireNonAdminAuth(req, res, next) {
         return res.status(403).render('403', {
             user: req.session.user,
             attemptedPath: req.originalUrl,
-            errorTitle: 'User Pages Restricted',
-            errorMessage: 'Administrator accounts cannot access student, staff, parent, or guest pages and workflows.',
+            errorTitle: 'User Dashboard Access Only',
+            errorMessage: 'Administrator accounts cannot access the student, staff, parent, or guest dashboard.',
             returnUrl: '/admin/dashboard',
             returnLabel: 'Back to Admin Dashboard'
         });
