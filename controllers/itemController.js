@@ -320,6 +320,14 @@ const showItemDetails = async (req, res) => {
     }
 };
 
+/**
+ * POST /items/:id/match-preview
+ * Live Match Preview Endpoint
+ * 
+ * Invokes calculateAnswerMatch() in real time as the claimant types their ownership proof.
+ * Returns the confidence score (0-100%) and threshold status to drive the dynamic SVG
+ * radial progression circle on the item detail view (views/pages/postDetail.ejs).
+ */
 const previewOwnershipMatch = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
     const userAnswer = typeof req.body.answer === 'string' ? req.body.answer.trim() : '';
@@ -330,10 +338,12 @@ const previewOwnershipMatch = async (req, res) => {
             return res.status(404).json({ error: 'Item not found' });
         }
         const item = rows[0];
+        // If the item has no secret challenge, verification is bypassed (100% confidence)
         if (!item.secret_answer || !item.secret_challenge) {
             return res.json({ hasChallenge: false, score: 100, meetsThreshold: true, threshold: ANSWER_MATCH_THRESHOLD });
         }
 
+        // Calculate confidence score via the Campus Match Engine
         const score = calculateAnswerMatch(userAnswer, item.secret_answer);
         return res.json({
             hasChallenge: true,
