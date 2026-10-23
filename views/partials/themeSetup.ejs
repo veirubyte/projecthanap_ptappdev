@@ -1,16 +1,8 @@
 <script>
-  // Theme initialization script to prevent FOUC (Flash of Unstyled Content)
   (function() {
-    try {
-      const savedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } catch (e) {
-      // Ignore localStorage security/privacy restrictions if disabled
-    }
+    const savedTheme = localStorage.getItem('hanap_theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark' || (!savedTheme && prefersDark));
   })();
 </script>
+<link rel="stylesheet" href="/css/style.css"/>
