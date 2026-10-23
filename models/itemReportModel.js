@@ -11,8 +11,12 @@ async function findCatalogReports({ statusFilter, isCatalog, typeFilter, catFilt
     const params = [];
 
     if (statusFilter && statusFilter !== 'all') {
-        querySql += ` AND r.status = ?`;
-        params.push(statusFilter);
+        if (statusFilter === 'claimed') {
+            querySql += ` AND r.status IN ('claimed', 'returned')`;
+        } else {
+            querySql += ` AND r.status = ?`;
+            params.push(statusFilter);
+        }
     } else if (isCatalog) {
         querySql += ` AND r.status = 'active'`;
     }
@@ -50,7 +54,7 @@ async function showDashboard(params, values = [], connection = db) {
             SELECT 
                 SUM(CASE WHEN report_type = 'lost' AND status = 'active' THEN 1 ELSE 0 END) AS active_lost,
                 SUM(CASE WHEN report_type = 'found' AND status = 'active' THEN 1 ELSE 0 END) AS active_found,
-                SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) AS total_claimed,
+                SUM(CASE WHEN status IN ('claimed', 'returned') THEN 1 ELSE 0 END) AS total_claimed,
                 COUNT(*) AS total_reports
             FROM item_reports
         `);
@@ -60,7 +64,7 @@ async function showDashboardQuery2(params, values = [], connection = db) {
     return connection.execute(`SELECT u.id, u.full_name, COUNT(r.id) AS item_count, MAX(r.date_reported) AS latest_at
                      FROM item_reports r
                      JOIN users u ON u.id = r.user_id
-                     WHERE r.report_type = 'found' AND r.status IN ('active', 'claimed')
+                     WHERE r.report_type = 'found' AND r.status IN ('active', 'claimed', 'returned')
                      GROUP BY u.id, u.full_name
                      ORDER BY latest_at DESC
                      LIMIT 5`);
@@ -172,7 +176,7 @@ async function showAdminDashboard(params, values = [], connection = db) {
                 SUM(CASE WHEN report_type = 'lost' THEN 1 ELSE 0 END) AS lost,
                 SUM(CASE WHEN report_type = 'found' THEN 1 ELSE 0 END) AS found,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active,
-                SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) AS claimed,
+                SUM(CASE WHEN status IN ('claimed', 'returned') THEN 1 ELSE 0 END) AS claimed,
                 SUM(CASE WHEN status = 'pending_review' THEN 1 ELSE 0 END) AS pending_review
             FROM item_reports
         `);
@@ -223,11 +227,15 @@ async function approveReportArchive(params, values = [], connection = db) {
     return connection.execute('UPDATE item_reports SET status = "archived" WHERE id = ?', params);
 }
 
+async function batchApproveReportArchive(params, values = [], connection = db) {
+    return connection.execute(`UPDATE item_reports SET status = 'archived' WHERE status IN ('active', 'pending_review') AND date_reported <= NOW() - INTERVAL 60 DAY`);
+}
+
 async function showAdminAnalytics(params, values = [], connection = db) {
     return connection.execute(`
             SELECT 
                 COUNT(*) as total_reports,
-                SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) as total_claimed,
+                SUM(CASE WHEN status IN ('claimed', 'returned') THEN 1 ELSE 0 END) as total_claimed,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as total_active,
                 SUM(CASE WHEN status = 'archived' THEN 1 ELSE 0 END) as total_archived
             FROM item_reports
@@ -277,6 +285,7 @@ module.exports = {
     confirmHandover,
     listAdminReports,
     approveReportArchive,
+    batchApproveReportArchive,
     showAdminAnalytics,
     description,
     flagStaleItems

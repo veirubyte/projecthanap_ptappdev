@@ -54,7 +54,11 @@
           <p class="text-xs text-slate-500 mt-0.5">Manage 60-day item disposition and audit trails.</p>
         </div>
         <div class="flex items-center gap-2.5">
-          <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/80 bg-white/70 backdrop-blur-md text-xs font-semibold text-slate-700 hover:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all cursor-pointer" id="exportModalBtn">
+          <button
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/80 bg-white/70 backdrop-blur-md text-xs font-semibold text-slate-700 hover:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
+            id="exportModalBtn"
+            data-csv="<%= reports ? reports.map(function(r) { return r.id + ',&quot;' + r.item_name + '&quot;,&quot;' + r.location_found_lost + '&quot;,' + r.status + ',&quot;' + r.reporter_name + '&quot;'; }).join('\n') : '' %>"
+          >
             <span class="material-symbols-outlined text-[16px]">download</span>
             <span>Export CSV</span>
           </button>
@@ -191,7 +195,7 @@
             <% auditLogs.forEach(log => { %>
               <div class="p-4 sm:px-6 flex items-center justify-between gap-4 hover:bg-white/60 transition-colors">
                 <div>
-                  <div class="text-xs font-semibold text-slate-900"><%= log.action %></div>
+                  <div class="text-xs font-semibold text-slate-900"><%= log.action_description || log.action %></div>
                   <div class="text-[11px] text-slate-500">Admin: <%= log.admin_name || 'System Officer' %> • IP: <%= log.ip_address || '127.0.0.1' %></div>
                 </div>
                 <span class="text-[11px] text-slate-400"><%= typeof timeAgo === 'function' ? timeAgo(log.timestamp) : new Date(log.timestamp).toLocaleTimeString() %></span>
@@ -348,17 +352,22 @@
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
         showToast('Exporting CSV ledger...');
-        // Generate CSV download
-        window.location.href = 'data:text/csv;charset=utf-8,ID,Item,Location,Status,Reporter\n' +
-          encodeURIComponent(<%- JSON.stringify(reports ? reports.map(r => `${r.id},"${r.item_name}","${r.location_found_lost}",${r.status},"${r.reporter_name}"`).join('\n') : '') %>);
+        const csvRows = exportBtn.getAttribute('data-csv') || '';
+        window.location.href = 'data:text/csv;charset=utf-8,ID,Item,Location,Status,Reporter\n' + encodeURIComponent(csvRows);
       });
     }
 
+    const csrfToken = '<%= typeof csrfToken !== "undefined" ? csrfToken : "" %>';
     const batchApproveBtn = document.getElementById('batchApproveBtn');
     if (batchApproveBtn) {
       batchApproveBtn.addEventListener('click', async () => {
         try {
-          const res = await fetch('/admin/reports/batch-approve', { method: 'POST', headers: { 'Accept': 'application/json' } });
+          const res = await fetch('/admin/reports/batch-approve', {
+            credentials: 'same-origin',
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'x-csrf-token': csrfToken }
+          });
+          if (!res.ok) throw new Error('Request failed');
           showToast('Archive batch approved.');
           setTimeout(() => location.reload(), 1000);
         } catch (e) {
@@ -372,13 +381,18 @@
         const itemId = btn.getAttribute('data-id');
         try {
           if (itemId) {
-            await fetch(`/admin/reports/${itemId}/archive-approve`, { credentials: 'same-origin', method: 'POST', headers: { 'Accept': 'application/json' } });
+            const res = await fetch(`/admin/reports/${itemId}/archive-approve`, {
+              credentials: 'same-origin',
+              method: 'POST',
+              headers: { 'Accept': 'application/json', 'x-csrf-token': csrfToken }
+            });
+            if (!res.ok) throw new Error('Request failed');
           }
           btn.textContent = 'Approved';
           btn.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-all shadow-sm';
           showToast('Item approved for disposition.');
         } catch (e) {
-          showToast('Action logged.');
+          showToast('Error approving item.');
         }
       });
     });

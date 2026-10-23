@@ -124,6 +124,59 @@
               </div>
             </div>
 
+            <!-- Mobile / Tablet Navigation Links (Visible when center nav is hidden) -->
+            <div class="lg:hidden flex flex-col gap-0.5 py-1 border-b border-slate-100">
+              <% if (isAdmin) { %>
+                <a href="/admin/dashboard" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#09436B]">dashboard</span>
+                  <span>Admin Dashboard</span>
+                </a>
+                <a href="/admin/handover" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#09436B]">inventory_2</span>
+                  <span>Custody Handover</span>
+                </a>
+                <a href="/admin/users" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#09436B]">group</span>
+                  <span>User Management</span>
+                </a>
+                <a href="/admin/reports" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#09436B]">archive</span>
+                  <span>Archive &amp; Reports</span>
+                </a>
+                <a href="/admin/analytics" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#09436B]">monitoring</span>
+                  <span>Analytics &amp; P2P</span>
+                </a>
+              <% } else { %>
+                <a href="/dashboard" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">dashboard</span>
+                  <span>Dashboard</span>
+                </a>
+                <a href="/catalog" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">manage_search</span>
+                  <span>Browse Catalog</span>
+                </a>
+                <a href="/items/new?type=lost" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-rose-600">add_circle</span>
+                  <span>Report Lost Item</span>
+                </a>
+                <% if (user.role !== 'parent/guest' && user.role !== 'guest' && user.role !== 'parent') { %>
+                  <a href="/items/new?type=found" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                    <span class="material-symbols-outlined text-[18px] text-teal-600">inventory_2</span>
+                    <span>Report Found Item</span>
+                  </a>
+                <% } %>
+                <a href="/claims" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">handshake</span>
+                  <span>Claims</span>
+                </a>
+                <a href="/my-reports" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">list_alt</span>
+                  <span>My Reports</span>
+                </a>
+              <% } %>
+            </div>
+
             <!-- Settings Link (Redirects to Sidebar Settings Page) -->
             <a 
               href="/settings" 

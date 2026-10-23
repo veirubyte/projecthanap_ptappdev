@@ -7,7 +7,7 @@ const userModel = require('../models/userModel');
 const guardianLinkModel = require('../models/guardianLinkModel');
 const mfaModel = require('../models/mfaModel');
 const { getConnection } = require('../models/connectionModel');
-const { isAdmin, isGuest, validatePasswordStrength, isValidEmailSyntax } = require('../config/roles');
+const { isAdmin, isGuest, isInstitutionalEmail, validatePasswordStrength, isValidEmailSyntax } = require('../config/roles');
 const { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch } = require('../services/answerMatch');
 const { issueCode, verifyCode } = require('../services/mfa');
 const { sendMfaEnabledNotice, verifyEmailTransport } = require('../services/email');
@@ -262,7 +262,7 @@ const showItemDetails = async (req, res) => {
 
         const item = rows[0];
         const storedMatchResult = req.session.answerMatchResult;
-        const answerMatchScore = storedMatchResult && storedMatchResult.itemId === itemId
+        let answerMatchScore = storedMatchResult && storedMatchResult.itemId === itemId
             ? storedMatchResult.score
             : null;
         delete req.session.answerMatchResult;
@@ -273,6 +273,9 @@ const showItemDetails = async (req, res) => {
             const [claims] = await claimModel.showItemDetails([itemId, user.id], []);
             if (claims.length > 0) {
                 existingClaim = claims[0];
+                if (answerMatchScore === null && existingClaim.proof_details && item.secret_answer) {
+                    answerMatchScore = calculateAnswerMatch(existingClaim.proof_details, item.secret_answer);
+                }
             }
         }
 
@@ -378,6 +381,19 @@ const createClaim = async (req, res) => {
     } catch (err) {
         console.error('Claim submission error:', err);
         return res.redirect(`/items/${itemId}?error=Failed to submit claim.`);
+    }
+};
+
+const cancelClaim = async (req, res) => {
+    const claimId = parseInt(req.params.id, 10);
+    const itemId = parseInt(req.body.item_id, 10);
+    const redirectBase = itemId ? `/items/${itemId}` : '/claims';
+    try {
+        await claimModel.cancelClaim([claimId, req.session.user.id], []);
+        return res.redirect(`${redirectBase}?msg=${encodeURIComponent('Your pending claim has been withdrawn.')}`);
+    } catch (err) {
+        console.error('Error withdrawing claim:', err);
+        return res.redirect(`${redirectBase}?error=${encodeURIComponent('Unable to withdraw claim.')}`);
     }
 };
 
@@ -614,11 +630,6 @@ const showEditItemForm = async (req, res) => {
 
         if (!isAdmin(user) && item.user_id !== user.id) {
             return res.redirect(`/items/${itemId}?error=Unauthorized to edit this report.`);
-        }
-
-        const reportAgeMs = Date.now() - new Date(item.date_reported).getTime();
-        if (!isAdmin(user) && reportAgeMs > 24 * 60 * 60 * 1000) {
-            return res.redirect(`/items/${itemId}?error=${encodeURIComponent('This report can no longer be edited after 24 hours.')}`);
         }
 
         res.render('editReport', {
@@ -1300,6 +1311,24 @@ const approveReportArchive = async (req, res) => {
     }
 };
 
+const batchApproveReportArchive = async (req, res) => {
+    const user = req.session.user;
+    try {
+        await itemReportModel.batchApproveReportArchive(undefined, []);
+        await logAudit(user.id, 'Admin batch-approved 60-day disposition archive queue', req.ip);
+        if (req.xhr || req.headers.accept?.includes('json')) {
+            return res.json({ success: true, message: 'Archive batch approved for disposition.' });
+        }
+        return res.redirect('/admin/reports?msg=Archive batch approved for disposition.');
+    } catch (err) {
+        console.error('Error batch approving archive:', err);
+        if (req.xhr || req.headers.accept?.includes('json')) {
+            return res.status(500).json({ error: 'Failed to batch approve archive.' });
+        }
+        return res.redirect('/admin/reports?error=Failed to batch approve archive.');
+    }
+};
+
 const showAdminAnalytics = async (req, res) => {
     const user = req.session.user;
     try {
@@ -1425,6 +1454,7 @@ module.exports = {
     showItemDetails,
     previewOwnershipMatch,
     createClaim,
+    cancelClaim,
     listClaims,
     showClaimChat,
     sendClaimMessage,
@@ -1455,6 +1485,7 @@ module.exports = {
     showForbiddenPage,
     listAdminReports,
     approveReportArchive,
+    batchApproveReportArchive,
     showAdminAnalytics,
     listAuditLogs,
     createAdminItemReport

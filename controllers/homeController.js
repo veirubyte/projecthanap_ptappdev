@@ -1,11 +1,9 @@
 /**
- * Home Controller (Delegates to indexController for landing page)
+ * Home Controller (Renders branded landing page)
  */
 
-const indexController = require('./indexController');
-
 function showLandingPage(req, res) {
-  return indexController.getLandingPage(req, res);
+  return res.render('landing', { user: req.session?.user || null });
 }
 
 module.exports = {
