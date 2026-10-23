@@ -1,23 +1,19 @@
-/**
- * Authentication Routes
- * Project HANAP - Campus System Round 1
- */
+const controller = require('../controllers/authController');
 
-const express = require('express');
-const router = express.Router();
-const authController = require('../controllers/authController');
-const { isGuest, isAuthenticated } = require('../middleware/authMiddleware');
+const router = require('express').Router();
 
-// Login page & submission
-router.get('/login', isGuest, authController.getLoginPage);
-router.post('/login', isGuest, authController.postLogin);
+router.get('/login', controller.showLogin);
 
-// Registration page & submission
-router.get('/register', isGuest, authController.getRegisterPage);
-router.post('/register', isGuest, authController.postRegister);
+// POST /login
+router.post('/login', controller.login);
 
-// Logout
-router.get('/logout', authController.logout);
-router.post('/logout', authController.logout);
+// GET /register
+router.get('/register', controller.showRegistration);
+
+// POST /register
+router.post('/register', controller.register);
+
+// GET /logout
+router.get('/logout', controller.logout);
 
 module.exports = router;
