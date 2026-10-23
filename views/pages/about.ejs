@@ -1,0 +1,72 @@
+<%- include('../partials/header') %>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+        <span class="badge bg-primary-subtle text-primary text-uppercase tracking-wider fw-bold fs-xs align-self-start mb-2 px-3 py-2 rounded-pill">
+          Course Specification
+        </span>
+        <h2 class="fw-bold mb-3">About Project HANAP (Campus System Round 1)</h2>
+        <p class="lead text-muted">
+          Project HANAP is an integrated campus-wide asset recovery and lost item registry engineered to replace fragmented physical logbooks and chaotic bulletin boards across collegiate departments.
+        </p>
+
+        <hr class="my-4">
+
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-diagram-3 text-primary me-2"></i>System Architecture Pillars</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded-3 border">
+              <h6 class="fw-bold text-primary mb-1"><i class="bi bi-shield-lock me-1"></i>Security & Authentication</h6>
+              <p class="fs-xs text-muted mb-0">Role-Based Access Control (Admin, Staff, Student) enforced via server-side session middleware and direct-URL tampering prevention.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded-3 border">
+              <h6 class="fw-bold text-primary mb-1"><i class="bi bi-database-check me-1"></i>Persistent Relational Database</h6>
+              <p class="fs-xs text-muted mb-0">Asynchronous MySQL2 connection pool with transactional integrity, foreign keys, and audit logging.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded-3 border">
+              <h6 class="fw-bold text-primary mb-1"><i class="bi bi-check2-circle me-1"></i>Server-Side Form Validation</h6>
+              <p class="fs-xs text-muted mb-0">Strict input hygiene for required fields, RFC email validation, string bounds, and duplicate checking.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded-3 border">
+              <h6 class="fw-bold text-primary mb-1"><i class="bi bi-window-sidebar me-1"></i>Responsive EJS Presentation</h6>
+              <p class="fs-xs text-muted mb-0">Bootstrap 5 layouts with semantic partials, status indicators, and clean tabular visualizations.</p>
+            </div>
+          </div>
+        </div>
+
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-terminal text-primary me-2"></i>Tech Stack Baseline</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm fs-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Technology</th>
+                <th>Version</th>
+                <th>Role in System</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Node.js</td><td>v24.x</td><td>JavaScript runtime environment</td></tr>
+              <tr><td>Express.js</td><td>v5.x</td><td>Web server routing & middleware framework</td></tr>
+              <tr><td>EJS</td><td>v3.x / v7.x</td><td>Server-side dynamic template rendering</td></tr>
+              <tr><td>MySQL2</td><td>v3.x</td><td>Relational database driver with Promise API</td></tr>
+              <tr><td>express-session</td><td>v1.x</td><td>Server-side stateful cookie-backed session storage</td></tr>
+              <tr><td>bcrypt</td><td>v6.x</td><td>One-way cryptographic password salting and hashing</td></tr>
+              <tr><td>dotenv</td><td>v18.x</td><td>Zero-dependency environment variable isolation</td></tr>
+              <tr><td>Bootstrap</td><td>v5.3.3</td><td>Mobile-responsive layout styling framework</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
