@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html class="h-full" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Project HANAP - Report Item</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+    <link href="style.css" rel="stylesheet"/>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased">
+    <!-- Navigation Bar -->
+    <header class="fixed top-4 left-4 right-4 z-50 max-w-7xl mx-auto">
+        <div class="h-16 px-6 bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-full flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-2 text-xl font-bold text-white tracking-wide">
+                    <span class="material-symbols-outlined text-primary">search</span>
+                    Project <span class="text-blue-400">HANAP</span>
+                </a>
+            </div>
+            <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+                <a href="index.html" class="text-slate-300 hover:text-white transition">Catalog</a>
+                <a href="report.html" class="text-blue-400 font-semibold">Report Item</a>
+                <a href="admin-claims.html" class="text-slate-300 hover:text-white transition">Admin Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="pt-28 pb-16 px-4 max-w-3xl mx-auto min-h-screen flex flex-col justify-center">
+        <!-- Toggle Switch (Lost vs Found) -->
+        <div class="flex flex-col items-center text-center mb-6">
+            <div class="inline-flex p-1.5 bg-slate-800/80 backdrop-blur-xl border border-slate-700/80 rounded-full shadow-inner mb-3">
+                <button id="tabLostBtn" class="px-6 py-2 rounded-full font-medium text-sm transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md">
+                    Report Lost Item
+                </button>
+                <button id="tabFoundBtn" class="px-6 py-2 rounded-full font-medium text-sm transition-all text-slate-400 hover:text-white">
+                    Report Found Item
+                </button>
+            </div>
+            <h1 id="formHeading" class="text-2xl font-bold tracking-tight text-white">Report a Lost Item</h1>
+        </div>
+
+        <!-- Form Card Container -->
+        <div class="bg-slate-800/60 backdrop-blur-2xl p-8 rounded-3xl border border-slate-700/60 shadow-2xl">
+            <form action="/items" method="POST" class="space-y-5">
+                <!-- Item Title -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-300" for="itemTitle">Item Title</label>
+                    <input id="itemTitle" name="title" type="text" placeholder="e.g., Blue Tumbler, CSPC ID Lanyard" required 
+                           class="w-full h-11 px-4 rounded-xl border border-slate-600/80 bg-slate-900/60 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"/>
+                </div>
+
+                <!-- Category Dropdown -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-300" for="itemCategory">Category</label>
+                    <select id="itemCategory" name="category" required 
+                            class="w-full h-11 px-4 rounded-xl border border-slate-600/80 bg-slate-900/60 text-white focus:outline-none focus:border-blue-500 transition">
+                        <option value="documents_ids">Documents & IDs</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="clothing">Clothing & Accessories</option>
+                        <option value="keys">Keys & Cards</option>
+                        <option value="books">Books & Stationery</option>
+                        <option value="others">Other Valuables</option>
+                    </select>
+                </div>
+
+                <!-- Campus Location -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-300" for="campusLocation">Campus Location</label>
+                    <select id="campusLocation" name="location" required 
+                            class="w-full h-11 px-4 rounded-xl border border-slate-600/80 bg-slate-900/60 text-white focus:outline-none focus:border-blue-500 transition">
+                        <option value="Main Library">Main Library</option>
+                        <option value="ComLab 2">ComLab 2</option>
+                        <option value="Canteen">Canteen</option>
+                        <option value="Gym">Gym / Student Center</option>
+                        <option value="Student Pavilion">Student Pavilion</option>
+                        <option value="Main Gate Guardhouse">Main Gate Guardhouse</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-medium text-slate-300" for="itemDescription">Description & Distinguishing Features</label>
+                    <textarea id="itemDescription" name="description" rows="3" placeholder="Provide key details, color, brand, or unique marks..." 
+                              class="w-full p-4 rounded-xl border border-slate-600/80 bg-slate-900/60 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4 border-t border-slate-700/60 flex justify-end">
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-lg transition">
+                        <span>Submit Report</span>
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const tabLostBtn = document.getElementById('tabLostBtn');
+        const tabFoundBtn = document.getElementById('tabFoundBtn');
+        const formHeading = document.getElementById('formHeading');
+
+        if (tabLostBtn && tabFoundBtn) {
+            tabLostBtn.addEventListener('click', () => {
+                tabLostBtn.className = "px-6 py-2 rounded-full font-medium text-sm transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md";
+                tabFoundBtn.className = "px-6 py-2 rounded-full font-medium text-sm transition-all text-slate-400 hover:text-white";
+                formHeading.innerText = "Report a Lost Item";
+            });
+
+            tabFoundBtn.addEventListener('click', () => {
+                tabFoundBtn.className = "px-6 py-2 rounded-full font-medium text-sm transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md";
+                tabLostBtn.className = "px-6 py-2 rounded-full font-medium text-sm transition-all text-slate-400 hover:text-white";
+                formHeading.innerText = "Report a Found Item";
+            });
+        }
+    </script>
+</body>
+</html>
