@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<%
+  const mfaEnabledForView = typeof mfaEnabled !== 'undefined' && Boolean(mfaEnabled);
+%>
+<html class="h-full hanap-hide-scrollbar" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Account Settings - Project HANAP CSPC</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script>
+    // Theme immediate load
+    if (localStorage.getItem('hanap_theme') === 'dark' || (!('hanap_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#F4F7FB",
+            "primary": "#09436B",
+            "primary-container": "#2B5B84",
+            "on-surface": "#0F172A",
+            "text-muted": "#64748B",
+            "border-subtle": "#E2E8F0"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <%- include('partials/themeSetup') %>
+</head>
+<body class="min-h-full bg-[#F4F7FB] font-sans text-slate-800 antialiased flex flex-col justify-between relative overflow-x-hidden">
+  
+  <!-- Ambient Aurora Canvas Background -->
+  <div aria-hidden="true" class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 left-1/4 w-[600px] h-[500px] bg-gradient-to-br from-blue-300/30 via-teal-200/20 to-transparent rounded-full blur-[110px]"></div>
+    <div class="absolute top-1/3 -right-28 w-[500px] h-[450px] bg-gradient-to-bl from-indigo-200/25 via-sky-200/15 to-transparent rounded-full blur-[100px]"></div>
+    <div class="absolute -bottom-20 left-1/3 w-[550px] h-[450px] bg-gradient-to-tr from-teal-200/20 via-blue-200/15 to-transparent rounded-full blur-[120px]"></div>
+  </div>
+
+  <%- include('partials/navbar', { active: 'settings' }) %>
+
+  <!-- Main Container -->
+  <main class="w-full pt-3 pb-16 flex-1">
+    <div class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-8 space-y-5">
+      
+      <!-- Flash Messages -->
+      <% if (typeof msg !== 'undefined' && msg) { %>
+        <div class="p-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-teal-600 text-[18px]">check_circle</span>
+          <span><%= msg %></span>
+        </div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-rose-600 text-[18px]">error</span>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+
+      <!-- Header Banner -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-6 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_24px_rgba(15,23,42,0.04)]">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#09436B] to-[#2B5B84] text-white flex items-center justify-center shadow-md shadow-blue-900/15">
+            <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Account Settings</h1>
+            <p class="text-xs sm:text-sm text-slate-500">
+              <%= isAdmin ? 'Manage security credentials and notification preferences.' : 'Manage personal details, security credentials, active posts, activity logs, and notification preferences.' %>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold capitalize border border-slate-200/70">
+            Role: <%= profileUser.role_label %>
+          </span>
+        </div>
+      </div>
+
+      <!-- Settings Layout (Sidebar + Tab Content Panels) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- ================= SIDEBAR (4 cols) ================= -->
+        <aside class="lg:col-span-4 flex flex-col gap-3">
+          <div class="rounded-3xl p-4 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-2">
+            
+            <% if (!isAdmin) { %>
+            <!-- User Mini Profile Card -->
+            <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100 mb-2">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#09436B] to-sky-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                <%= (profileUser.full_name || 'U').substring(0, 2).toUpperCase() %>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-bold text-slate-900 truncate"><%= profileUser.full_name %></span>
+                <span class="text-xs text-slate-500 truncate"><%= profileUser.email %></span>
+              </div>
+            </div>
+            <% } %>
+
+            <!-- Tab Buttons -->
+            <nav class="flex flex-col gap-1" id="settingsTabNav">
+              <% if (!isAdmin) { %>
+              <button 
+                type="button" 
+                data-tab="personal" 
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-[#09436B] text-white shadow-xs cursor-pointer text-left"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-[19px]">person</span>
+                  <span>Personal Details</span>
+                </div>
+                <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
+              </button>
+              <% } %>
+
+              <button 
+                type="button" 
+                data-tab="security" 
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm <%= isAdmin ? 'font-bold bg-[#09436B] text-white shadow-xs' : 'font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70' %> transition-all cursor-pointer text-left"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-[19px]">shield</span>
+                  <span>Security &amp; Privacy</span>
+                </div>
+                <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
+              </button>
+
+              <button 
+                type="button" 
+                data-tab="posts" 
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-[19px]">inventory_2</span>
+                  <span>Post &amp; Reports</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 text-[11px] font-bold"><%= myReports.length %></span>
+              </button>
+
+              <button 
+                type="button" 
+                data-tab="activity" 
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-[19px]">history</span>
+                  <span>Activity Log</span>
+                </div>
+                <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
+              </button>
+
+              <% if (['student', 'guest', 'parent'].includes(profileUser.role)) { %>
+                <button
+                  type="button"
+                  data-tab="connections"
+                  class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left"
+                >
+                  <div class="flex items-center gap-2.5">
+                    <span class="material-symbols-outlined text-[19px]">family_restroom</span>
+                    <span>Student Connections</span>
+                  </div>
+                  <% if (profileUser.role === 'student' && guardianRequests.length > 0) { %>
+                    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold"><%= guardianRequests.length %></span>
+                  <% } %>
+                </button>
+              <% } %>
+
+              <button 
+                type="button" 
+                data-tab="notifications" 
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-[19px]">notifications</span>
+                  <span>Notification Details</span>
+                </div>
+                <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
+              </button>
+
+              <button 
+                type="button" 
+                data-tab="darkmode" 
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-[19px] text-amber-500">dark_mode</span>
+                  <span>Night Mode</span>
+                </div>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600" id="sidebarThemeIndicator">Theme</span>
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        <!-- ================= MAIN CONTENT PANELS (8 cols) ================= -->
+        <div class="lg:col-span-8 flex flex-col gap-6" id="settingsPanelsContainer">
+
+          <% if (['student', 'guest', 'parent'].includes(profileUser.role)) { %>
+            <div id="panel-connections" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
+              <div class="border-b border-slate-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-900">Student Connections</h2>
+                <p class="text-xs text-slate-500">Parent / Guardian access is granted only after the Student approves a request.</p>
+              </div>
+
+              <% if (profileUser.role === 'student') { %>
+                <div class="space-y-3">
+                  <h3 class="text-sm font-bold text-slate-800">Pending Parent / Guardian requests</h3>
+                  <% if (guardianRequests.length === 0) { %>
+                    <p class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">You have no pending connection requests.</p>
+                  <% } else { %>
+                    <% guardianRequests.forEach(request => { %>
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+                        <div class="min-w-0">
+                          <p class="text-sm font-bold text-slate-900 truncate"><%= request.guardian_name %></p>
+                          <p class="text-xs text-slate-500 truncate"><%= request.guardian_email %></p>
+                          <p class="text-[11px] text-slate-400 mt-1">Requested <%= new Date(request.requested_at).toLocaleString() %></p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                          <form action="/settings/guardian-links/<%= request.id %>/reject" method="POST">
+                            <% if (typeof csrfToken !== 'undefined' && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"/><% } %>
+                            <button type="submit" class="px-3 py-2 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold hover:bg-rose-50">Reject</button>
+                          </form>
+                          <form action="/settings/guardian-links/<%= request.id %>/approve" method="POST">
+                            <% if (typeof csrfToken !== 'undefined' && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"/><% } %>
+                            <button type="submit" class="px-3 py-2 rounded-xl bg-[#09436B] text-white text-xs font-bold hover:bg-[#2B5B84]">Approve</button>
+                          </form>
+                        </div>
+                      </div>
+                    <% }) %>
+                  <% } %>
+                </div>
+              <% } else { %>
+                <div class="space-y-3">
+                  <h3 class="text-sm font-bold text-slate-800">Request a Student connection</h3>
+                  <p class="text-xs text-slate-500">Enter the Student's CSPC email. Your account remains Guest until that Student approves the request.</p>
+                  <form action="/settings/guardian-links" method="POST" class="flex flex-col sm:flex-row gap-3">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"/><% } %>
+                    <input type="email" name="student_email" required autocomplete="email" placeholder="student@my.cspc.edu.ph" class="flex-1 min-w-0 h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:ring-2 focus:ring-sky-500"/>
+                    <button type="submit" class="px-5 h-11 rounded-xl bg-[#09436B] text-white text-xs font-bold hover:bg-[#2B5B84]">Send request</button>
+                  </form>
+                </div>
+
+                <div class="space-y-3">
+                  <h3 class="text-sm font-bold text-slate-800">Your Student connections</h3>
+                  <% if (guardianLinks.length === 0) { %>
+                    <p class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">No Student connection requests yet.</p>
+                  <% } else { %>
+                    <% guardianLinks.forEach(link => { %>
+                      <div class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+                        <div class="min-w-0">
+                          <p class="text-sm font-bold text-slate-900 truncate"><%= link.student_name %></p>
+                          <p class="text-xs text-slate-500 truncate"><%= link.student_email %></p>
+                        </div>
+                        <span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold <%= link.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (link.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>"><%= link.status === 'approved' ? 'Approved' : (link.status === 'rejected' ? 'Rejected' : 'Pending approval') %></span>
+                      </div>
+                    <% }) %>
+                  <% } %>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+
+          <!-- ================= PANEL 1: PERSONAL DETAILS ================= -->
+          <% if (!isAdmin) { %>
+          <div id="panel-personal" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6">
+            <div class="border-b border-slate-100 pb-4">
+              <h2 class="text-lg font-bold text-slate-900">Personal Details</h2>
+              <p class="text-xs text-slate-500">Update your account information, institutional contacts, and profile configurations.</p>
+            </div>
+
+            <form action="/settings/profile" method="POST" class="flex flex-col gap-4.5">
+              <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+              <% } %>
+
+              <!-- Full Name -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="fullName">Full Name *</label>
+                <input 
+                  type="text" 
+                  id="fullName" 
+                  name="full_name" 
+                  value="<%= profileUser.full_name %>" 
+                  required 
+                  class="w-full h-11 px-4 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6]"
+                />
+              </div>
+
+              <!-- Email & Phone Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="email">Email Address *</label>
+                  <div class="relative">
+                    <input 
+                      type="email" 
+                      id="email" 
+                      name="email" 
+                      value="<%= profileUser.email %>" 
+                      readonly
+                      aria-readonly="true"
+                      title="Email address cannot be changed."
+                      class="w-full h-11 pl-4 pr-11 rounded-xl border border-slate-200/90 bg-slate-100/80 text-sm text-slate-600 cursor-not-allowed"
+                    />
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-label="Locked">lock</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="phoneNumber">Contact Phone Number</label>
+                  <input 
+                    type="text" 
+                    id="phoneNumber" 
+                    name="phone_number" 
+                    placeholder="e.g. 0912-345-6789" 
+                    value="<%= profileUser.phone_number || '' %>" 
+                    class="w-full h-11 px-4 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6]"
+                  />
+                </div>
+              </div>
+
+              <!-- Department & Student ID Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="department">Campus Department / Course</label>
+                  <input 
+                    type="text" 
+                    id="department" 
+                    name="department" 
+                    placeholder="e.g. BSIT / College of Computer Studies" 
+                    value="<%= profileUser.department || '' %>" 
+                    class="w-full h-11 px-4 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] <%= profileUser.role === 'student' ? '' : 'bg-slate-100/80 text-slate-500 cursor-not-allowed' %>"
+                    <%= profileUser.role === 'student' ? '' : 'disabled aria-disabled="true" title="Department is only editable for student accounts."' %>
+                  />
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="studentId">Student / Faculty ID Number</label>
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      id="studentId" 
+                      name="student_id" 
+                      placeholder="e.g. 2023-10024" 
+                      value="<%= profileUser.student_id || '' %>" 
+                      readonly
+                      aria-readonly="true"
+                      title="ID number cannot be changed."
+                      class="w-full h-11 pl-4 pr-11 rounded-xl border border-slate-200/90 bg-slate-100/80 text-sm text-slate-600 cursor-not-allowed"
+                    />
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-label="Locked">lock</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end pt-4 border-t border-slate-100">
+                <button type="submit" class="px-6 h-11 rounded-xl bg-gradient-to-r from-[#09436B] to-[#2B5B84] hover:brightness-110 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">check</span>
+                  <span>Save Personal Details</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Danger Zone: Account deletion -->
+            <div class="mt-4 pt-6 border-t border-rose-100">
+              <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 class="text-xs font-bold text-rose-900 uppercase tracking-wider">Danger Zone</h4>
+                  <p class="text-xs text-rose-700">Deleting your account removes all active sessions and personal configurations.</p>
+                </div>
+                <form action="/settings/delete-account" method="POST" onsubmit="return confirm('WARNING: Are you absolutely sure you want to permanently delete your account? This action cannot be undone.');">
+                  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                  <% } %>
+                  <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs cursor-pointer whitespace-nowrap">
+                    Delete Account
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <!-- ================= PANEL 2: SECURITY & PRIVACY ================= -->
+          <div id="panel-security" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 <%= isAdmin ? '' : 'hidden' %>">
+            <div class="border-b border-slate-100 pb-4">
+              <h2 class="text-lg font-bold text-slate-900">Security &amp; Privacy</h2>
+              <p class="text-xs text-slate-500">Manage your password, privacy masking, and active campus authentication credentials.</p>
+            </div>
+
+            <!-- Password Change Form -->
+            <form action="/settings/security" method="POST" autocomplete="off" class="flex flex-col gap-4">
+              <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+              <% } %>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="currentPassword">Current Password *</label>
+                <div class="relative">
+                  <input 
+                    type="password" 
+                    id="currentPassword" 
+                    name="current_password" 
+                    autocomplete="off"
+                    required 
+                    class="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                  />
+                  <button type="button" data-password-toggle="currentPassword" aria-label="Show current password" aria-pressed="false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
+                    <span class="material-symbols-outlined text-[19px]" aria-hidden="true">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="newPassword">New Password *</label>
+                  <div class="relative">
+                    <input 
+                      type="password" 
+                      id="newPassword" 
+                      name="new_password" 
+                      autocomplete="new-password"
+                      required 
+                      class="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                    />
+                    <button type="button" data-password-toggle="newPassword" aria-label="Show new password" aria-pressed="false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
+                      <span class="material-symbols-outlined text-[19px]" aria-hidden="true">visibility</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="confirmPassword">Confirm New Password *</label>
+                  <div class="relative">
+                    <input 
+                      type="password" 
+                      id="confirmPassword" 
+                      name="confirm_password" 
+                      autocomplete="new-password"
+                      required 
+                      class="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                    />
+                    <button type="button" data-password-toggle="confirmPassword" aria-label="Show confirmation password" aria-pressed="false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
+                      <span class="material-symbols-outlined text-[19px]" aria-hidden="true">visibility</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 flex items-start gap-2">
+                <span class="material-symbols-outlined text-slate-500 text-[18px]">lock</span>
+                <span>Use at least 8 characters with uppercase and lowercase letters, a number, and a special character.</span>
+              </div>
+
+              <div class="space-y-2" aria-live="polite">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span id="settingsPasswordStrengthText" class="font-semibold text-slate-500">Password Strength: Empty</span>
+                  <span class="text-[10px] text-slate-400">8+ chars, upper, lower, number &amp; symbol</span>
+                </div>
+                <div id="settingsPasswordStrengthMeter" class="grid grid-cols-3 gap-1.5 h-2 w-full" role="progressbar" aria-label="New password strength" aria-valuenow="0" aria-valuemin="0" aria-valuemax="3">
+                  <div class="h-full rounded-full bg-slate-200 transition-colors duration-300"></div>
+                  <div class="h-full rounded-full bg-slate-200 transition-colors duration-300"></div>
+                  <div class="h-full rounded-full bg-slate-200 transition-colors duration-300"></div>
+                </div>
+                <p id="settingsPasswordWarning" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800" role="alert"></p>
+              </div>
+
+              <div class="flex items-center justify-end pt-2">
+                <button id="updatePasswordButton" type="submit" class="px-6 h-11 rounded-xl bg-[#09436B] hover:bg-[#2B5B84] text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">lock_reset</span>
+                  <span>Update Password</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Email MFA -->
+            <div class="pt-6 border-t border-slate-100 flex flex-col gap-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800">Email multi-factor authentication</h3>
+                  <p class="text-xs text-slate-500 mt-1">Require a one-time code sent to <%= profileUser.email %> after your password when signing in.</p>
+                </div>
+                <% if (mfaEnabledForView) { %>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                    <span class="material-symbols-outlined text-[15px]">verified_user</span>
+                    Enabled
+                  </span>
+                <% } else { %>
+                  <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">Disabled</span>
+                <% } %>
+              </div>
+
+              <% if (mfaEnabledForView) { %>
+                <form action="/settings/mfa/disable" method="POST" class="flex flex-col sm:flex-row sm:items-end gap-3">
+                  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                  <% } %>
+                  <div class="flex-1 flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-700" for="disableMfaPassword">Current password to disable MFA</label>
+                    <div class="relative">
+                      <input id="disableMfaPassword" name="current_password" type="password" autocomplete="current-password" required class="w-full h-10 pl-3 pr-11 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"/>
+                      <button type="button" data-password-toggle="disableMfaPassword" aria-label="Show current password" aria-pressed="false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
+                        <span class="material-symbols-outlined text-[19px]" aria-hidden="true">visibility</span>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="submit" class="px-4 h-10 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold transition">
+                    Disable MFA
+                  </button>
+                </form>
+              <% } else { %>
+                <form action="/settings/mfa/enable" method="POST" class="flex flex-col sm:flex-row sm:items-end gap-3">
+                  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                  <% } %>
+                  <div class="flex-1 flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-700" for="enableMfaPassword">Current password to enable MFA</label>
+                    <div class="relative">
+                      <input id="enableMfaPassword" name="current_password" type="password" autocomplete="current-password" required class="w-full h-10 pl-3 pr-11 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"/>
+                      <button type="button" data-password-toggle="enableMfaPassword" aria-label="Show current password" aria-pressed="false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
+                        <span class="material-symbols-outlined text-[19px]" aria-hidden="true">visibility</span>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="submit" class="px-4 h-10 rounded-xl bg-[#09436B] hover:bg-[#2B5B84] text-white text-xs font-bold transition">
+                    Enable Email MFA
+                  </button>
+                </form>
+              <% } %>
+              <p class="text-[11px] text-slate-500">After enabling MFA, each sign-in requires a single-use email code. Codes expire after 10 minutes and allow five attempts.</p>
+            </div>
+
+            <!-- Privacy Preferences Card -->
+            <div class="pt-6 border-t border-slate-100 flex flex-col gap-3">
+              <h3 class="text-sm font-bold text-slate-800">Privacy Preferences</h3>
+              
+              <div class="p-4 rounded-2xl bg-sky-50/60 border border-sky-100 flex items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <span class="material-symbols-outlined text-[#2B5B84] text-[20px] mt-0.5">visibility_off</span>
+                  <div>
+                    <span class="text-xs font-bold text-slate-800 block">Phone Number Auto-Masking</span>
+                    <span class="text-[11px] text-slate-500">Automatically hide personal phone numbers (`09**-***-**09`) in claim chats until verified.</span>
+                  </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">Enabled</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= PANEL 3: POSTS & REPORTS ================= -->
+          <div id="panel-posts" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">Your Posts &amp; Reports</h2>
+                <p class="text-xs text-slate-500">Full CRUD configuration for all your submitted lost and found item reports.</p>
+              </div>
+              <a href="/items/new?type=lost" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#09436B] text-white text-xs font-bold hover:bg-[#2B5B84] transition shadow-xs">
+                <span class="material-symbols-outlined text-[16px]">add</span>
+                <span>New Report</span>
+              </a>
+            </div>
+
+            <!-- Reports List -->
+            <% if (!myReports || myReports.length === 0) { %>
+              <div class="py-12 text-center text-slate-400 text-xs">
+                <span class="material-symbols-outlined text-4xl mb-2 text-slate-300">inventory_2</span>
+                <p class="font-semibold text-slate-700">No reports posted yet.</p>
+                <p class="text-slate-400 mt-1">When you report lost or found items, they will appear here for easy editing.</p>
+              </div>
+            <% } else { %>
+              <div class="divide-y divide-slate-100">
+                <% myReports.forEach(item => { %>
+                  <% const itemAgeMs = Date.now() - new Date(item.date_reported).getTime(); %>
+                  <% const canEditOwnedItem = itemAgeMs <= 24 * 60 * 60 * 1000; %>
+                  <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 p-2 rounded-2xl transition">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                      <% if (item.image_path) { %>
+                        <img src="<%= item.image_path %>" alt="" class="w-12 h-12 rounded-xl object-cover border border-slate-200/80 shrink-0"/>
+                      <% } else { %>
+                        <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-500 shrink-0">
+                          <span class="material-symbols-outlined text-2xl">category</span>
+                        </div>
+                      <% } %>
+                      <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="font-bold text-sm text-slate-900 truncate"><%= item.item_name %></span>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= item.report_type === 'found' ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800' %>">
+                            <%= item.report_type %>
+                          </span>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= item.status === 'claimed' ? 'bg-emerald-100 text-emerald-800' : (item.status === 'pending_review' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800') %>">
+                            <%= item.status %>
+                          </span>
+                        </div>
+                        <span class="text-xs text-slate-500 mt-0.5">
+                          📍 <%= item.location_found_lost %> • Reported <%= new Date(item.date_reported).toLocaleDateString() %>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- CRUD Action Buttons -->
+                    <div class="flex items-center gap-2 shrink-0">
+                      <a href="/items/<%= item.id %>" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition" title="View details">
+                        View
+                      </a>
+                      <% if (canEditOwnedItem) { %>
+                        <a href="/items/<%= item.id %>/edit" class="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-semibold transition" title="Edit report">
+                          Edit
+                        </a>
+                      <% } %>
+                      <form action="/items/<%= item.id %>/delete" method="POST" onsubmit="return confirm('Delete report: <%= item.item_name %>?');" class="inline">
+                        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                        <% } %>
+                        <button type="submit" class="px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-semibold transition cursor-pointer" title="Delete report">
+                          <span class="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- ================= PANEL 4: ACTIVITY LOG ================= -->
+          <div id="panel-activity" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
+            <div class="border-b border-slate-100 pb-4">
+              <h2 class="text-lg font-bold text-slate-900">Activity Log</h2>
+              <p class="text-xs text-slate-500">Chronological history of your reported items, claims, and security audit events.</p>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Account Created -->
+              <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50/70 border border-slate-100">
+                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
+                  <span class="material-symbols-outlined text-[18px]">verified_user</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-800">Account Registered</span>
+                  <span class="text-xs text-slate-500">Joined Project HANAP with institutional email <%= profileUser.email %>.</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5"><%= new Date(profileUser.created_at).toLocaleString() %></span>
+                </div>
+              </div>
+
+              <!-- Reports Log Loop -->
+              <% if (myReports && myReports.length > 0) { %>
+                <% myReports.slice(0, 5).forEach(r => { %>
+                  <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/80 border border-slate-200/60">
+                    <div class="w-8 h-8 rounded-full bg-sky-100 text-[#09436B] flex items-center justify-center shrink-0 mt-0.5">
+                      <span class="material-symbols-outlined text-[18px]">post_add</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-bold text-slate-800">Report Filed: "<%= r.item_name %>"</span>
+                      <span class="text-xs text-slate-500">Type: <%= r.report_type.toUpperCase() %> • Location: <%= r.location_found_lost %> • Status: <%= r.status %></span>
+                      <span class="text-[10px] text-slate-400 mt-0.5"><%= new Date(r.date_reported).toLocaleString() %></span>
+                    </div>
+                  </div>
+                <% }) %>
+              <% } %>
+
+              <!-- Claims Log Loop -->
+              <% if (claimsMade && claimsMade.length > 0) { %>
+                <% claimsMade.forEach(c => { %>
+                  <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/80 border border-slate-200/60">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                      <span class="material-symbols-outlined text-[18px]">handshake</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-bold text-slate-800">Claim Submitted for "<%= c.item_name %>"</span>
+                      <span class="text-xs text-slate-500">Finder: <%= c.reporter_name %> • Status: <%= c.status.toUpperCase() %></span>
+                      <span class="text-[10px] text-slate-400 mt-0.5"><%= new Date(c.created_at).toLocaleString() %></span>
+                    </div>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- ================= PANEL 5: NOTIFICATION DETAILS ================= -->
+          <div id="panel-notifications" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
+            <div class="border-b border-slate-100 pb-4">
+              <h2 class="text-lg font-bold text-slate-900">Notification Details</h2>
+              <p class="text-xs text-slate-500">Customize how and when Project HANAP sends you alerts and claim notifications.</p>
+            </div>
+
+            <form action="/settings/notifications" method="POST" class="flex flex-col gap-4">
+              <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+              <% } %>
+
+              <div class="p-4 rounded-2xl bg-white/80 border border-slate-200/70 flex items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <span class="material-symbols-outlined text-primary text-[22px] mt-0.5">mark_email_read</span>
+                  <div>
+                    <span class="text-xs sm:text-sm font-bold text-slate-800 block">Claim Alerts</span>
+                    <span class="text-[11px] text-slate-500">Receive an email immediately when another student files a claim on an item you reported.</span>
+                  </div>
+                </div>
+                <input checked class="w-5 h-5 text-[#2B5B84] rounded-md focus:ring-sky-500 accent-[#2B5B84] cursor-pointer" type="checkbox" name="notify_claims"/>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-white/80 border border-slate-200/70 flex items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <span class="material-symbols-outlined text-primary text-[22px] mt-0.5">chat</span>
+                  <div>
+                    <span class="text-xs sm:text-sm font-bold text-slate-800 block">Chat Messages</span>
+                    <span class="text-[11px] text-slate-500">Get notified when a message is posted in your active claim coordination conversation.</span>
+                  </div>
+                </div>
+                <input checked class="w-5 h-5 text-[#2B5B84] rounded-md focus:ring-sky-500 accent-[#2B5B84] cursor-pointer" type="checkbox" name="notify_chat"/>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-white/80 border border-slate-200/70 flex items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <span class="material-symbols-outlined text-primary text-[22px] mt-0.5">campaign</span>
+                  <div>
+                    <span class="text-xs sm:text-sm font-bold text-slate-800 block">Campus Care Broadcasts</span>
+                    <span class="text-[11px] text-slate-500">Receive campus-wide notifications for high-priority lost valuables (IDs, keys, laptops).</span>
+                  </div>
+                </div>
+                <input checked class="w-5 h-5 text-[#2B5B84] rounded-md focus:ring-sky-500 accent-[#2B5B84] cursor-pointer" type="checkbox" name="notify_broadcasts"/>
+              </div>
+
+              <div class="flex items-center justify-end pt-2">
+                <button type="submit" class="px-6 h-11 rounded-xl bg-gradient-to-r from-[#09436B] to-[#2B5B84] hover:brightness-110 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">save</span>
+                  <span>Save Notification Preferences</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ================= PANEL 6: NIGHT MODE SETTINGS ================= -->
+          <div id="panel-darkmode" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
+            <div class="border-b border-slate-100 pb-4">
+              <h2 class="text-lg font-bold text-slate-900">Night Mode / Theme Settings</h2>
+              <p class="text-xs text-slate-500">Toggle between Light Horizon and Serene Deep Slate Night Mode.</p>
+            </div>
+
+            <fieldset class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <legend class="sr-only">Choose appearance</legend>
+              <label class="flex items-start gap-3 p-5 rounded-2xl border border-slate-200/80 bg-white/80 cursor-pointer hover:border-[#2B5B84] transition-colors">
+                <input type="radio" name="themePreference" value="light" class="mt-1 accent-[#2B5B84]"/>
+                <span class="flex flex-col gap-2">
+                  <span class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <span class="w-3 h-3 rounded-full bg-slate-100 border border-slate-300"></span>
+                    Light Horizon
+                  </span>
+                  <span class="text-xs text-slate-500">Daylight theme with a cool alabaster canvas and crisp glass panels.</span>
+                </span>
+              </label>
+              <label class="flex items-start gap-3 p-5 rounded-2xl border border-slate-700 bg-[#0E162D] text-white cursor-pointer hover:border-sky-400 transition-colors">
+                <input type="radio" name="themePreference" value="dark" class="mt-1 accent-sky-400"/>
+                <span class="flex flex-col gap-2">
+                  <span class="flex items-center gap-2 text-xs font-bold text-white">
+                    <span class="w-3 h-3 rounded-full bg-[#38BDF8]"></span>
+                    Serene Horizon Night Mode
+                  </span>
+                  <span class="text-xs text-slate-300">Low-glare midnight navy canvas with glowing frosted glass cards.</span>
+                </span>
+              </label>
+            </fieldset>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-white/60 bg-white/50 backdrop-blur-md py-4 mt-8">
+    <div class="max-w-[1060px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 font-medium">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-700">Project HANAP</span>
+        <span>•</span>
+        <span>CSPC Camarines Sur</span>
+      </div>
+      <div>© 2026 CSPC Campus Care Network</div>
+    </div>
+  </footer>
+
+  <script>
+    // Tab Switching Logic
+    (function() {
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const panels = document.querySelectorAll('.settings-panel');
+
+      function switchTab(tabName) {
+        panels.forEach(p => p.classList.add('hidden'));
+        const activePanel = document.getElementById(`panel-${tabName}`);
+        if (activePanel) activePanel.classList.remove('hidden');
+
+        tabButtons.forEach(btn => {
+          if (btn.getAttribute('data-tab') === tabName) {
+            btn.className = 'tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-[#09436B] text-white shadow-xs cursor-pointer text-left';
+          } else {
+            btn.className = 'tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left';
+          }
+        });
+
+        history.replaceState(null, null, `#${tabName}`);
+      }
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.getAttribute('data-tab');
+          switchTab(tab);
+        });
+      });
+
+      // Handle Hash on load
+      const hash = window.location.hash.replace('#', '');
+      if (hash && document.getElementById(`panel-${hash}`)) {
+        switchTab(hash);
+      }
+    })();
+
+    (function() {
+      const passwordForm = document.querySelector('form[action="/settings/security"]');
+      const newPasswordInput = document.getElementById('newPassword');
+      const confirmPasswordInput = document.getElementById('confirmPassword');
+      const strengthText = document.getElementById('settingsPasswordStrengthText');
+      const strengthMeter = document.getElementById('settingsPasswordStrengthMeter');
+      const warning = document.getElementById('settingsPasswordWarning');
+
+      if (!passwordForm || !newPasswordInput || !confirmPasswordInput || !strengthText || !strengthMeter || !warning) return;
+
+      const bars = Array.from(strengthMeter.children);
+      const calculateStrength = (password) => {
+        const hasLength = password.length >= 8;
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/`~]/.test(password);
+
+        if (hasLength && hasUpper && hasLower && hasNumber && hasSpecial) return 3;
+        if (hasLength && hasUpper && hasLower && hasNumber) return 2;
+        if (hasLength) return 1;
+        return 0;
+      };
+
+      const updateStrengthMeter = () => {
+        const password = newPasswordInput.value;
+        const strength = calculateStrength(password);
+        const labels = [
+          password ? 'Password Strength: Too Short (< 8 chars)' : 'Password Strength: Empty',
+          'Password Strength: Weak (Need Upper, Lower & Number)',
+          'Password Strength: Medium (Need Special Character)',
+          'Password Strength: Strong (All Requirements Met)'
+        ];
+
+        strengthMeter.setAttribute('aria-valuenow', String(strength));
+        strengthText.textContent = labels[strength];
+        strengthText.className = strength === 3
+          ? 'font-semibold text-emerald-700'
+          : (strength > 0 ? 'font-semibold text-blue-700' : 'font-semibold text-slate-500');
+
+        bars.forEach((bar, index) => {
+          bar.className = `h-full rounded-full transition-colors duration-300 ${index < strength ? 'bg-[#2B5B84]' : 'bg-slate-200'}`;
+        });
+
+        if (strength === 3) {
+          warning.classList.add('hidden');
+          warning.textContent = '';
+          newPasswordInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
+        }
+      };
+
+      newPasswordInput.addEventListener('input', updateStrengthMeter);
+
+      passwordForm.addEventListener('submit', (event) => {
+        const strength = calculateStrength(newPasswordInput.value);
+        if (strength < 3) {
+          event.preventDefault();
+          warning.textContent = 'Password rejected. Use at least 8 characters with an uppercase letter, a lowercase letter, a number, and a special character.';
+          warning.classList.remove('hidden');
+          newPasswordInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
+          newPasswordInput.focus();
+          return;
+        }
+
+        if (newPasswordInput.value !== confirmPasswordInput.value) {
+          event.preventDefault();
+          warning.textContent = 'New password and confirmation password do not match.';
+          warning.classList.remove('hidden');
+          confirmPasswordInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
+          confirmPasswordInput.focus();
+          return;
+        }
+
+        warning.classList.add('hidden');
+        warning.textContent = '';
+      });
+
+      confirmPasswordInput.addEventListener('input', () => {
+        confirmPasswordInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
+        if (newPasswordInput.value === confirmPasswordInput.value) {
+          warning.classList.add('hidden');
+          warning.textContent = '';
+        }
+      });
+    })();
+
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.passwordToggle);
+        if (!input) return;
+
+        const shouldShow = input.type === 'password';
+        input.type = shouldShow ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(shouldShow));
+        button.setAttribute('aria-label', `${shouldShow ? 'Hide' : 'Show'} ${input.labels?.[0]?.textContent.trim().toLowerCase() || 'password'}`);
+        button.querySelector('span').textContent = shouldShow ? 'visibility_off' : 'visibility';
+      });
+    });
+
+    document.querySelectorAll('input[name="themePreference"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (radio.checked && typeof window.setHanapTheme === 'function') {
+          window.setHanapTheme(radio.value);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
