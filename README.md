@@ -1,7 +1,7 @@
 # Project HANAP (*Holistic Asset Notification & Access Portal*)
 
 [![Platform](https://img.shields.io/badge/Platform-Node.js%20v18%2B%20%7C%20Express%205.x-09436B?style=for-the-badge&logo=nodedotjs)](https://nodejs.org/)
-[![Database](https://img.shields.io/badge/Database-MariaDB%20%2F%20MySQL%208.x-2B5B84?style=for-the-badge&logo=mysql)](https://www.mysql.com/)
+[![Database](http://img.shields.io/badge/Database-MariaDB%20%2F%20MySQL%208.x-2B5B84?style=for-the-badge&logo=mysql)](https://www.mysql.com/)
 [![Frontend](https://img.shields.io/badge/Frontend-EJS%20%2B%20Tailwind%20CSS-0D9488?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 [![Institution](https://img.shields.io/badge/Institution-CSPC%20Camarines%20Sur-1D63B8?style=for-the-badge)](https://my.cspc.edu.ph/)
 [![License](https://img.shields.io/badge/License-MIT-emerald?style=for-the-badge)](LICENSE)
