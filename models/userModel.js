@@ -1,4 +1,4 @@
-const db = require('../config/db');
+﻿const db = require('../config/db');
 
 async function login(params, values = [], connection = db) {
     return connection.execute(`SELECT u.id, u.full_name, u.email, u.password_hash, ar.role_code AS role
