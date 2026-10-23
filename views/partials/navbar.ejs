@@ -1,0 +1,301 @@
+
+<!-- Floating Glass Navbar Dock -->
+<header class="app-navbar sticky top-3 sm:top-4 z-50 px-4 sm:px-6 xl:px-8 mb-5 sm:mb-6 w-full">
+  <div class="max-w-[1440px] mx-auto rounded-3xl sm:rounded-[28px] bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.04)] px-4 sm:px-6 py-2.5 min-h-[68px] flex items-center justify-between gap-4 transition-all">
+    
+    <!-- Left: Brand / Logo Section -->
+    <a class="flex items-center gap-3.5 group shrink-0" href="<%= isAdmin ? '/admin/dashboard' : '/dashboard' %>">
+      <div class="w-11 h-11 rounded-2xl bg-[#E5F0FD] flex items-center justify-center text-[#1E3A5F] group-hover:scale-105 transition-transform">
+        <span class="material-symbols-outlined text-[24px]">explore</span>
+      </div>
+      <div class="flex flex-col">
+        <div class="flex items-center gap-2 leading-none">
+          <span class="font-bold tracking-tight text-[#1E3A5F] text-base sm:text-lg">Project HANAP</span>
+          <span class="px-2 py-0.5 rounded-md bg-[#EEF2F6] text-[#64748B] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">CSPC</span>
+        </div>
+        <span class="text-xs text-[#64748B] font-medium leading-none mt-1 hidden sm:inline">Campus Lost &amp; Found Portal</span>
+      </div>
+    </a>
+
+    <!-- Center: Primary Navigation Links (Inline, single-line capsule track) -->
+    <nav class="hidden lg:flex items-center flex-nowrap shrink-0 gap-1 p-1 bg-[#F4F7FB] rounded-full border border-slate-100/90 shadow-2xs whitespace-nowrap">
+      <% if (isAdmin) { %>
+        <!-- Admin Dedicated Direct Links (Guest, student, and staff links hidden) -->
+        <a href="/admin/dashboard" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'admin-dashboard') ? 'bg-white text-[#09436B] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
+          <span class="material-symbols-outlined text-[17px]">dashboard</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="/admin/handover" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'admin-handover') ? 'bg-white text-[#09436B] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
+          <span class="material-symbols-outlined text-[17px]">inventory_2</span>
+          <span>Handover</span>
+        </a>
+        <a href="/admin/users" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'admin-users') ? 'bg-white text-[#09436B] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
+          <span class="material-symbols-outlined text-[17px]">group</span>
+          <span>Users</span>
+        </a>
+        <a href="/admin/reports" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'admin-reports') ? 'bg-white text-[#09436B] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
+          <span class="material-symbols-outlined text-[17px]">archive</span>
+          <span>Archive</span>
+        </a>
+        <a href="/admin/analytics" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'admin-analytics') ? 'bg-white text-[#09436B] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
+          <span class="material-symbols-outlined text-[17px]">monitoring</span>
+          <span>Analytics &amp; P2P</span>
+        </a>
+      <% } else { %>
+        <!-- Guest, Student, and Staff Navigation Links -->
+        <a href="/dashboard" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'dashboard') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Dashboard</a>
+        <a href="/catalog" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'catalog') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Browse Catalog</a>
+        <a href="/items/new?type=lost" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'report-lost') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">+ Report Lost Item</a>
+        <% if (typeof user === 'undefined' || !user || (user.role !== 'parent/guest' && user.role !== 'guest' && user.role !== 'parent')) { %>
+          <a href="/items/new?type=found" class="whitespace-nowrap inline-flex items-center shrink-0 px-4.5 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'report-found') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">+ Report Found Item</a>
+        <% } %>
+        <% if (typeof user !== 'undefined' && user) { %>
+          <a href="/claims" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'claims') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Claims</a>
+          <a href="/my-reports" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'my-reports') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">My Reports</a>
+        <% } %>
+      <% } %>
+    </nav>
+
+    <!-- Right Controls: Theme Toggle, Notifications, Account Dropdown & Authentication -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      
+      <!-- Quick Theme Toggle Button (1-Click Switch) -->
+      <button 
+        type="button" 
+        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-amber-500 hover:bg-slate-100/80 transition-all cursor-pointer border border-transparent hover:border-slate-200/60"
+        title="Toggle Night / Light Mode"
+        aria-label="Toggle light and dark mode"
+        aria-pressed="false"
+        data-theme-toggle
+      >
+        <span class="material-symbols-outlined text-[21px]" id="navThemeIcon">dark_mode</span>
+      </button>
+
+      <% if (typeof user !== 'undefined' && user) { %>
+        <% const notificationBadgeCount = Number(typeof unreadNotificationCount !== 'undefined' ? unreadNotificationCount : 0); %>
+        <!-- Notification bell with recent unread count badge -->
+        <a id="notificationBellLink" href="/claims" aria-label="Notifications" class="relative w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors" title="Notifications" data-notification-count="<%= notificationBadgeCount %>">
+          <span class="material-symbols-outlined text-[22px]">notifications</span>
+          <span id="notificationBadge" class="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-[#1D63B8] text-white text-[9px] font-bold flex items-center justify-center shadow-xs ring-1 ring-white <%= notificationBadgeCount > 0 ? '' : 'hidden' %>" data-visible="<%= notificationBadgeCount > 0 ? 'true' : 'false' %>">
+            <%= notificationBadgeCount > 99 ? '99+' : notificationBadgeCount %>
+          </span>
+        </a>
+
+        <!-- Vertical Divider -->
+        <div class="h-6 w-px bg-slate-200/80 hidden sm:block"></div>
+
+        <!-- Account Name Dropdown Button Container -->
+        <div class="relative" id="userMenuContainer">
+          <button 
+            type="button" 
+            id="userMenuBtn" 
+            aria-expanded="false" 
+            aria-haspopup="true"
+            class="flex items-center gap-2.5 p-1 pr-2 sm:pr-2.5 rounded-2xl hover:bg-slate-100/80 border border-transparent hover:border-slate-200/60 transition-all cursor-pointer group"
+          >
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#09436B] to-[#2B5B84] text-white flex items-center justify-center shadow-xs font-bold text-xs shrink-0">
+              <%= (user.full_name || 'U').substring(0, 2).toUpperCase() %>
+            </div>
+            <div class="hidden sm:flex flex-col text-left leading-tight whitespace-nowrap">
+              <div class="flex items-center gap-1.5 whitespace-nowrap">
+                <span class="font-bold text-slate-800 text-xs sm:text-sm max-w-[120px] truncate whitespace-nowrap"><%= user.full_name %></span>
+                <span class="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold capitalize whitespace-nowrap shrink-0">
+                  <%= isAdmin ? 'Admin' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : (user.role === 'parent' ? 'Parent' : (user.role === 'legacy_institutional' ? 'Review' : 'Guest')))) %>
+                </span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap">CSPC Account</span>
+            </div>
+            <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-slate-700 transition-transform duration-200" id="userMenuChevron">expand_more</span>
+          </button>
+
+          <!-- User Account Dropdown Menu -->
+          <div 
+            id="userMenuDropdown" 
+            class="hidden absolute right-0 top-12 sm:top-14 w-64 rounded-2xl bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.12)] p-2 z-50 flex flex-col gap-1 transition-all"
+          >
+            <!-- User Header Card inside Dropdown -->
+            <div class="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-[#09436B] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                <%= (user.full_name || 'U').substring(0, 2).toUpperCase() %>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-bold text-slate-900 truncate"><%= user.full_name %></span>
+                <span class="text-[11px] text-slate-500 truncate"><%= user.email %></span>
+              </div>
+            </div>
+
+            <!-- Settings Link (Redirects to Sidebar Settings Page) -->
+            <a 
+              href="/settings" 
+              class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-700 hover:text-primary hover:bg-slate-100/80 text-xs sm:text-sm font-semibold transition-colors"
+            >
+              <span class="material-symbols-outlined text-[19px] text-[#2B5B84]">settings</span>
+              <span>Account Settings</span>
+            </a>
+
+            <!-- Night Mode Toggle Switch inside Dropdown -->
+            <button 
+              type="button" 
+              aria-pressed="false"
+              data-theme-toggle
+              class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs sm:text-sm font-semibold transition-colors cursor-pointer text-left"
+            >
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-[19px] text-amber-500" id="dropdownThemeIcon">dark_mode</span>
+                <span id="dropdownThemeLabel">Night Mode</span>
+              </div>
+              <!-- Switch Pill -->
+              <div class="w-8 h-4.5 rounded-full bg-slate-300 flex items-center p-0.5 transition-colors" id="dropdownThemeSwitch">
+                <div class="w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform transform translate-x-0" id="dropdownThemeThumb"></div>
+              </div>
+            </button>
+
+            <!-- Divider -->
+            <div class="h-px bg-slate-100 my-1"></div>
+
+            <!-- Logout -->
+            <a 
+              href="/logout" 
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs sm:text-sm font-semibold transition-colors"
+            >
+              <span class="material-symbols-outlined text-[18px]">logout</span>
+              <span>Logout</span>
+            </a>
+          </div>
+        </div>
+
+      <% } else { %>
+        <a href="/login" class="px-5 py-2 rounded-full text-sm font-bold text-white bg-[#09436B] hover:bg-[#204667] transition-all shadow-xs">
+          Sign In
+        </a>
+        <a href="/register" class="px-5 py-2 rounded-full text-sm font-bold text-[#09436B] bg-white hover:bg-slate-50 border border-slate-200 transition-all shadow-xs hidden sm:inline">
+          Create Account
+        </a>
+      <% } %>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Global Dark Mode Controller
+  function updateThemeUI(isDark) {
+    const navIcon = document.getElementById('navThemeIcon');
+    const dropdownIcon = document.getElementById('dropdownThemeIcon');
+    const dropdownLabel = document.getElementById('dropdownThemeLabel');
+    const dropdownSwitch = document.getElementById('dropdownThemeSwitch');
+    const dropdownThumb = document.getElementById('dropdownThemeThumb');
+    const themeBtnIcon = document.getElementById('themeBtnIcon');
+    const themeBtnText = document.getElementById('themeBtnText');
+    const sidebarThemeIndicator = document.getElementById('sidebarThemeIndicator');
+    const themeToggleLabel = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(isDark));
+      button.setAttribute('aria-label', 'Toggle light and dark mode');
+      button.setAttribute('title', themeToggleLabel);
+    });
+    document.querySelectorAll('input[name="themePreference"]').forEach((radio) => {
+      radio.checked = radio.value === (isDark ? 'dark' : 'light');
+    });
+
+    if (isDark) {
+      if (navIcon) navIcon.textContent = 'light_mode';
+      if (dropdownIcon) dropdownIcon.textContent = 'light_mode';
+      if (dropdownLabel) dropdownLabel.textContent = 'Light Mode';
+      if (dropdownSwitch) dropdownSwitch.className = 'w-8 h-4.5 rounded-full bg-sky-600 flex items-center p-0.5 transition-colors';
+      if (dropdownThumb) dropdownThumb.className = 'w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform transform translate-x-3.5';
+      if (themeBtnIcon) themeBtnIcon.textContent = 'light_mode';
+      if (themeBtnText) themeBtnText.textContent = 'Switch to Light Mode';
+      if (sidebarThemeIndicator) sidebarThemeIndicator.textContent = 'Active: Dark';
+    } else {
+      if (navIcon) navIcon.textContent = 'dark_mode';
+      if (dropdownIcon) dropdownIcon.textContent = 'dark_mode';
+      if (dropdownLabel) dropdownLabel.textContent = 'Night Mode';
+      if (dropdownSwitch) dropdownSwitch.className = 'w-8 h-4.5 rounded-full bg-slate-300 flex items-center p-0.5 transition-colors';
+      if (dropdownThumb) dropdownThumb.className = 'w-3.5 h-3.5 rounded-full bg-white shadow-xs transition-transform transform translate-x-0';
+      if (themeBtnIcon) themeBtnIcon.textContent = 'dark_mode';
+      if (themeBtnText) themeBtnText.textContent = 'Toggle Night Mode';
+      if (sidebarThemeIndicator) sidebarThemeIndicator.textContent = 'Active: Light';
+    }
+  }
+
+  function setHanapTheme(theme) {
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('hanap_theme', isDark ? 'dark' : 'light');
+    updateThemeUI(isDark);
+  }
+
+  window.setHanapTheme = setHanapTheme;
+
+  function toggleDarkMode() {
+    setHanapTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+  }
+
+  function syncNotificationBadge() {
+    const bell = document.getElementById('notificationBellLink');
+    const badge = document.getElementById('notificationBadge');
+    if (!bell || !badge) return;
+
+    const baseCount = Number(bell.dataset.notificationCount || 0);
+    const seenAt = Number(localStorage.getItem('hanap_notifications_seen_at') || 0);
+    const isViewed = seenAt > 0 && Date.now() - seenAt < 24 * 60 * 60 * 1000;
+
+    if (baseCount > 0 && !isViewed) {
+      badge.classList.remove('hidden');
+      badge.textContent = baseCount > 99 ? '99+' : String(baseCount);
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  // Initialize UI on load
+  document.addEventListener('DOMContentLoaded', () => {
+  const isDark = document.documentElement.classList.contains('dark');
+  updateThemeUI(isDark);
+
+  syncNotificationBadge();
+
+  const bell = document.getElementById('notificationBellLink');
+  if (bell) {
+    bell.addEventListener('click', () => {
+      localStorage.setItem('hanap_notifications_seen_at', Date.now());
+      const badge = document.getElementById('notificationBadge');
+      if (badge) badge.classList.add('hidden');
+    });
+  }
+
+  document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+    button.addEventListener('click', toggleDarkMode);
+  });
+
+  // Dropdown toggle logic
+  const userBtn = document.getElementById('userMenuBtn');
+  const userDropdown = document.getElementById('userMenuDropdown');
+  const userChevron = document.getElementById('userMenuChevron');
+
+    if (userBtn && userDropdown) {
+      userBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = userDropdown.classList.contains('hidden');
+        if (isHidden) {
+          userDropdown.classList.remove('hidden');
+          userBtn.setAttribute('aria-expanded', 'true');
+          if (userChevron) userChevron.style.transform = 'rotate(180deg)';
+        } else {
+          userDropdown.classList.add('hidden');
+          userBtn.setAttribute('aria-expanded', 'false');
+          if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!userDropdown.contains(e.target) && e.target !== userBtn) {
+          userDropdown.classList.add('hidden');
+          userBtn.setAttribute('aria-expanded', 'false');
+          if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+        }
+      });
+    }
+  });
+</script>

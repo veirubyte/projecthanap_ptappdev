@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full hanap-hide-scrollbar">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title><%= isCatalog ? 'Browse Catalog' : 'Dashboard' %> - Project HANAP CSPC</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#F4F7FB",
+            "primary": "#09436B",
+            "primary-container": "#2B5B84",
+            "on-surface": "#0F172A",
+            "text-muted": "#64748B",
+            "border-subtle": "#E2E8F0"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <%- include('partials/themeSetup') %>
+</head>
+<body class="<%= isCatalog ? 'catalog-page' : '' %> min-h-full bg-[#F4F7FB] font-sans text-slate-800 antialiased flex flex-col justify-between relative overflow-x-hidden selection:bg-sky-100 selection:text-sky-900">
+  <% const catalogFinders = typeof recognizedFinders !== 'undefined' ? recognizedFinders : []; %>
+  <% const catalogHandovers = typeof successfulHandovers !== 'undefined' ? successfulHandovers : []; %>
+  <% const catalogCategoryCounts = typeof categoryCounts !== 'undefined' ? categoryCounts : {}; %>
+  <% const catalogCanReportFound = Boolean(user && !['guest', 'parent', 'parent/guest'].includes(String(user.role || '').toLowerCase())); %>
+  
+  <!-- Ambient Mesh Gradient Underlays -->
+  <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+    <div class="absolute -top-[25%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-tr from-sky-200/35 via-blue-100/25 to-teal-100/30 rounded-full blur-3xl opacity-75"></div>
+    <div class="absolute top-[35%] -right-[15%] w-[650px] h-[500px] bg-gradient-to-br from-indigo-100/30 via-teal-100/25 to-slate-200/30 rounded-full blur-3xl opacity-60"></div>
+    <div class="absolute -bottom-[20%] -left-[10%] w-[700px] h-[500px] bg-gradient-to-tr from-cyan-100/25 via-slate-100/40 to-blue-200/25 rounded-full blur-3xl opacity-70"></div>
+  </div>
+
+  <%- include('partials/navbar', { active: isCatalog ? 'catalog' : 'dashboard' }) %>
+
+  <!-- Main Dashboard Container (Width extended, side gaps deducted) -->
+  <main class="w-full flex-1 py-2 sm:py-4">
+    <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 xl:px-8 space-y-6">
+      
+      <!-- Flash Toasts -->
+      <% if (typeof msg !== 'undefined' && msg) { %>
+        <div class="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs sm:text-sm flex items-center gap-3 shadow-xs">
+          <span class="material-symbols-outlined text-teal-600">check_circle</span>
+          <span class="font-medium"><%= msg %></span>
+        </div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-3 shadow-xs">
+          <span class="material-symbols-outlined text-rose-600">error</span>
+          <span class="font-medium"><%= error %></span>
+        </div>
+      <% } %>
+
+      <% if (isCatalog) { %>
+        <div class="grid grid-cols-1 xl:grid-cols-[220px_minmax(0,1fr)_250px] gap-4 lg:gap-5 items-start">
+          <aside class="rounded-2xl p-3 bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] xl:sticky xl:top-24">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-xs font-extrabold text-slate-900">Categories</h2>
+              <span class="text-[10px] text-slate-400"><%= items.length %> items</span>
+            </div>
+            <nav aria-label="Catalog categories" class="flex xl:flex-col gap-1.5 overflow-x-auto xl:overflow-visible pb-1 xl:pb-0">
+              <a href="/catalog?type=<%= encodeURIComponent(filters.type) %>&period=<%= encodeURIComponent(filters.period) %>&q=<%= encodeURIComponent(filters.q) %>"
+                 class="shrink-0 inline-flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-bold transition <%= filters.category ? 'text-slate-600 hover:bg-slate-100' : 'bg-[#09436B] text-white shadow-xs' %>">
+                <span class="material-symbols-outlined text-[15px]">apps</span>
+                <span>All categories</span>
+                <span class="ml-auto text-[9px] opacity-75"><%= items.length %></span>
+              </a>
+              <% categories.forEach(cat => { %>
+                <a href="/catalog?category=<%= encodeURIComponent(cat) %>&type=<%= encodeURIComponent(filters.type) %>&period=<%= encodeURIComponent(filters.period) %>&q=<%= encodeURIComponent(filters.q) %>"
+                   class="shrink-0 inline-flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-semibold transition <%= filters.category === cat ? 'bg-[#09436B] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' %>">
+                  <span class="material-symbols-outlined text-[15px]"><%= cat === 'Electronics' ? 'devices' : (cat === 'Keys & Lanyards' ? 'key' : (cat === 'IDs & Cards' ? 'badge' : (cat === 'Bags & Wallets' ? 'work' : (cat === 'Books & Documents' ? 'menu_book' : (cat === 'Clothing & Accessories' ? 'checkroom' : 'category'))))) %></span>
+                  <span><%= cat %></span>
+                  <span class="catalog-category-count ml-auto text-[9px] px-1.5 py-0.5 rounded-full"><%= catalogCategoryCounts[cat] || 0 %></span>
+                </a>
+              <% }) %>
+            </nav>
+          </aside>
+
+          <div class="min-w-0 space-y-3">
+            <section class="rounded-2xl p-4 bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_24px_rgba(15,23,42,0.04)] space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-50 text-[#09436B] flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[21px]">apartment</span>
+                </div>
+                <div class="min-w-0">
+                  <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900">Campus Items Feed</h1>
+                  <p class="text-[11px] sm:text-xs text-slate-500">Browse lost and found reports across CSPC Nabua Campus.</p>
+                </div>
+              </div>
+
+              <form id="catalogFilterForm" method="GET" action="/catalog" class="space-y-2">
+                <% if (filters.category) { %>
+                  <input type="hidden" name="category" value="<%= filters.category %>"/>
+                <% } %>
+                <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch gap-2">
+                  <label class="relative flex-1 min-w-[180px]">
+                    <span class="sr-only" for="catalogSearch">Search campus items or locations</span>
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">search</span>
+                    <input id="catalogSearch" type="search" name="q" value="<%= filters.q %>" placeholder="Search campus item or location..."
+                           class="w-full h-10 pl-10 pr-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/15"/>
+                  </label>
+                  <label class="relative sm:w-[112px]">
+                    <span class="sr-only">Item type</span>
+                    <select name="type" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none">
+                      <option value="">All Types</option>
+                      <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost Items</option>
+                      <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found Items</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">expand_more</span>
+                  </label>
+                  <label class="relative sm:w-[112px]">
+                    <span class="sr-only">Time range</span>
+                    <select name="period" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none">
+                      <option value="">Any Time</option>
+                      <option value="today" <%= filters.period === 'today' ? 'selected' : '' %>>Last 24 Hours</option>
+                      <option value="week" <%= filters.period === 'week' ? 'selected' : '' %>>Last 7 Days</option>
+                      <option value="month" <%= filters.period === 'month' ? 'selected' : '' %>>Last 30 Days</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">expand_more</span>
+                  </label>
+                  <button type="submit" class="h-10 sm:px-4 px-3 rounded-xl bg-[#09436B] hover:bg-[#154E77] text-white text-[11px] font-bold shadow-xs transition inline-flex items-center justify-center gap-1.5 shrink-0">
+                    <span class="material-symbols-outlined text-[16px]">filter_list</span>
+                    <span>Filter</span>
+                  </button>
+                </div>
+                <% if (filters.q || filters.type || filters.period || filters.category) { %>
+                  <div class="flex items-center justify-between gap-3 px-1">
+                    <p class="text-[10px] text-slate-500">Showing <%= items.length %> matching active <%= items.length === 1 ? 'post' : 'posts' %>.</p>
+                    <a href="/catalog" class="text-[10px] font-bold text-[#09436B] hover:underline">Clear filters</a>
+                  </div>
+                <% } %>
+              </form>
+            </section>
+
+            <section class="min-w-0 space-y-3" aria-label="Campus item posts">
+              <% if (items.length === 0) { %>
+                <div class="p-10 sm:p-14 text-center rounded-3xl bg-white/75 backdrop-blur-md border border-slate-200/80 shadow-xs">
+                  <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                    <span class="material-symbols-outlined text-3xl">inventory_2</span>
+                  </div>
+                  <h2 class="text-sm font-bold text-slate-900">No matching campus items</h2>
+                  <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Try another search or clear the filters to browse all active posts.</p>
+                  <a href="/catalog" class="inline-flex mt-4 px-4 py-2 rounded-xl bg-[#09436B] text-white text-xs font-bold hover:bg-[#154E77]">Clear filters</a>
+                </div>
+              <% } else { %>
+                <div class="space-y-3">
+                  <% items.forEach(item => { %>
+                    <article class="catalog-item-card min-w-0 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_5px_18px_rgba(15,23,42,0.05)] px-3.5 pt-3.5 flex flex-col">
+                      <header class="flex items-center gap-2.5 pb-3">
+                        <span class="w-8 h-8 rounded-full bg-sky-100 text-[#09436B] flex items-center justify-center shrink-0">
+                          <span class="material-symbols-outlined text-[17px]">person</span>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                          <h2 class="text-[11px] font-extrabold text-slate-800 truncate"><%= item.reporter_name || 'HANAP Campus Member' %></h2>
+                          <p class="text-[9px] text-slate-500">Reported <%= timeAgo(item.date_reported) %> · CSPC Nabua Campus</p>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 text-[18px]" aria-hidden="true">public</span>
+                      </header>
+
+                      <div class="flex gap-3 min-w-0">
+                        <a href="/items/<%= item.id %>" aria-label="View <%= item.item_name %> details" class="catalog-item-photo w-[88px] h-[80px] sm:w-[100px] sm:h-[88px] rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                          <% if (item.image_path) { %>
+                            <img src="<%= item.image_path %>" alt="<%= item.item_name %>" loading="lazy" class="w-full h-full object-cover"/>
+                          <% } else { %>
+                            <span class="material-symbols-outlined text-[32px] text-slate-400"><%= item.category === 'Electronics' ? 'devices' : (item.category === 'Keys & Lanyards' ? 'badge' : 'category') %></span>
+                          <% } %>
+                        </a>
+                        <div class="min-w-0 flex-1 py-0.5">
+                          <div class="flex items-start justify-between gap-2">
+                            <h3 class="text-xs sm:text-sm leading-snug font-extrabold text-slate-900 line-clamp-2"><%= item.item_name %></h3>
+                            <span class="shrink-0 px-2 py-1 rounded-full <%= item.report_type === 'found' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' %> text-[8px] font-extrabold uppercase"><%= item.report_type %></span>
+                          </div>
+                          <p class="mt-1 flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                            <span class="material-symbols-outlined text-[14px]">location_on</span>
+                            <span class="truncate"><%= item.location_found_lost %></span>
+                          </p>
+                          <p class="mt-1 text-[10px] sm:text-[11px] leading-snug text-slate-500 line-clamp-2"><%= item.description %></p>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                        <span class="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-[9px] font-medium text-slate-500">
+                          <span class="material-symbols-outlined text-[12px]">calendar_today</span>
+                          Posted <%= new Date(item.date_reported).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                        </span>
+                        <span class="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-[9px] font-medium text-slate-500">
+                          <span class="material-symbols-outlined text-[12px]">category</span>
+                          <%= item.category %>
+                        </span>
+                      </div>
+                      <div class="catalog-post-actions mt-3 border-t border-slate-100">
+                        <a href="/items/<%= item.id %>" class="catalog-view-details flex min-h-10 w-full items-center justify-center gap-2 rounded-b-2xl text-[11px] font-bold text-[#09436B] transition hover:bg-sky-50">
+                          <span class="material-symbols-outlined text-[16px]">visibility</span>
+                          <span>View details</span>
+                          <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+                        </a>
+                      </div>
+                    </article>
+                  <% }) %>
+                </div>
+              <% } %>
+            </section>
+          </div>
+
+          <aside class="space-y-4" aria-label="Community acknowledgements">
+            <section class="rounded-3xl p-4 sm:p-5 bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)]">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[19px]">volunteer_activism</span>
+                </span>
+                <div>
+                  <h2 class="text-sm font-extrabold text-slate-900">Campus Helpers</h2>
+                  <p class="text-[11px] text-slate-500">Thank you for looking out for one another.</p>
+                </div>
+              </div>
+
+              <div class="pt-3">
+                <h3 class="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Reported found items</h3>
+                <% if (catalogFinders.length === 0) { %>
+                  <p class="rounded-xl bg-slate-50 px-3 py-3 text-[11px] text-slate-500">No found-item reports to acknowledge yet.</p>
+                <% } else { %>
+                  <ul class="space-y-2">
+                    <% catalogFinders.forEach(helper => { %>
+                      <li class="flex items-center gap-2.5 rounded-xl bg-slate-50/80 p-2.5">
+                        <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold flex items-center justify-center shrink-0"><%= (helper.full_name || 'U').substring(0, 2).toUpperCase() %></span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block text-xs font-bold text-slate-800 truncate"><%= helper.full_name %></span>
+                          <span class="block text-[10px] text-slate-500"><%= helper.item_count %> found <%= Number(helper.item_count) === 1 ? 'item reported' : 'items reported' %></span>
+                        </span>
+                      </li>
+                    <% }) %>
+                  </ul>
+                <% } %>
+              </div>
+
+              <div class="pt-4">
+                <h3 class="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">Successful returns</h3>
+                <% if (catalogHandovers.length === 0) { %>
+                  <p class="rounded-xl bg-slate-50 px-3 py-3 text-[11px] text-slate-500">Confirmed item returns will be celebrated here.</p>
+                <% } else { %>
+                  <ul class="space-y-2">
+                    <% catalogHandovers.forEach(helper => { %>
+                      <li class="flex items-center gap-2.5 rounded-xl bg-slate-50/80 p-2.5">
+                        <span class="w-8 h-8 rounded-full bg-sky-100 text-sky-800 text-[11px] font-bold flex items-center justify-center shrink-0"><%= (helper.full_name || 'U').substring(0, 2).toUpperCase() %></span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block text-xs font-bold text-slate-800 truncate"><%= helper.full_name %></span>
+                          <span class="block text-[10px] text-slate-500"><%= helper.handover_count %> approved <%= Number(helper.handover_count) === 1 ? 'return' : 'returns' %></span>
+                        </span>
+                        <span class="material-symbols-outlined text-emerald-600 text-[17px]" aria-label="Confirmed return">verified</span>
+                      </li>
+                    <% }) %>
+                  </ul>
+                <% } %>
+              </div>
+            </section>
+
+            <section class="rounded-3xl p-4 sm:p-5 bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)]">
+              <div class="flex items-center gap-2.5 mb-2">
+                <span class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[20px]">campaign</span>
+                </span>
+                <h2 class="text-sm font-extrabold text-slate-900">Report an Item</h2>
+              </div>
+              <p class="text-[11px] leading-relaxed text-slate-500 mb-3">Help a campus member reconnect with a missing belonging.</p>
+              <div class="grid <%= catalogCanReportFound ? 'grid-cols-2' : 'grid-cols-1' %> gap-2">
+                <a href="<%= user ? '/items/new?type=lost' : '/login' %>" class="flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[#09436B] px-2 text-white text-[10px] font-bold transition hover:bg-[#154E77]">
+                  <span class="material-symbols-outlined text-[15px]">search</span>
+                  <span>Report Lost</span>
+                </a>
+                <% if (catalogCanReportFound) { %>
+                  <a href="/items/new?type=found" class="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-700 text-[10px] font-bold transition hover:bg-slate-50">
+                    <span class="material-symbols-outlined text-[15px]">inventory_2</span>
+                    <span>Report Found</span>
+                  </a>
+                <% } %>
+              </div>
+              <% if (user && !catalogCanReportFound) { %>
+                <p class="mt-2 text-[10px] leading-relaxed text-slate-500">Found items should be turned in to Campus Security.</p>
+              <% } %>
+            </section>
+          </aside>
+        </div>
+      <% } else { %>
+      <!-- Hero Strip (Aligned with uploaded screenshot design) -->
+      <div class="rounded-3xl p-6 sm:p-8 bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_4px_24px_rgba(15,23,42,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div class="space-y-1.5 z-10 max-w-xl">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl select-none">👋</span>
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">
+              Welcome, <%= user ? user.full_name : 'Guest' %> ✨
+            </h1>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium">
+            Quickly report, track, and recover lost items on campus.
+          </p>
+          <div class="pt-2">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+              <span>Live Recovery Ticker: <strong><%= stats.total_claimed %></strong> recovered</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Backpack Asset Illustration (From screenshot) -->
+        <div class="hidden lg:flex items-center justify-center shrink-0 opacity-90 select-none pointer-events-none">
+          <svg class="w-28 h-28 text-blue-200/90" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="25" y="32" width="70" height="72" rx="28" fill="#D6E4F0" />
+            <rect x="32" y="38" width="56" height="60" rx="22" fill="#ADCBE3" />
+            <path d="M42 32V24C42 16.268 48.268 10 56 10H64C71.732 10 78 16.268 78 24V32" stroke="#4682B4" stroke-width="6" stroke-linecap="round" />
+            <rect x="42" y="62" width="36" height="28" rx="10" fill="#EAF1F8" />
+            <path d="M52 70H68" stroke="#4682B4" stroke-width="4" stroke-linecap="round" />
+            <circle cx="60" cy="50" r="4" fill="#09436B" />
+          </svg>
+        </div>
+
+        <!-- Action Buttons (Stacked Pills matching screenshot) -->
+        <div class="flex flex-col gap-3 shrink-0 z-10 w-full sm:w-auto">
+          <% if (user) { %>
+            <a href="/items/new?type=lost" class="w-full sm:w-56 h-12 px-6 rounded-full bg-[#09436B] hover:bg-[#154E77] text-white text-xs sm:text-sm font-bold shadow-sm transition flex items-center justify-between gap-4 cursor-pointer">
+              <span class="flex items-center gap-1.5">
+                <span class="text-base font-normal">+</span>
+                <span>Report Lost</span>
+              </span>
+              <span class="material-symbols-outlined text-base">chevron_right</span>
+            </a>
+            <% if (user.role !== 'guest' && user.role !== 'parent' && user.role !== 'parent/guest') { %>
+              <a href="/items/new?type=found" class="w-full sm:w-56 h-12 px-6 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold shadow-2xs transition flex items-center justify-between gap-4 cursor-pointer">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-base font-normal">+</span>
+                  <span>Report Found</span>
+                </span>
+                <span class="material-symbols-outlined text-base">chevron_right</span>
+              </a>
+            <% } else { %>
+              <a href="/claims/guest-claim" class="w-full sm:w-56 h-12 px-6 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold shadow-2xs transition flex items-center justify-between gap-4 cursor-pointer" title="Security Desk Routing">
+                <span class="flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-base text-slate-600">shield</span>
+                  <span>Security Desk</span>
+                </span>
+                <span class="material-symbols-outlined text-base">chevron_right</span>
+              </a>
+            <% } %>
+          <% } else { %>
+            <a href="/login" class="w-full sm:w-56 h-12 px-6 rounded-full bg-[#09436B] hover:bg-[#154E77] text-white text-xs sm:text-sm font-bold shadow-sm transition flex items-center justify-between gap-4">
+              <span>Sign In</span>
+              <span class="material-symbols-outlined text-base">chevron_right</span>
+            </a>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Interactive Smart Match Spotlight Card (if any matches) -->
+      <% if (smartMatches && smartMatches.length > 0) { %>
+        <% const topMatch = smartMatches[0]; %>
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-500/10 via-white/85 to-sky-500/10 backdrop-blur-xl border border-teal-200/60 p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.08)] transition hover:border-teal-300">
+          <div class="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-teal-300/20 blur-2xl pointer-events-none"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div class="flex items-center gap-4 min-w-0">
+              <!-- Circular Progress Ring (92%) -->
+              <div class="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                <svg class="w-12 h-12 -rotate-90 transform" viewBox="0 0 36 36">
+                  <path class="text-teal-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.2"></path>
+                  <path class="text-teal-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-linecap="round" stroke-width="3.2"></path>
+                </svg>
+                <span class="absolute text-[11px] font-bold text-teal-800">92%</span>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-full bg-teal-600/10 text-teal-800 text-[11px] font-bold">Smart Match</span>
+                  <span class="text-xs text-slate-500 hidden sm:inline">Discovered <%= timeAgo(topMatch.date_reported) %></span>
+                </div>
+                <p class="text-sm sm:text-base font-bold text-slate-900 truncate mt-0.5">
+                  <%= topMatch.item_name %> found at <%= topMatch.location_found_lost %>
+                </p>
+              </div>
+            </div>
+            <a href="/items/<%= topMatch.id %>" class="shrink-0 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-bold shadow-[0_4px_14px_rgba(13,148,136,0.3)] active:scale-95 transition">
+              <span>Review Match</span>
+              <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+            </a>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- 4 Glass Bento KPI Tiles (Matching Screenshot Style) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Tile 1: Active Lost -->
+        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-11 h-11 rounded-full bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">search</span>
+            </div>
+            <span class="text-[11px] font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full">Lost</span>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.active_lost %></div>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
+              <span>Active Lost</span>
+              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tile 2: Posted Found -->
+        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-11 h-11 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+            </div>
+            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">Found</span>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.active_found %></div>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
+              <span>Posted Found</span>
+              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tile 3: Reunited Total -->
+        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-11 h-11 rounded-full bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">handshake</span>
+            </div>
+            <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full">Resolved</span>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.total_claimed %></div>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
+              <span>Reunited Total</span>
+              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tile 4: Recovery Rate -->
+        <% const rate = stats.total_reports > 0 ? Math.min(100, Math.round((stats.total_claimed / stats.total_reports) * 100)) : 25; %>
+        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">verified_user</span>
+            </div>
+            <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full">Rate</span>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= rate %>%</div>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
+              <span>Recovery Rate</span>
+              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsive dual-column dashboard with balanced side gutters -->
+      <% if (user) { %>
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,1fr)] xl:grid-cols-[minmax(0,1.75fr)_minmax(20rem,1fr)] gap-5 items-start">
+          
+          <!-- Left panel: My Reported Items with 4-Step Tracker -->
+          <div class="min-w-0 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] p-4 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100/90 pb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+                  <span class="material-symbols-outlined text-lg">note_add</span>
+                </div>
+                <h2 class="text-base font-bold tracking-tight text-slate-900">My Reported Items</h2>
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                  <%= myReports ? myReports.length : 0 %> active
+                </span>
+              </div>
+              <a href="/my-reports" class="text-xs font-bold text-[#09436B] hover:underline flex items-center gap-1">
+                <span>View All History</span>
+                <span>&rarr;</span>
+              </a>
+            </div>
+
+            <% if (!myReports || myReports.length === 0) { %>
+              <!-- Empty state matching uploaded screenshot -->
+              <div class="py-10 text-center space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                  <span class="material-symbols-outlined text-2xl">note_add</span>
+                </div>
+                <p class="text-xs sm:text-sm font-semibold text-slate-600">You haven't reported any items yet.</p>
+                <div class="flex justify-center items-center gap-3">
+                  <a href="/items/new?type=lost" class="px-4 py-2 rounded-full border border-rose-200 text-rose-700 bg-rose-50/50 hover:bg-rose-50 text-xs font-bold transition flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">search</span>
+                    <span>Report Lost</span>
+                  </a>
+                  <% if (user.role !== 'guest' && user.role !== 'parent' && user.role !== 'parent/guest') { %>
+                    <a href="/items/new?type=found" class="px-4 py-2 rounded-full border border-teal-200 text-teal-800 bg-teal-50/50 hover:bg-teal-50 text-xs font-bold transition flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-sm">inventory_2</span>
+                      <span>Report Found</span>
+                    </a>
+                  <% } %>
+                </div>
+              </div>
+            <% } else { %>
+              <div class="space-y-3">
+                <% myReports.forEach(r => { %>
+                  <div class="rounded-2xl p-4 bg-white border border-slate-200/70 shadow-2xs hover:border-slate-300 transition space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl <%= r.report_type === 'found' ? 'bg-teal-50 border-teal-100 text-teal-700' : 'bg-rose-50 border-rose-100 text-rose-700' %> border flex items-center justify-center shrink-0 overflow-hidden">
+                          <% if (r.image_path) { %>
+                            <img src="<%= r.image_path %>" alt="" class="w-full h-full object-cover"/>
+                          <% } else { %>
+                            <span class="material-symbols-outlined text-[20px]"><%= r.report_type === 'found' ? 'inventory_2' : 'search' %></span>
+                          <% } %>
+                        </div>
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-2">
+                            <h3 class="text-xs sm:text-sm font-bold text-slate-900 truncate"><%= r.item_name %></h3>
+                            <span class="shrink-0 px-2 py-0.5 rounded-full <%= r.status === 'claimed' ? 'bg-slate-100 text-slate-600' : 'bg-teal-500/10 text-teal-800' %> text-[10px] font-bold border border-teal-500/20">
+                              <%= r.status === 'claimed' ? 'Returned' : 'Active' %>
+                            </span>
+                          </div>
+                          <p class="text-[11px] text-slate-500 truncate"><%= r.location_found_lost %> • Reported <%= timeAgo(r.date_reported) %></p>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-1.5 shrink-0">
+                        <a href="/items/<%= r.id %>" class="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition">
+                          View
+                        </a>
+                      </div>
+                    </div>
+
+                    <!-- 4-step horizontal progress tracker (from ZIP2) -->
+                    <div class="pt-2 border-t border-slate-100">
+                      <div class="grid grid-cols-4 gap-1 relative text-center">
+                        <!-- Step 1: Reported -->
+                        <div class="flex flex-col items-center">
+                          <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center text-[10px] font-bold">✓</div>
+                          <span class="text-[10px] font-bold text-slate-700 mt-1">Reported</span>
+                        </div>
+                        <!-- Step 2: Matched -->
+                        <div class="flex flex-col items-center">
+                          <div class="w-5 h-5 rounded-full <%= r.status !== 'active' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white ring-4 ring-teal-100' %> flex items-center justify-center text-[10px] font-bold">
+                            <%= r.status === 'claimed' ? '✓' : '2' %>
+                          </div>
+                          <span class="text-[10px] font-bold text-teal-700 mt-1">Matched</span>
+                        </div>
+                        <!-- Step 3: Verifying -->
+                        <div class="flex flex-col items-center <%= r.status === 'claimed' ? '' : 'opacity-50' %>">
+                          <div class="w-5 h-5 rounded-full <%= r.status === 'claimed' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600' %> flex items-center justify-center text-[10px] font-bold">
+                            <%= r.status === 'claimed' ? '✓' : '3' %>
+                          </div>
+                          <span class="text-[10px] font-medium text-slate-500 mt-1">Verifying</span>
+                        </div>
+                        <!-- Step 4: Returned -->
+                        <div class="flex flex-col items-center <%= r.status === 'claimed' ? '' : 'opacity-50' %>">
+                          <div class="w-5 h-5 rounded-full <%= r.status === 'claimed' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600' %> flex items-center justify-center text-[10px] font-bold">
+                            <%= r.status === 'claimed' ? '✓' : '4' %>
+                          </div>
+                          <span class="text-[10px] font-medium text-slate-500 mt-1">Returned</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Right panel: Live Peer Claim Widget -->
+          <div class="min-w-0 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] p-4 sm:p-6 flex flex-col justify-between gap-4">
+            <div>
+              <div class="flex items-center justify-between pb-4 border-b border-slate-100/90">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800">Live Peer Claim</h2>
+                </div>
+                <% if (recentClaim) { %>
+                  <span class="text-[10px] font-bold text-slate-400">Claim #<%= recentClaim.id %></span>
+                <% } %>
+              </div>
+
+              <% if (recentClaim) { %>
+                <div class="mt-4 space-y-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                      <span class="material-symbols-outlined text-[18px]">handshake</span>
+                    </div>
+                    <div class="min-w-0">
+                      <h4 class="text-xs sm:text-sm font-bold text-slate-900 truncate"><%= recentClaim.item_name %></h4>
+                      <p class="text-[11px] text-slate-500">Peer: <%= recentClaim.claimant_id === user.id ? recentClaim.reporter_name : recentClaim.claimant_name %></p>
+                    </div>
+                  </div>
+
+                  <!-- Mini Chat Preview Bubble -->
+                  <div class="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/60 relative">
+                    <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-1">
+                      <span class="material-symbols-outlined text-[12px] text-teal-600">forum</span>
+                      <span>Latest Activity • <%= recentClaim.last_message_at ? timeAgo(recentClaim.last_message_at) : 'Active' %></span>
+                    </div>
+                    <p class="text-xs text-slate-700 italic line-clamp-2 leading-relaxed">
+                      "<%= recentClaim.last_message || recentClaim.proof_details %>"
+                    </p>
+                  </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 mt-4">
+                  <a href="/claims/<%= recentClaim.id %>" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:brightness-110 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs">
+                    <span class="material-symbols-outlined text-[16px]">chat</span>
+                    <span>Open Conversation</span>
+                  </a>
+                </div>
+              <% } else { %>
+                <!-- Quick Community Guidance Matching Screenshot -->
+                <div class="py-8 text-center space-y-3">
+                  <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#09436B] flex items-center justify-center mx-auto">
+                    <span class="material-symbols-outlined text-2xl">verified_user</span>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-900">Safe Campus Handovers</h4>
+                  <p class="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                    Always verify identifying marks or serial numbers before handing over recovered property. You can also route items to the Main Gate Guardhouse.
+                  </p>
+                  <div class="pt-2">
+                    <a href="/claims" class="inline-flex items-center gap-1 text-xs font-bold text-[#09436B] bg-sky-50 hover:bg-sky-100 px-4 py-2 rounded-full transition">
+                      <span>View Claims Hub</span>
+                      <span>&rarr;</span>
+                    </a>
+                  </div>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Campus Items Feed Bar (Matching Screenshot Header Bar) -->
+      <div class="rounded-3xl p-4 sm:p-5 bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+            <span class="material-symbols-outlined text-xl">apartment</span>
+          </div>
+          <div>
+            <h2 class="text-sm sm:text-base font-bold tracking-tight text-slate-900 leading-tight">Campus Items Feed</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Live active lost and found reports across CSPC Nabua Campus</p>
+          </div>
+        </div>
+
+        <form method="GET" action="/dashboard" class="flex flex-wrap items-center gap-2.5">
+          <div class="relative">
+            <input type="text" name="q" value="<%= filters.q %>" placeholder="Search item, location..." class="w-48 sm:w-64 h-10 pl-9 pr-4 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3B82F6] focus:bg-white shadow-2xs transition"/>
+            <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-base">search</span>
+          </div>
+
+          <div class="relative">
+            <select name="type" onchange="this.form.submit()" class="h-10 pl-3.5 pr-8 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-700 font-bold focus:outline-none shadow-2xs appearance-none cursor-pointer">
+              <option value="">All Types</option>
+              <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost Only</option>
+              <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found Only</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-2.5 top-2.5 text-slate-400 text-sm pointer-events-none">expand_more</span>
+          </div>
+
+          <div class="relative">
+            <select name="category" onchange="this.form.submit()" class="h-10 pl-3.5 pr-8 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-700 font-bold focus:outline-none shadow-2xs appearance-none cursor-pointer">
+              <option value="">All Categories</option>
+              <% categories.forEach(cat => { %>
+                <option value="<%= cat %>" <%= filters.category === cat ? 'selected' : '' %>><%= cat %></option>
+              <% }) %>
+            </select>
+            <span class="material-symbols-outlined absolute right-2.5 top-2.5 text-slate-400 text-sm pointer-events-none">expand_more</span>
+          </div>
+
+          <button type="submit" class="h-10 px-5 rounded-full bg-[#09436B] hover:bg-[#154E77] text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-sm">filter_list</span>
+            <span>Filter</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Items Grid Gallery -->
+      <div>
+        <% if (items.length === 0) { %>
+          <div class="p-12 text-center rounded-3xl bg-white/70 backdrop-blur-md border border-slate-200/80 shadow-xs">
+            <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+              <span class="material-symbols-outlined text-3xl">inventory</span>
+            </div>
+            <h3 class="text-sm font-bold text-slate-900">No matching campus items</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Try clearing search filters or report this belonging to the community.</p>
+          </div>
+        <% } else { %>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <% items.forEach(item => { %>
+              <div class="group rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 overflow-hidden shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:border-slate-300 hover:shadow-md transition flex flex-col justify-between">
+                <div>
+                  <!-- Image / Fallback -->
+                  <div class="p-3 pb-0">
+                    <div class="h-36 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200/80 flex items-center justify-center relative overflow-hidden">
+                      <% if (item.image_path) { %>
+                        <img src="<%= item.image_path %>" alt="<%= item.item_name %>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                      <% } else { %>
+                        <span class="material-symbols-outlined text-slate-400 text-[36px]">
+                          <%= item.category === 'Electronics' ? 'devices' : (item.category === 'Keys & Lanyards' ? 'badge' : 'category') %>
+                        </span>
+                      <% } %>
+                      
+                      <!-- Masked Badge -->
+                      <span class="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-slate-700 text-[10px] font-bold flex items-center gap-1 shadow-2xs border border-white/60">
+                        <span class="material-symbols-outlined text-[11px]">lock</span>
+                        <span><%= item.report_type === 'found' ? 'Found' : 'Lost' %></span>
+                      </span>
+
+                      <% if (item.status === 'claimed') { %>
+                        <span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-slate-900/80 text-white text-[10px] font-bold">
+                          Claimed
+                        </span>
+                      <% } %>
+                    </div>
+                  </div>
+
+                  <!-- Details -->
+                  <div class="p-4 space-y-2">
+                    <div>
+                      <h3 class="text-xs sm:text-sm font-bold text-slate-900 truncate"><%= item.item_name %></h3>
+                      <div class="inline-flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                        <span class="material-symbols-outlined text-[13px] text-slate-400">location_on</span>
+                        <span class="truncate"><%= item.location_found_lost %></span>
+                      </div>
+                    </div>
+                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                      <%= item.description %>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Footer CTA -->
+                <div class="p-4 pt-0">
+                  <a href="/items/<%= item.id %>" class="w-full py-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs hover:border-[#2B5B84]">
+                    <span>View Details</span>
+                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </a>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+      <% } %>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-slate-200/60 bg-white/50 backdrop-blur-md py-4 mt-8">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-800">Project HANAP</span>
+        <span>•</span>
+        <span>Camarines Sur Polytechnic Colleges</span>
+      </div>
+      <div>© 2026 CSPC Campus Care Network</div>
+    </div>
+  </footer>
+</body>
+</html>
