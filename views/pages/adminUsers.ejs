@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html class="hanap-hide-scrollbar" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Users — Project HANAP</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#09436b",
+            "primary-container": "#2b5b84",
+            "on-primary": "#ffffff",
+            "secondary": "#0058be",
+            "on-secondary": "#ffffff",
+            "tertiary": "#3a4247",
+            "on-surface": "#131b2e",
+            "on-surface-variant": "#42474e",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6",
+            "background": "#faf8ff"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <%- include('partials/themeSetup') %>
+</head>
+<body class="bg-[#f4f7fb] font-sans text-on-surface min-h-screen antialiased relative overflow-x-hidden selection:bg-secondary/15">
+  
+  <!-- Ambient Aurora Mesh Background Glows -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+    <div class="absolute -top-[18%] -left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-br from-blue-300/35 via-indigo-200/25 to-transparent blur-[120px]"></div>
+    <div class="absolute top-[20%] -right-[15%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-bl from-sky-200/35 via-teal-100/30 to-transparent blur-[130px]"></div>
+    <div class="absolute -bottom-[20%] left-[25%] w-[45vw] h-[45vw] rounded-full bg-gradient-to-t from-purple-200/25 via-blue-100/25 to-transparent blur-[110px]"></div>
+  </div>
+
+  <%- include('partials/navbar', { active: 'admin-users' }) %>
+
+  <!-- Main Container -->
+  <main class="relative z-10 w-full pt-2 pb-14">
+    <div class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 xl:px-8 flex flex-col gap-6">
+      
+      <!-- Main Content Area -->
+      <div class="min-w-0 flex-1 w-full flex flex-col gap-5">
+      
+      <!-- Flash Messages -->
+      <% if (typeof msg !== 'undefined' && msg) { %>
+        <div class="p-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-teal-600 text-[18px]">check_circle</span>
+          <span><%= msg %></span>
+        </div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-rose-600 text-[18px]">error</span>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+
+      <!-- Top Header Strip -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold tracking-tight text-on-surface">Users</h1>
+          <span class="text-xs font-semibold text-primary bg-primary/10 border border-primary/15 px-2.5 py-0.5 rounded-full shadow-xs">
+            <%= users ? users.length : 0 %>
+          </span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <!-- Testbed 403 Block Pill (from ZIP B) -->
+          <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/70 hover:bg-rose-100/80 transition-all shadow-xs" href="/admin/test-403">
+            <span class="material-symbols-outlined text-[14px]">lock</span>
+            <span>Test 403 Block</span>
+          </a>
+          <!-- Add User Button -->
+          <button onclick="openAddUserModal()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-container shadow-md shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer" type="button">
+            <span class="material-symbols-outlined text-[16px]">person_add</span>
+            <span>Add User</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Glass Filter & Search Strip -->
+      <div class="admin-user-filters flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/60 backdrop-blur-xl p-2 rounded-2xl border border-white/80 shadow-[0_4px_24px_rgba(9,67,107,0.04)]">
+        <!-- Segmented Role Filter Pills -->
+        <div class="flex items-center gap-1 overflow-x-auto p-0.5" id="role-filter-group">
+          <button data-filter="all" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary text-white shadow-xs transition-all cursor-pointer" type="button">All</button>
+          <button data-filter="student" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Students</button>
+          <button data-filter="staff" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Staff</button>
+          <button data-filter="parent" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Parents</button>
+          <button data-filter="guest" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Guests</button>
+          <button data-filter="admin" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Admins</button>
+          <button data-filter="legacy_institutional" class="filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Needs review</button>
+        </div>
+        <!-- Sleek Glass Search Input -->
+        <div class="relative w-full sm:w-72">
+          <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
+          <input class="w-full h-9 pl-9 pr-3 rounded-xl bg-white/80 backdrop-blur-md text-xs text-on-surface placeholder:text-slate-400 border border-white/90 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all shadow-inner" id="user-search-input" placeholder="Search directory..." type="text"/>
+        </div>
+      </div>
+
+      <!-- Translucent Directory Matrix Table Card -->
+      <div class="admin-user-directory bg-white/65 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-[0_12px_40px_rgba(9,67,107,0.05)] overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-200/60 text-on-surface-variant/90 font-semibold bg-white/40 backdrop-blur-md">
+                <th class="py-3 px-5">User</th>
+                <th class="py-3 px-4">Role</th>
+                <th class="py-3 px-4">Quota</th>
+                <th class="py-3 px-5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/60" id="user-table-body">
+              <% if (!users || users.length === 0) { %>
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-slate-400">No users found in directory.</td>
+                </tr>
+              <% } else { %>
+                <% users.forEach(u => { %>
+                  <% const initials = (u.full_name || 'U').substring(0, 2).toUpperCase(); %>
+                  <% const claimsCount = u.claim_count || 0; %>
+                  <% const isQuotaLocked = (claimsCount >= 3) && u.role !== 'admin'; %>
+                  
+                  <tr class="hover:bg-white/70 transition-colors user-row" data-role="<%= u.role %>">
+                    <td class="py-3.5 px-5">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl <%= u.role === 'admin' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : (u.role === 'parent' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (u.role === 'guest' || u.role === 'legacy_institutional' ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-blue-100/80 text-blue-800 border border-blue-200/60')) %> font-semibold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                          <%= initials %>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                          <span class="font-semibold text-on-surface truncate"><%= u.full_name %></span>
+                          <span class="text-on-surface-variant text-[11px] truncate"><%= u.email %></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                      <span class="user-role-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium <%= u.role === 'admin' ? 'bg-indigo-100/80 text-indigo-800 border border-indigo-200/60' : (u.role === 'parent' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (u.role === 'guest' || u.role === 'legacy_institutional' ? 'bg-slate-100/80 text-slate-700 border border-slate-200/60' : 'bg-blue-50/90 text-primary border border-blue-200/50')) %> shadow-xs capitalize">
+                        <%= u.role_label %>
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-4">
+                      <% if (u.role === 'admin') { %>
+                        <span class="user-quota text-on-surface-variant font-medium bg-white/60 px-2 py-0.5 rounded-md border border-white/80">Exempt</span>
+                      <% } else if (isQuotaLocked) { %>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-300/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                          <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                          <span>3/3 Locked</span>
+                        </span>
+                      <% } else { %>
+                        <span class="user-quota font-medium text-on-surface bg-white/60 px-2 py-0.5 rounded-md border border-white/80"><%= claimsCount %>/3</span>
+                      <% } %>
+                    </td>
+                    <td class="py-3.5 px-5 text-right">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <% if (isQuotaLocked) { %>
+                          <form action="/admin/users/<%= u.id %>/quota-reset" method="POST" class="inline">
+                            <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                              <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                            <% } %>
+                            <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100/90 text-amber-900 border border-amber-200 hover:bg-amber-200/90 shadow-xs transition-all cursor-pointer">
+                              Reset
+                            </button>
+                          </form>
+                        <% } %>
+                        <% if (u.role === 'parent') { %>
+                          <span class="text-[10px] font-semibold text-emerald-700">Student-approved</span>
+                        <% } else { %>
+                          <form action="/admin/users/<%= u.id %>/role" method="POST" class="inline-flex items-center gap-1.5" onsubmit="return confirm('Change role for <%= u.full_name %>?');">
+                            <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                              <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                            <% } %>
+                            <select name="new_role" class="user-action-select max-w-28 rounded-lg border border-slate-200/70 bg-white/70 px-2 py-1 text-[10px] text-slate-700">
+                              <option value="student" <%= u.role === 'student' ? 'selected' : '' %>>Student</option>
+                              <option value="staff" <%= u.role === 'staff' ? 'selected' : '' %>>Staff</option>
+                              <option value="guest" <%= u.role === 'guest' ? 'selected' : '' %>>Guest</option>
+                              <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                              <option value="legacy_institutional" <%= u.role === 'legacy_institutional' ? 'selected' : '' %>>Needs review</option>
+                            </select>
+                            <button type="submit" class="user-action-button px-2 py-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-white text-[11px] font-medium border border-slate-200/60 shadow-2xs transition cursor-pointer">Save</button>
+                          </form>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="user-directory-footer py-3 px-5 border-t border-white/70 bg-white/35 backdrop-blur-md flex items-center justify-between text-xs text-on-surface-variant">
+          <span>Showing <%= users ? users.length : 0 %> registered users</span>
+          <div class="flex items-center gap-1">
+            <button class="w-7 h-7 rounded-lg border border-white/80 bg-white/70 text-on-surface-variant hover:bg-white flex items-center justify-center disabled:opacity-40 shadow-xs" disabled="" type="button">
+              <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+            </button>
+            <button class="w-7 h-7 rounded-lg border border-white/80 bg-white/70 text-on-surface-variant hover:bg-white flex items-center justify-center shadow-xs transition-colors" type="button">
+              <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+
+  <!-- Add User Modal -->
+  <div id="addUserModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-white/95 backdrop-blur-2xl max-w-md w-full rounded-3xl p-6 sm:p-7 shadow-2xl border border-white/80 flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-base font-bold text-slate-900">Add New Directory User</h3>
+        <button type="button" onclick="closeAddUserModal()" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <form action="/admin/users/add" method="POST" class="flex flex-col gap-3">
+        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+        <% } %>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-700">Full Name *</label>
+          <input type="text" name="full_name" required placeholder="e.g. Juan Dela Cruz" class="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"/>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-700">Email Address *</label>
+          <input type="email" name="email" required placeholder="e.g. j.delacruz@cspc.edu.ph" class="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"/>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-700">Temporary Password *</label>
+          <input type="password" name="password" required placeholder="Minimum 8 characters" class="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"/>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-slate-700">Role</label>
+          <select name="role" class="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white">
+            <option value="student">Student</option>
+            <option value="staff">Staff</option>
+            <option value="guest">Guest</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-primary text-white text-xs font-bold shadow-xs hover:bg-primary-container">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Modal toggle
+    function openAddUserModal() {
+      const modal = document.getElementById('addUserModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function closeAddUserModal() {
+      const modal = document.getElementById('addUserModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Role filter pills
+    document.querySelectorAll('.filter-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pill').forEach(b => {
+          b.className = 'filter-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer';
+        });
+        btn.className = 'filter-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary text-white shadow-xs transition-all cursor-pointer';
+
+        const filter = btn.getAttribute('data-filter');
+        document.querySelectorAll('.user-row').forEach(row => {
+          if (filter === 'all' || row.getAttribute('data-role') === filter) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Real-time directory search
+    const searchInput = document.getElementById('user-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('.user-row').forEach(row => {
+          row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</body>
+</html>
