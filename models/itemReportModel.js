@@ -1,8 +1,13 @@
 const db = require('../config/db');
+const primaryImageSelect = `COALESCE((SELECT report_image.image_path
+             FROM item_report_images report_image
+             WHERE report_image.report_id = r.id
+             ORDER BY report_image.is_primary DESC, report_image.sort_order ASC, report_image.id ASC
+             LIMIT 1), r.image_path) AS primary_image_path`;
 
 async function findCatalogReports({ statusFilter, isCatalog, typeFilter, catFilter, periodFilter, q }) {
     let querySql = `
-            SELECT r.*, u.full_name AS reporter_name, reporter_role.role_code AS reporter_role
+            SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name, reporter_role.role_code AS reporter_role
             FROM item_reports r
             JOIN users u ON u.id = r.user_id
             JOIN account_roles reporter_role ON reporter_role.id = u.role_id
@@ -78,15 +83,15 @@ async function showDashboardQuery3(params, values = [], connection = db) {
 }
 
 async function showDashboardQuery4(params, values = [], connection = db) {
-    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? AND status = 'active'`, params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.user_id = ? AND r.status = 'active'`, params);
 }
 
 async function showDashboardQuery5(params, values = [], connection = db) {
-    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? ORDER BY date_reported DESC LIMIT 4`, params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.user_id = ? ORDER BY r.date_reported DESC LIMIT 4`, params);
 }
 
 async function showDashboardQuery6(params, values = [], connection = db) {
-    return connection.execute(`SELECT r.*, u.full_name AS reporter_name 
+    return connection.execute(`SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name 
                          FROM item_reports r 
                          JOIN users u ON u.id = r.user_id
                          WHERE r.user_id != ? 
@@ -96,23 +101,50 @@ async function showDashboardQuery6(params, values = [], connection = db) {
                          ORDER BY r.date_reported DESC LIMIT 4`, params);
 }
 
-async function createItemReport(params, values = [], connection = db) {
-    return connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, image_path, secret_challenge, secret_answer, custody_mode, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`, params);
+async function createItemReport(params, imagePaths = []) {
+    const connection = await db.getConnection();
+    let transactionOpen = false;
+    try {
+        await connection.beginTransaction();
+        transactionOpen = true;
+        const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, secret_challenge, secret_answer, custody_mode, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`, params);
+
+        for (let index = 0; index < imagePaths.length; index += 1) {
+            await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
+                     VALUES (?, ?, ?, ?)`, [result.insertId, imagePaths[index], index === 0 ? 1 : 0, index]);
+        }
+
+        await connection.commit();
+        transactionOpen = false;
+        return [result, fields];
+    } catch (err) {
+        if (transactionOpen) await connection.rollback();
+        throw err;
+    } finally {
+        connection.release();
+    }
 }
 
 async function showItemDetails(params, values = [], connection = db) {
-    return connection.execute(`SELECT r.*, u.full_name AS reporter_name, u.email AS reporter_email, reporter_role.role_code AS reporter_role
+    return connection.execute(`SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name, u.email AS reporter_email, reporter_role.role_code AS reporter_role
              FROM item_reports r
              JOIN users u ON u.id = r.user_id
              JOIN account_roles reporter_role ON reporter_role.id = u.role_id
              WHERE r.id = ?`, params);
 }
 
+async function showItemReportImages(params, values = [], connection = db) {
+    return connection.execute(`SELECT image_path, is_primary, sort_order
+             FROM item_report_images
+             WHERE report_id = ?
+             ORDER BY is_primary DESC, sort_order ASC, id ASC`, params);
+}
+
 async function showItemDetailsQuery2(params, values = [], connection = db) {
-    return connection.execute(`SELECT * FROM item_reports 
-             WHERE category = ? AND id != ? AND status = 'active'
-             ORDER BY date_reported DESC LIMIT 3`, params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r
+             WHERE r.category = ? AND r.id != ? AND r.status = 'active'
+             ORDER BY r.date_reported DESC LIMIT 3`, params);
 }
 
 async function previewOwnershipMatch(params, values = [], connection = db) {
@@ -120,7 +152,7 @@ async function previewOwnershipMatch(params, values = [], connection = db) {
 }
 
 async function createClaim(params, values = [], connection = db) {
-    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
 async function updateClaimStatus(params, values = [], connection = db) {
@@ -132,11 +164,11 @@ async function updateClaimStatusQuery2(params, values = [], connection = db) {
 }
 
 async function listMyReports(params, values = [], connection = db) {
-    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? ORDER BY date_reported DESC`, params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.user_id = ? ORDER BY r.date_reported DESC`, params);
 }
 
 async function updateItemStatus(params, values = [], connection = db) {
-    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
 async function updateItemStatusQuery2(params, values = [], connection = db) {
@@ -144,19 +176,34 @@ async function updateItemStatusQuery2(params, values = [], connection = db) {
 }
 
 async function deleteItemReport(params, values = [], connection = db) {
-    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
-async function deleteItemReportQuery2(params, values = [], connection = db) {
-    return connection.execute('DELETE FROM item_reports WHERE id = ?', params);
+async function deleteItemReportQuery2(params) {
+    const dbConnection = await db.getConnection();
+    let transactionOpen = false;
+    try {
+        await dbConnection.beginTransaction();
+        transactionOpen = true;
+        await dbConnection.execute('DELETE FROM item_report_images WHERE report_id = ?', params);
+        const result = await dbConnection.execute('DELETE FROM item_reports WHERE id = ?', params);
+        await dbConnection.commit();
+        transactionOpen = false;
+        return result;
+    } catch (err) {
+        if (transactionOpen) await dbConnection.rollback();
+        throw err;
+    } finally {
+        dbConnection.release();
+    }
 }
 
 async function showEditItemForm(params, values = [], connection = db) {
-    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
 async function updateItemReport(params, values = [], connection = db) {
-    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
 async function updateItemReportQuery2(params, values = [], connection = db) {
@@ -166,7 +213,7 @@ async function updateItemReportQuery2(params, values = [], connection = db) {
 }
 
 async function showSettings(params, values = [], connection = db) {
-    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? ORDER BY date_reported DESC`, params);
+    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.user_id = ? ORDER BY r.date_reported DESC`, params);
 }
 
 async function showAdminDashboard(params, values = [], connection = db) {
@@ -184,7 +231,7 @@ async function showAdminDashboard(params, values = [], connection = db) {
 
 async function showAdminDashboardQuery2(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT r.*, u.full_name AS reporter_name
+            SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name
             FROM item_reports r
             JOIN users u ON u.id = r.user_id
             WHERE r.report_type = 'found' AND r.status = 'active'
@@ -215,7 +262,7 @@ async function confirmHandover(params, values = [], connection = db) {
 
 async function listAdminReports(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT r.*, u.full_name AS reporter_name, u.email AS reporter_email, ar.role_code AS reporter_role
+            SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name, u.email AS reporter_email, ar.role_code AS reporter_role
             FROM item_reports r
             JOIN users u ON u.id = r.user_id
             JOIN account_roles ar ON ar.id = u.role_id
@@ -242,9 +289,27 @@ async function showAdminAnalytics(params, values = [], connection = db) {
         `);
 }
 
-async function description(params, values = [], connection = db) {
-    return connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, image_path, status)
-             VALUES (?, 'found', ?, ?, ?, ?, ?, 'active')`, params);
+async function description(params, imagePaths = []) {
+    const connection = await db.getConnection();
+    let transactionOpen = false;
+    try {
+        await connection.beginTransaction();
+        transactionOpen = true;
+        const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, status)
+                 VALUES (?, 'found', ?, ?, ?, ?, 'active')`, params.slice(0, 5));
+        for (let index = 0; index < imagePaths.length; index += 1) {
+            await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
+                     VALUES (?, ?, ?, ?)`, [result.insertId, imagePaths[index], index === 0 ? 1 : 0, index]);
+        }
+        await connection.commit();
+        transactionOpen = false;
+        return [result, fields];
+    } catch (err) {
+        if (transactionOpen) await connection.rollback();
+        throw err;
+    } finally {
+        connection.release();
+    }
 }
 
 async function flagStaleItems(params, values = [], connection = db) {
@@ -264,6 +329,7 @@ module.exports = {
     showDashboardQuery6,
     createItemReport,
     showItemDetails,
+    showItemReportImages,
     showItemDetailsQuery2,
     previewOwnershipMatch,
     createClaim,

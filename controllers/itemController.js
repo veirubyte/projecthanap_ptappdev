@@ -1,4 +1,5 @@
 const fs = require('fs/promises');
+const path = require('path');
 const bcrypt = require('bcrypt');
 const auditLogModel = require('../models/auditLogModel');
 const itemReportModel = require('../models/itemReportModel');
@@ -24,13 +25,23 @@ function timeAgo(d) {
     return new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-async function removeUploadedFile(file) {
-    if (!file) return;
-    try {
-        await fs.unlink(file.path);
-    } catch (err) {
+async function removeUploadedFiles(files) {
+    const uploadedFiles = (Array.isArray(files) ? files : [files]).filter(Boolean);
+    await Promise.all(uploadedFiles.map((file) => fs.unlink(file.path).catch((err) => {
         if (err.code !== 'ENOENT') console.error('Failed to remove invalid report upload:', err);
-    }
+    })));
+}
+
+async function removeReportImageFiles(imagePaths) {
+    const uploadDirectory = path.join(__dirname, '..', 'public', 'uploads');
+    await Promise.all(imagePaths.map((imagePath) => {
+        if (typeof imagePath !== 'string' || !imagePath.startsWith('/uploads/')) return Promise.resolve();
+        const filename = path.basename(imagePath);
+        if (!filename || filename !== imagePath.slice('/uploads/'.length)) return Promise.resolve();
+        return fs.unlink(path.join(uploadDirectory, filename)).catch((err) => {
+            if (err.code !== 'ENOENT') console.error('Failed to remove report image:', err);
+        });
+    }));
 }
 
 // Helper: Audit Logger
@@ -187,14 +198,15 @@ const showNewReportForm = (req, res) => {
 const createItemReport = async (req, res) => {
     const reportType = req.body && ['lost', 'found'].includes(req.body.report_type) ? req.body.report_type : null;
     const reportFormUrl = `/items/new?type=${reportType || 'lost'}`;
+    const uploadedFiles = req.files || [];
 
     // Strict guest security guard: guests cannot report found items
     if (reportType === 'found' && isGuest(req.session.user)) {
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('Guests are not authorized to report found items. Please surrender found belongings directly to Campus Security.')}`);
     }
     if (!reportType) {
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`/items/new?type=lost&error=${encodeURIComponent('Choose whether you lost or found the item, then try again.')}`);
     }
 
@@ -207,34 +219,34 @@ const createItemReport = async (req, res) => {
     const custodyMode = req.body.custody_mode === 'security_desk' ? 'security_desk' : 'peer_meetup';
 
     if (!itemName || !location || !description) {
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('Please fill in all required fields.')}`);
     }
     const invalidVerificationInput = ['secret_challenge', 'secret_answer'].some((field) => (
         req.body[field] !== undefined && typeof req.body[field] !== 'string'
     ));
     if (invalidVerificationInput) {
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('The ownership question and answer must be plain text.')}`);
     }
     if (Boolean(secretChallenge) !== Boolean(secretAnswer)) {
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
     }
     if ((secretChallenge && secretChallenge.length > 500) || (secretAnswer && secretAnswer.length > 500)) {
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
     }
 
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const imagePaths = uploadedFiles.map((file) => `/uploads/${file.filename}`);
 
     try {
-        await itemReportModel.createItemReport([req.session.user.id, reportType, itemName, category, description, location, imagePath, secretChallenge, secretAnswer, custodyMode], []);
+        await itemReportModel.createItemReport([req.session.user.id, reportType, itemName, category, description, location, secretChallenge, secretAnswer, custodyMode], imagePaths);
 
         return res.redirect(`/dashboard?msg=${encodeURIComponent(`Successfully reported ${reportType} item: "${itemName}"`)}`);
     } catch (err) {
         console.error('Failed to report item:', err);
-        await removeUploadedFile(req.file);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('Failed to save report. Please try again.')}`);
     }
 };
@@ -261,6 +273,10 @@ const showItemDetails = async (req, res) => {
         }
 
         const item = rows[0];
+        const [storedImages] = await itemReportModel.showItemReportImages([itemId], []);
+        const itemImages = storedImages.length
+            ? storedImages
+            : (item.primary_image_path ? [{ image_path: item.primary_image_path, is_primary: 1, sort_order: 0 }] : []);
         const storedMatchResult = req.session.answerMatchResult;
         let answerMatchScore = storedMatchResult && storedMatchResult.itemId === itemId
             ? storedMatchResult.score
@@ -284,6 +300,7 @@ const showItemDetails = async (req, res) => {
 
         res.render('postDetail', {
             item,
+            itemImages,
             user,
             existingClaim,
             hasConfiguredChallenge: typeof item.secret_challenge === 'string' &&
@@ -607,7 +624,11 @@ const deleteItemReport = async (req, res) => {
             return res.redirect('/my-reports?error=Unauthorized.');
         }
 
+        const [storedImages] = await itemReportModel.showItemReportImages([itemId], []);
         await itemReportModel.deleteItemReportQuery2([itemId], []);
+        const imagePaths = storedImages.map((image) => image.image_path);
+        if (item.primary_image_path) imagePaths.push(item.primary_image_path);
+        await removeReportImageFiles([...new Set(imagePaths)]);
 
         if (isAdmin(user)) {
             await logAudit(user.id, `Admin deleted item report #${itemId} ("${item.item_name}")`, req.ip);
@@ -1424,14 +1445,15 @@ const createAdminItemReport = async (req, res) => {
     const description = (typeof req.body.description === 'string' && req.body.description.trim())
         ? req.body.description.trim()
         : itemName;
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const imagePaths = req.file ? [`/uploads/${req.file.filename}`] : [];
 
     if (!itemName) {
+        await removeUploadedFiles(req.file);
         return res.redirect('/admin/dashboard?error=Please specify item description.');
     }
 
     try {
-        const [result] = await itemReportModel.description([user.id, itemName, category, description, location, imagePath], []);
+        const [result] = await itemReportModel.description([user.id, itemName, category, description, location], imagePaths);
 
         await logAudit(
             user.id,
@@ -1442,6 +1464,7 @@ const createAdminItemReport = async (req, res) => {
         return res.redirect('/admin/dashboard?msg=Office item logged and broadcasted to campus.');
     } catch (err) {
         console.error('Error logging office item:', err);
+        await removeUploadedFiles(req.file);
         return res.redirect('/admin/dashboard?error=Failed to log office item.');
     }
 };

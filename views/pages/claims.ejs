@@ -100,8 +100,8 @@
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0 overflow-hidden">
-                      <% if (claim.image_path) { %>
-                        <img src="<%= claim.image_path %>" alt="" class="w-full h-full object-cover"/>
+                      <% if (claim.primary_image_path) { %>
+                        <img src="<%= claim.primary_image_path %>" alt="" class="w-full h-full object-cover"/>
                       <% } else { %>
                         <span class="material-symbols-outlined text-[20px]">inventory_2</span>
                       <% } %>
@@ -156,8 +156,8 @@
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2B5B84] shrink-0 overflow-hidden">
-                      <% if (claim.image_path) { %>
-                        <img src="<%= claim.image_path %>" alt="" class="w-full h-full object-cover"/>
+                      <% if (claim.primary_image_path) { %>
+                        <img src="<%= claim.primary_image_path %>" alt="" class="w-full h-full object-cover"/>
                       <% } else { %>
                         <span class="material-symbols-outlined text-[20px]">category</span>
                       <% } %>
@@ -204,4 +204,3 @@
   </footer>
 </body>
 </html>
-

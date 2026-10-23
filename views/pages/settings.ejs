@@ -586,8 +586,8 @@
                   <% const canEditOwnedItem = true; %>
                   <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 p-2 rounded-2xl transition">
                     <div class="flex items-center gap-3.5 min-w-0">
-                      <% if (item.image_path) { %>
-                        <img src="<%= item.image_path %>" alt="" class="w-12 h-12 rounded-xl object-cover border border-slate-200/80 shrink-0"/>
+                      <% if (item.primary_image_path) { %>
+                        <img src="<%= item.primary_image_path %>" alt="" class="w-12 h-12 rounded-xl object-cover border border-slate-200/80 shrink-0"/>
                       <% } else { %>
                         <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-500 shrink-0">
                           <span class="material-symbols-outlined text-2xl">category</span>

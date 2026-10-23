@@ -17,6 +17,8 @@
     : (challengeLower.includes('pin') || challengeLower.includes('clip') || challengeLower.includes('department')
       ? 'e.g. College of Computer Studies'
       : 'Enter a specific detail only the owner would know...');
+  const reportImagesForView = typeof itemImages !== 'undefined' && Array.isArray(itemImages) ? itemImages : [];
+  const primaryReportImage = reportImagesForView.length ? reportImagesForView[0].image_path : null;
 %>
 <html lang="en" class="h-full hanap-hide-scrollbar">
 <head>
@@ -131,8 +133,8 @@
             
             <!-- Main Photo with Fullscreen / Expand Icon -->
             <div class="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/70 flex items-center justify-center group">
-              <% if (item.image_path) { %>
-                <img id="mainDisplayImage" src="<%= item.image_path %>" alt="<%= item.item_name %>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"/>
+              <% if (primaryReportImage) { %>
+                <img id="mainDisplayImage" src="<%= primaryReportImage %>" alt="<%= item.item_name %>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"/>
                 <div id="imageFallbackPlaceholder" class="hidden flex-col items-center justify-center text-slate-400 p-6">
                   <span class="material-symbols-outlined text-6xl">inventory_2</span>
                   <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2"><%= item.category %></span>
@@ -145,8 +147,8 @@
               <% } %>
 
               <!-- Expand / Maximize Button in Top-Right -->
-              <% if (item.image_path) { %>
-                <a id="expandImageLink" href="<%= item.image_path %>" target="_blank" rel="noopener" class="absolute top-3 right-3 w-9 h-9 rounded-xl bg-white/80 hover:bg-white text-slate-700 backdrop-blur-md flex items-center justify-center shadow-md transition-all active:scale-95" title="View full image">
+              <% if (primaryReportImage) { %>
+                <a id="expandImageLink" href="<%= primaryReportImage %>" target="_blank" rel="noopener" class="absolute top-3 right-3 w-9 h-9 rounded-xl bg-white/80 hover:bg-white text-slate-700 backdrop-blur-md flex items-center justify-center shadow-md transition-all active:scale-95" title="View full image">
                   <span class="material-symbols-outlined text-[20px]">open_in_full</span>
                 </a>
               <% } %>
@@ -159,14 +161,13 @@
             </div>
 
             <!-- Dual Thumbnails row (preview gallery) -->
-            <% if (item.image_path) { %>
-              <div class="flex items-center gap-2.5" id="thumbnailGallery">
-                <button type="button" id="thumbStandardBtn" class="w-16 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-xs cursor-pointer transition-all" title="Standard view">
-                  <img src="<%= item.image_path %>" alt="Standard preview" class="w-full h-full object-cover"/>
-                </button>
-                <button type="button" id="thumbDetailBtn" class="w-16 h-12 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 flex items-center justify-center text-slate-400 opacity-70 cursor-pointer transition-all" title="Zoomed detail view">
-                  <img src="<%= item.image_path %>" alt="Detail preview" class="w-full h-full object-cover scale-125 filter brightness-95"/>
-                </button>
+            <% if (reportImagesForView.length > 1) { %>
+              <div class="flex items-center gap-2.5 overflow-x-auto py-1" id="thumbnailGallery" aria-label="Item photos">
+                <% reportImagesForView.forEach((image, index) => { %>
+                  <button type="button" data-gallery-image="<%= image.image_path %>" aria-label="Show photo <%= index + 1 %>" aria-pressed="<%= index === 0 ? 'true' : 'false' %>" class="w-16 h-12 rounded-xl overflow-hidden <%= index === 0 ? 'border-2 border-primary ring-2 ring-primary/20' : 'border border-slate-200/80 opacity-70' %> shrink-0 shadow-xs cursor-pointer transition-all">
+                    <img src="<%= image.image_path %>" alt="<%= item.item_name %> photo <%= index + 1 %>" class="w-full h-full object-cover"/>
+                  </button>
+                <% }) %>
               </div>
             <% } %>
 
@@ -202,18 +203,18 @@
                 <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">description</span>
                 <span>Additional Details</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-sky-50/60 border border-sky-100/80 text-xs">
+              <div class="additional-details-grid grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-sky-50/60 border border-sky-100/80 text-xs">
                 <div>
-                  <span class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Category</span>
-                  <span class="font-bold text-slate-800"><%= item.category %></span>
+                  <span class="additional-details-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Category</span>
+                  <span class="additional-details-value font-bold text-slate-800"><%= item.category %></span>
                 </div>
                 <div>
-                  <span class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Location</span>
-                  <span class="font-bold text-slate-800"><%= item.location_found_lost %></span>
+                  <span class="additional-details-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Location</span>
+                  <span class="additional-details-value font-bold text-slate-800"><%= item.location_found_lost %></span>
                 </div>
                 <div>
-                  <span class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Report Date</span>
-                  <span class="font-bold text-slate-800"><%= new Date(item.date_reported).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                  <span class="additional-details-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Report Date</span>
+                  <span class="additional-details-value font-bold text-slate-800"><%= new Date(item.date_reported).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
                 </div>
               </div>
             </div>
@@ -232,7 +233,7 @@
         >
           
           <!-- POD 1: CAMPUS MATCH ENGINE with Dynamic Progression Circle -->
-          <div class="rounded-3xl p-5 bg-gradient-to-br from-teal-500/15 via-emerald-500/10 to-cyan-500/15 backdrop-blur-xl border border-teal-300/60 shadow-[0_12px_32px_rgba(13,148,136,0.10)] relative overflow-hidden flex flex-col gap-3.5">
+          <div class="match-engine-card rounded-3xl p-5 bg-gradient-to-br from-teal-500/15 via-emerald-500/10 to-cyan-500/15 backdrop-blur-xl border border-teal-300/60 shadow-[0_12px_32px_rgba(13,148,136,0.10)] relative overflow-hidden flex flex-col gap-3.5">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#0D9488]/20 rounded-full blur-2xl pointer-events-none"></div>
 
             <!-- Top Row: Engine Label + Radial Progression Circle -->
@@ -554,8 +555,7 @@
       const fallbackPlaceholder = document.getElementById('imageFallbackPlaceholder');
       const expandImageLink = document.getElementById('expandImageLink');
       const thumbnailGallery = document.getElementById('thumbnailGallery');
-      const thumbStandardBtn = document.getElementById('thumbStandardBtn');
-      const thumbDetailBtn = document.getElementById('thumbDetailBtn');
+      const galleryButtons = thumbnailGallery ? Array.from(thumbnailGallery.querySelectorAll('[data-gallery-image]')) : [];
 
       if (mainImg) {
         mainImg.addEventListener('error', () => {
@@ -565,22 +565,31 @@
             fallbackPlaceholder.classList.add('flex');
           }
           if (expandImageLink) expandImageLink.classList.add('hidden');
-          if (thumbnailGallery) thumbnailGallery.classList.add('hidden');
         });
       }
 
-      if (thumbStandardBtn && thumbDetailBtn && mainImg) {
-        thumbStandardBtn.addEventListener('click', () => {
-          mainImg.classList.remove('scale-125', 'brightness-95');
-          thumbStandardBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-xs cursor-pointer transition-all';
-          thumbDetailBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 flex items-center justify-center text-slate-400 opacity-70 cursor-pointer transition-all';
+      galleryButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const imagePath = button.dataset.galleryImage;
+          if (!mainImg || !imagePath) return;
+
+          mainImg.src = imagePath;
+          mainImg.classList.remove('hidden', 'scale-125', 'brightness-95');
+          if (fallbackPlaceholder) {
+            fallbackPlaceholder.classList.add('hidden');
+            fallbackPlaceholder.classList.remove('flex');
+          }
+          if (expandImageLink) {
+            expandImageLink.href = imagePath;
+            expandImageLink.classList.remove('hidden');
+          }
+          galleryButtons.forEach((galleryButton) => {
+            const isActive = galleryButton === button;
+            galleryButton.setAttribute('aria-pressed', String(isActive));
+            galleryButton.className = `w-16 h-12 rounded-xl overflow-hidden ${isActive ? 'border-2 border-primary ring-2 ring-primary/20' : 'border border-slate-200/80 opacity-70'} shrink-0 shadow-xs cursor-pointer transition-all`;
+          });
         });
-        thumbDetailBtn.addEventListener('click', () => {
-          mainImg.classList.add('scale-125', 'brightness-95');
-          thumbDetailBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-xs cursor-pointer transition-all';
-          thumbStandardBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 flex items-center justify-center text-slate-400 opacity-70 cursor-pointer transition-all';
-        });
-      }
+      });
 
       // 4. Campus Match Engine & Live Ownership Verification
       const claimContainer = document.getElementById('claim');

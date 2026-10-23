@@ -220,8 +220,8 @@
               <div class="py-4 flex items-center justify-between gap-4 hover:bg-slate-50/50 p-2 rounded-2xl transition">
                 <div class="flex items-center gap-3.5 min-w-0">
                   <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-[#2B5B84] shrink-0 overflow-hidden">
-                    <% if (h.image_path) { %>
-                      <img src="<%= h.image_path %>" alt="" class="w-full h-full object-cover"/>
+                    <% if (h.primary_image_path) { %>
+                      <img src="<%= h.primary_image_path %>" alt="" class="w-full h-full object-cover"/>
                     <% } else { %>
                       <span class="material-symbols-outlined text-2xl">category</span>
                     <% } %>

@@ -68,6 +68,128 @@ html.dark body:not(.landing-page):not(.login-page):not(.register-page) .text-on-
   color: #94a3b8 !important;
 }
 
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar .navbar-brand-icon {
+  background-color: #1e3a5f !important;
+  color: #bfdbfe !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar .navbar-brand-title {
+  color: #f8fafc !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar .navbar-brand-badge {
+  background-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar .navbar-brand-subtitle {
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a {
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a[class*="bg-white"] {
+  background-color: #2563eb !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card {
+  background-image: none !important;
+  background-color: #10272b !important;
+  border-color: #28645f !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card > div:first-child {
+  background-color: rgba(45, 212, 191, 0.12) !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card .text-teal-950,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card .text-teal-900 {
+  color: #f0fdfa !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card .text-teal-800,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card .text-teal-800\/80 {
+  color: #99f6e4 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card .text-teal-700\/60 {
+  color: #5eead4 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card .text-teal-200\/70 {
+  color: #3b7771 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card #matchBanner {
+  background-color: #142a36 !important;
+  border-color: #28645f !important;
+  color: #f0fdfa !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .match-engine-card [class*="bg-white"] {
+  background-color: #17343a !important;
+  border-color: #34766e !important;
+  color: #e6fffb !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .additional-details-grid {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .additional-details-label {
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .additional-details-value {
+  color: #f8fafc !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-verification-card {
+  background-image: none !important;
+  background-color: #142338 !important;
+  border-color: #3b5875 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-verification-heading {
+  color: #bfdbfe !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-verification-description,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-custody-title {
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-custody-option {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-custody-option:has(input:checked) {
+  background-color: #1e3a5f !important;
+  border-color: #60a5fa !important;
+  color: #eff6ff !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-custody-option span.text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) input:not([type="checkbox"]):not([type="radio"]),
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) select,
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) textarea {
@@ -76,7 +198,18 @@ html.dark body:not(.landing-page):not(.login-page):not(.register-page) textarea 
   color: #f8fafc !important;
 }
 
-/* ==============================================================================
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-challenge-input {
+  background-color: #0b1628 !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownership-challenge-input::placeholder {
+  color: #a8b6c9 !important;
+  opacity: 1;
+}
+
+/* ============================================================================== 
  * BRANDED LANDING & AUTH PAGE STYLES
  * Micro-animations and layout rules for landing radar & beacon
  * ============================================================================== */

@@ -124,8 +124,8 @@
             <% archiveQueue.forEach(item => { %>
               <div class="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/60 transition-colors">
                 <div class="flex items-center gap-3.5">
-                  <% if (item.image_path) { %>
-                    <img class="w-11 h-11 rounded-xl object-cover border border-white shadow-sm shrink-0" src="<%= item.image_path %>" alt="<%= item.item_name %>"/>
+                  <% if (item.primary_image_path) { %>
+                    <img class="w-11 h-11 rounded-xl object-cover border border-white shadow-sm shrink-0" src="<%= item.primary_image_path %>" alt="<%= item.item_name %>"/>
                   <% } else { %>
                     <div class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200/80 shadow-sm shrink-0 flex items-center justify-center text-slate-400">
                       <span class="material-symbols-outlined text-[20px]">inventory_2</span>
@@ -228,8 +228,8 @@
                     <td class="py-3.5 px-5">
                       <div class="flex items-center gap-3">
                         <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200/70 flex items-center justify-center text-[#2B5B84] shrink-0 overflow-hidden">
-                          <% if (r.image_path) { %>
-                            <img src="<%= r.image_path %>" alt="" class="w-full h-full object-cover"/>
+                          <% if (r.primary_image_path) { %>
+                            <img src="<%= r.primary_image_path %>" alt="" class="w-full h-full object-cover"/>
                           <% } else { %>
                             <span class="material-symbols-outlined text-lg">category</span>
                           <% } %>

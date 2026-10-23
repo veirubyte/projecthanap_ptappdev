@@ -73,8 +73,8 @@
               <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </a>
             <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-sky-50 to-blue-100/80 border border-blue-200/70 flex items-center justify-center shrink-0 shadow-xs text-primary overflow-hidden">
-              <% if (claim.image_path) { %>
-                <img src="<%= claim.image_path %>" alt="" class="w-full h-full object-cover"/>
+              <% if (claim.primary_image_path) { %>
+                <img src="<%= claim.primary_image_path %>" alt="" class="w-full h-full object-cover"/>
               <% } else { %>
                 <span class="material-symbols-outlined text-[22px] text-[#2B5B84]">badge</span>
               <% } %>
