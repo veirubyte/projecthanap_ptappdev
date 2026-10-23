@@ -101,6 +101,7 @@ router.post('/settings/notifications', requireAuth, controller.updateNotificatio
    ========================================================================== */
 
 router.get('/admin/dashboard', requireAdmin, controller.showAdminDashboard);
+router.post('/admin/items/:id/accept-custody', requireAdmin, controller.acceptItemCustody);
 
 // Admin User Management Directory (ZIP B)
 router.get('/admin/users', requireAdmin, controller.listAdminUsers);

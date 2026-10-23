@@ -156,7 +156,9 @@ CREATE TABLE `item_reports` (
   `date_reported` timestamp NOT NULL DEFAULT current_timestamp(),
   `secret_challenge` varchar(500) DEFAULT NULL,
   `custody_mode` enum('peer_meetup','security_desk') DEFAULT 'peer_meetup',
-  `secret_answer` varchar(500) DEFAULT NULL
+  `secret_answer` varchar(500) DEFAULT NULL,
+  `custody_received_at` timestamp NULL DEFAULT NULL,
+  `custody_received_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -386,7 +388,8 @@ ALTER TABLE `guardian_student_links`
 -- Constraints for table `item_reports`
 --
 ALTER TABLE `item_reports`
-  ADD CONSTRAINT `item_reports_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `item_reports_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_item_reports_custody_received_by` FOREIGN KEY (`custody_received_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `users`

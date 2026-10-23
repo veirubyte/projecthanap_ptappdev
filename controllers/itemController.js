@@ -1057,7 +1057,7 @@ const showAdminDashboard = async (req, res) => {
                 users: userCount[0].cnt,
                 reports: reportCount[0],
                 claims: claimCount[0],
-                vaulted: vaultedRows.length,
+                vaulted: vaultedRows.filter((item) => item.custody_received_at).length,
                 guestClaims: guestClaimRows.length,
                 disputes: disputeRows.length,
                 overdue: overdueRows[0].cnt || 0
@@ -1074,6 +1074,27 @@ const showAdminDashboard = async (req, res) => {
     } catch (err) {
         console.error('Error loading admin dashboard:', err);
         res.status(500).send('Error loading admin portal.');
+    }
+};
+
+const acceptItemCustody = async (req, res) => {
+    const itemId = Number.parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect(`/admin/dashboard?tab=surrendered&error=${encodeURIComponent('Invalid item report.')}`);
+    }
+
+    const user = req.session.user;
+    try {
+        const [result] = await itemReportModel.acceptItemCustody([user.id, itemId], []);
+        if (result.affectedRows !== 1) {
+            return res.redirect(`/admin/dashboard?tab=surrendered&error=${encodeURIComponent('This item is already accepted or is not awaiting Security Desk custody.')}`);
+        }
+
+        await logAudit(user.id, `Admin accepted physical custody of item report #${itemId}`, req.ip);
+        return res.redirect(`/admin/dashboard?tab=surrendered&msg=${encodeURIComponent('Item accepted into Security Desk custody.')}`);
+    } catch (err) {
+        console.error('Error accepting item custody:', err);
+        return res.redirect(`/admin/dashboard?tab=surrendered&error=${encodeURIComponent('Could not accept this item into custody. Please try again.')}`);
     }
 };
 
@@ -1254,7 +1275,10 @@ const rejectHandover = async (req, res) => {
 
 const showForbiddenPage = (req, res) => {
     return res.status(403).render('403', {
-        user: req.session.user || null
+        user: req.session.user || null,
+        attemptedPath: req.originalUrl,
+        returnUrl: req.session.user && isAdmin(req.session.user) ? '/admin/dashboard' : '/dashboard',
+        returnLabel: 'Back to Dashboard'
     });
 };
 
@@ -1453,7 +1477,7 @@ const createAdminItemReport = async (req, res) => {
     }
 
     try {
-        const [result] = await itemReportModel.description([user.id, itemName, category, description, location], imagePaths);
+        const [result] = await itemReportModel.description([user.id, itemName, category, description, location, user.id], imagePaths);
 
         await logAudit(
             user.id,
@@ -1497,6 +1521,7 @@ module.exports = {
     updateNotificationSettings,
     deleteAccount,
     showAdminDashboard,
+    acceptItemCustody,
     listAdminUsers,
     createAdminUser,
     resetUserQuota,
