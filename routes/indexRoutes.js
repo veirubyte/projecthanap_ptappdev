@@ -1,5 +1,5 @@
 /**
- * Index Routes (Starter Scaffold)
+ * Main / Index Routes
  * Project HANAP - Campus System Round 1
  */
 
@@ -9,5 +9,8 @@ const indexController = require('../controllers/indexController');
 
 // Home / Landing Page
 router.get('/', indexController.getHomePage);
+
+// About System Information Page
+router.get('/about', indexController.getAboutPage);
 
 module.exports = router;
