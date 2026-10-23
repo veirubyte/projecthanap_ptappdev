@@ -1,0 +1,283 @@
+const db = require('../config/db');
+
+async function findCatalogReports({ statusFilter, isCatalog, typeFilter, catFilter, periodFilter, q }) {
+    let querySql = `
+            SELECT r.*, u.full_name AS reporter_name, reporter_role.role_code AS reporter_role
+            FROM item_reports r
+            JOIN users u ON u.id = r.user_id
+            JOIN account_roles reporter_role ON reporter_role.id = u.role_id
+            WHERE 1=1
+        `;
+    const params = [];
+
+    if (statusFilter && statusFilter !== 'all') {
+        querySql += ` AND r.status = ?`;
+        params.push(statusFilter);
+    } else if (isCatalog) {
+        querySql += ` AND r.status = 'active'`;
+    }
+
+    if (typeFilter) {
+        querySql += ` AND r.report_type = ?`;
+        params.push(typeFilter);
+    }
+
+    if (catFilter) {
+        querySql += ` AND r.category = ?`;
+        params.push(catFilter);
+    }
+
+    if (periodFilter === 'today') {
+        querySql += ` AND r.date_reported >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 DAY)`;
+    } else if (periodFilter === 'week') {
+        querySql += ` AND r.date_reported >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)`;
+    } else if (periodFilter === 'month') {
+        querySql += ` AND r.date_reported >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 DAY)`;
+    }
+
+    if (q) {
+        querySql += ` AND (r.item_name LIKE ? OR r.description LIKE ? OR r.location_found_lost LIKE ?)`;
+        const wildcard = `%${q}%`;
+        params.push(wildcard, wildcard, wildcard);
+    }
+
+    querySql += ` ORDER BY r.date_reported DESC LIMIT 100`;
+    return db.execute(querySql, params);
+}
+
+async function showDashboard(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT 
+                SUM(CASE WHEN report_type = 'lost' AND status = 'active' THEN 1 ELSE 0 END) AS active_lost,
+                SUM(CASE WHEN report_type = 'found' AND status = 'active' THEN 1 ELSE 0 END) AS active_found,
+                SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) AS total_claimed,
+                COUNT(*) AS total_reports
+            FROM item_reports
+        `);
+}
+
+async function showDashboardQuery2(params, values = [], connection = db) {
+    return connection.execute(`SELECT u.id, u.full_name, COUNT(r.id) AS item_count, MAX(r.date_reported) AS latest_at
+                     FROM item_reports r
+                     JOIN users u ON u.id = r.user_id
+                     WHERE r.report_type = 'found' AND r.status IN ('active', 'claimed')
+                     GROUP BY u.id, u.full_name
+                     ORDER BY latest_at DESC
+                     LIMIT 5`);
+}
+
+async function showDashboardQuery3(params, values = [], connection = db) {
+    return connection.execute(`SELECT category, COUNT(*) AS item_count
+                     FROM item_reports
+                     WHERE status = 'active'
+                     GROUP BY category`);
+}
+
+async function showDashboardQuery4(params, values = [], connection = db) {
+    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? AND status = 'active'`, params);
+}
+
+async function showDashboardQuery5(params, values = [], connection = db) {
+    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? ORDER BY date_reported DESC LIMIT 4`, params);
+}
+
+async function showDashboardQuery6(params, values = [], connection = db) {
+    return connection.execute(`SELECT r.*, u.full_name AS reporter_name 
+                         FROM item_reports r 
+                         JOIN users u ON u.id = r.user_id
+                         WHERE r.user_id != ? 
+                           AND r.report_type = ? 
+                           AND r.status = 'active' 
+                           AND r.category IN (${values[0]})
+                         ORDER BY r.date_reported DESC LIMIT 4`, params);
+}
+
+async function createItemReport(params, values = [], connection = db) {
+    return connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, image_path, secret_challenge, secret_answer, custody_mode, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`, params);
+}
+
+async function showItemDetails(params, values = [], connection = db) {
+    return connection.execute(`SELECT r.*, u.full_name AS reporter_name, u.email AS reporter_email, reporter_role.role_code AS reporter_role
+             FROM item_reports r
+             JOIN users u ON u.id = r.user_id
+             JOIN account_roles reporter_role ON reporter_role.id = u.role_id
+             WHERE r.id = ?`, params);
+}
+
+async function showItemDetailsQuery2(params, values = [], connection = db) {
+    return connection.execute(`SELECT * FROM item_reports 
+             WHERE category = ? AND id != ? AND status = 'active'
+             ORDER BY date_reported DESC LIMIT 3`, params);
+}
+
+async function previewOwnershipMatch(params, values = [], connection = db) {
+    return connection.execute('SELECT secret_answer, secret_challenge FROM item_reports WHERE id = ?', params);
+}
+
+async function createClaim(params, values = [], connection = db) {
+    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+}
+
+async function updateClaimStatus(params, values = [], connection = db) {
+    return connection.execute('UPDATE item_reports SET status = "claimed" WHERE id = ?', params);
+}
+
+async function updateClaimStatusQuery2(params, values = [], connection = db) {
+    return connection.execute('UPDATE item_reports SET status = "returned" WHERE id = ?', params);
+}
+
+async function listMyReports(params, values = [], connection = db) {
+    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? ORDER BY date_reported DESC`, params);
+}
+
+async function updateItemStatus(params, values = [], connection = db) {
+    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+}
+
+async function updateItemStatusQuery2(params, values = [], connection = db) {
+    return connection.execute('UPDATE item_reports SET status = ? WHERE id = ?', params);
+}
+
+async function deleteItemReport(params, values = [], connection = db) {
+    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+}
+
+async function deleteItemReportQuery2(params, values = [], connection = db) {
+    return connection.execute('DELETE FROM item_reports WHERE id = ?', params);
+}
+
+async function showEditItemForm(params, values = [], connection = db) {
+    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+}
+
+async function updateItemReport(params, values = [], connection = db) {
+    return connection.execute('SELECT * FROM item_reports WHERE id = ?', params);
+}
+
+async function updateItemReportQuery2(params, values = [], connection = db) {
+    return connection.execute(`UPDATE item_reports 
+             SET item_name = ?, category = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?
+             WHERE id = ?`, params);
+}
+
+async function showSettings(params, values = [], connection = db) {
+    return connection.execute(`SELECT * FROM item_reports WHERE user_id = ? ORDER BY date_reported DESC`, params);
+}
+
+async function showAdminDashboard(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT 
+                COUNT(*) AS total,
+                SUM(CASE WHEN report_type = 'lost' THEN 1 ELSE 0 END) AS lost,
+                SUM(CASE WHEN report_type = 'found' THEN 1 ELSE 0 END) AS found,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) AS claimed,
+                SUM(CASE WHEN status = 'pending_review' THEN 1 ELSE 0 END) AS pending_review
+            FROM item_reports
+        `);
+}
+
+async function showAdminDashboardQuery2(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT r.*, u.full_name AS reporter_name
+            FROM item_reports r
+            JOIN users u ON u.id = r.user_id
+            WHERE r.report_type = 'found' AND r.status = 'active'
+            ORDER BY r.date_reported DESC
+        `);
+}
+
+async function showAdminDashboardQuery3(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT COUNT(*) AS cnt
+            FROM item_reports
+            WHERE status = 'active' AND date_reported <= NOW() - INTERVAL 60 DAY
+        `);
+}
+
+async function showAdminDashboardQuery4(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT category, COUNT(*) as cnt 
+            FROM item_reports 
+            GROUP BY category 
+            ORDER BY cnt DESC
+        `);
+}
+
+async function confirmHandover(params, values = [], connection = db) {
+    return connection.execute('UPDATE item_reports SET status = "claimed" WHERE id = ?', params);
+}
+
+async function listAdminReports(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT r.*, u.full_name AS reporter_name, u.email AS reporter_email, ar.role_code AS reporter_role
+            FROM item_reports r
+            JOIN users u ON u.id = r.user_id
+            JOIN account_roles ar ON ar.id = u.role_id
+            ORDER BY r.date_reported DESC
+        `);
+}
+
+async function approveReportArchive(params, values = [], connection = db) {
+    return connection.execute('UPDATE item_reports SET status = "archived" WHERE id = ?', params);
+}
+
+async function showAdminAnalytics(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT 
+                COUNT(*) as total_reports,
+                SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) as total_claimed,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as total_active,
+                SUM(CASE WHEN status = 'archived' THEN 1 ELSE 0 END) as total_archived
+            FROM item_reports
+        `);
+}
+
+async function description(params, values = [], connection = db) {
+    return connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, image_path, status)
+             VALUES (?, 'found', ?, ?, ?, ?, ?, 'active')`, params);
+}
+
+async function flagStaleItems(params, values = [], connection = db) {
+    return connection.execute(`UPDATE item_reports 
+             SET status = 'archived' 
+             WHERE status = 'active' 
+               AND date_reported <= NOW() - INTERVAL 60 DAY`);
+}
+
+module.exports = {
+    findCatalogReports,
+    showDashboard,
+    showDashboardQuery2,
+    showDashboardQuery3,
+    showDashboardQuery4,
+    showDashboardQuery5,
+    showDashboardQuery6,
+    createItemReport,
+    showItemDetails,
+    showItemDetailsQuery2,
+    previewOwnershipMatch,
+    createClaim,
+    updateClaimStatus,
+    updateClaimStatusQuery2,
+    listMyReports,
+    updateItemStatus,
+    updateItemStatusQuery2,
+    deleteItemReport,
+    deleteItemReportQuery2,
+    showEditItemForm,
+    updateItemReport,
+    updateItemReportQuery2,
+    showSettings,
+    showAdminDashboard,
+    showAdminDashboardQuery2,
+    showAdminDashboardQuery3,
+    showAdminDashboardQuery4,
+    confirmHandover,
+    listAdminReports,
+    approveReportArchive,
+    showAdminAnalytics,
+    description,
+    flagStaleItems
+};
