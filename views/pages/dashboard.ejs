@@ -366,8 +366,8 @@
       <!-- Interactive Smart Match Spotlight Card (if any matches) -->
       <% if (smartMatches && smartMatches.length > 0) { %>
         <% const topMatch = smartMatches[0]; %>
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-500/10 via-white/85 to-sky-500/10 backdrop-blur-xl border border-teal-200/60 p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.08)] transition hover:border-teal-300">
-          <div class="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-teal-300/20 blur-2xl pointer-events-none"></div>
+        <div class="dashboard-match-card relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-500/10 via-white/85 to-sky-500/10 backdrop-blur-xl border border-teal-200/60 p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.08)] transition hover:border-teal-300">
+          <div class="dashboard-match-glow absolute -right-12 -top-12 w-44 h-44 rounded-full bg-teal-300/20 blur-2xl pointer-events-none"></div>
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
             <div class="flex items-center gap-4 min-w-0">
               <!-- Circular Progress Ring (92%) -->
@@ -380,10 +380,10 @@
               </div>
               <div class="min-w-0">
                 <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 rounded-full bg-teal-600/10 text-teal-800 text-[11px] font-bold">Smart Match</span>
-                  <span class="text-xs text-slate-500 hidden sm:inline">Discovered <%= timeAgo(topMatch.date_reported) %></span>
+                  <span class="dashboard-match-badge px-2 py-0.5 rounded-full bg-teal-600/10 text-teal-800 text-[11px] font-bold">Smart Match</span>
+                  <span class="dashboard-match-date text-xs text-slate-500 hidden sm:inline">Discovered <%= timeAgo(topMatch.date_reported) %></span>
                 </div>
-                <p class="text-sm sm:text-base font-bold text-slate-900 truncate mt-0.5">
+                <p class="dashboard-match-title text-sm sm:text-base font-bold text-slate-900 truncate mt-0.5">
                   <%= topMatch.item_name %> found at <%= topMatch.location_found_lost %>
                 </p>
               </div>

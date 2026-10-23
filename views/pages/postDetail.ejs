@@ -414,17 +414,17 @@
             <% } else { %>
               <!-- Active Claim Verification Form -->
               <!-- Finder Asks Speech Box -->
-              <div class="relative p-3.5 rounded-2xl bg-sky-50/80 border border-sky-100/90 shadow-2xs">
+              <div class="claim-question-card relative p-3.5 rounded-2xl bg-sky-50/80 border border-sky-100/90 shadow-2xs">
                 <div class="flex items-start gap-2.5">
-                  <div class="w-6 h-6 rounded-full bg-[#09436B] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                  <div class="claim-question-icon w-6 h-6 rounded-full bg-[#09436B] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                     ?
                   </div>
                   <div class="space-y-1">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">FINDER ASKS:</p>
-                    <label class="block text-xs sm:text-sm font-bold text-slate-900 leading-snug" for="proofDetails">
+                    <p class="claim-question-label text-[10px] font-bold uppercase tracking-wider text-slate-400">FINDER ASKS:</p>
+                    <label class="claim-question-prompt block text-xs sm:text-sm font-bold text-slate-900 leading-snug" for="proofDetails">
                       “<%= challengePromptText %>”
                     </label>
-                    <p class="text-[11px] text-slate-500 font-medium">Enter a detail only the owner is likely to know.</p>
+                    <p class="claim-question-help text-[11px] text-slate-500 font-medium">Enter a detail only the owner is likely to know.</p>
                   </div>
                 </div>
               </div>
