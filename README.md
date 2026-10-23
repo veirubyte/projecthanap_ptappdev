@@ -10,7 +10,7 @@ Project HANAP addresses these challenges by delivering an auditable, role-restri
 
 | Member Identifier | Full Name / GitHub Handle | Core Technical Responsibilities | Primary Feature Branch |
 | :--- | :--- | :--- | :--- |
-| **Member 1** | Backend & Routing Architect (`veirubyte`) | Server configuration, Express routing, controller business logic, server-side validation middleware, and API responses. | `feature/backend-routes` |
+| **Member 1** | Backend & Routing Architect (`Team Member 1`) | Server configuration, Express routing, controller business logic, server-side validation middleware, and API responses. | `feature/backend-routes` |
 | **Member 2** | Frontend & UI/UX Specialist (`Team Member 2`) | EJS view templates, partials (`header`, `footer`), responsive Bootstrap 5 styling, forms, client feedback, and UX accessibility. | `feature/frontend-pages` |
 | **Member 3** | Database, Auth & Security (`Team Member 3`) | MySQL schema design, connection pooling (`mysql2/promise`), `bcrypt` password hashing, `express-session` RBAC, and test suites. | `feature/database-auth` |
 
