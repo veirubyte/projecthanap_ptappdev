@@ -202,8 +202,7 @@ campus-system/
 │   └── db.js                      # MySQL2 connection pool & async connectivity testing
 ├── controllers/
 │   ├── .gitkeep
-│   ├── authController.js          # User registration, login verification, and session logout
-│   └── indexController.js         # Dashboard overview, summary statistics, and static pages
+│   └── indexController.js         # Starter index/home controller
 ├── docs/
 │   ├── .gitkeep
 │   └── REQUIREMENTS.md            # Complete 5-section project system requirements specification
@@ -216,28 +215,25 @@ campus-system/
 ├── public/
 │   ├── css/
 │   │   ├── .gitkeep
-│   │   └── style.css              # Custom design system tokens, typography, and card accents
+│   │   └── style.css              # Starter stylesheet to be customized by Member 2 (Frontend)
 │   ├── images/
 │   │   └── .gitkeep               # Static graphical assets, campus logos, and placeholders
 │   └── js/
 │       ├── .gitkeep
-│       └── main.js                # Frontend UX interactions, live search filtering, and alerts
+│       └── main.js                # Starter frontend script to be customized by Member 2 (Frontend)
 ├── routes/
 │   ├── .gitkeep
-│   ├── authRoutes.js              # Authentication endpoints (/auth/login, /auth/register, /auth/logout)
-│   └── indexRoutes.js             # Core navigation endpoints (/, /about)
+│   ├── authRoutes.js              # Starter auth route scaffolding (/auth/login, /auth/logout)
+│   └── indexRoutes.js             # Core navigation starter endpoint (/)
 ├── views/
 │   ├── pages/
 │   │   ├── .gitkeep
-│   │   ├── about.ejs              # System specifications and technical architecture details
-│   │   ├── error.ejs              # Standardized 400, 403, 404, and 500 error display view
-│   │   ├── index.ejs              # Main dashboard, summary metric cards, and catalog preview
-│   │   ├── login.ejs              # Login form with quick test credentials selector
-│   │   └── register.ejs           # User sign-up form with input validation highlights
+│   │   ├── error.ejs              # Generic error display template
+│   │   └── index.ejs              # Starter home layout template
 │   └── partials/
 │       ├── .gitkeep
-│       ├── footer.ejs             # Reusable footer markup, system links, and Bootstrap JS bundle
-│       └── header.ejs             # HTML head, Bootstrap 5 CSS, Google Fonts, and dynamic navbar
+│       ├── footer.ejs             # Starter footer layout with Bootstrap 5 bundle
+│       └── header.ejs             # Starter header layout with Bootstrap 5 and navigation
 ├── .env.example                   # Safe configuration template containing placeholder variables
 ├── .gitignore                     # Git exclusion rules blocking node_modules and secrets
 ├── LICENSE                        # MIT License legal terms
