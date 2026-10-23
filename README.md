@@ -78,7 +78,7 @@ Project HANAP solves these challenges with an auditable, role-restricted, respon
 | **Runtime** | Node.js | `>= 18.0.0` (LTS v20 / v24 tested) | Asynchronous JavaScript server runtime environment |
 | **Web Framework** | Express.js | `^5.3.0` | High-performance MVC routing, middleware pipeline, and REST handlers |
 | **View Engine** | EJS | `^7.0.2` | Server-rendered templates with dual lookup paths (`views/pages/` and `views/`) |
-| **Database** | MariaDB / MySQL | `10.4+` / `8.0+` | Relational storage engine with foreign keys, transactions, and UTF8MB4 |
+| **Database** | MySQL | `8.0+` | Relational storage engine with foreign keys, transactions, and UTF8MB4 |
 | **Database Driver** | `mysql2` | `^3.24.6` | Connection pooling (`mysql2/promise`) with prepared parameterized queries |
 | **Authentication** | `bcrypt` & `express-session` | `bcrypt ^6.0.0` / `session ^1.19.0` | Salted password hashing (cost factor 10) & secure HTTP-only sessions |
 | **Security Suite** | `helmet` | `^8.3.0` | HTTP headers with CSP tailored for Tailwind CDN, Google Fonts, and self-hosted assets |
