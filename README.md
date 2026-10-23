@@ -1,168 +1,374 @@
-# Project Description
+# Project HANAP (*Holistic Asset Notification & Access Portal*)
 
-**Project HANAP** (*Holistic Asset Notification & Access Portal*) is a centralized, web-based Campus Lost and Found, Asset Tracking, and Item Recovery System built for collegiate environments. Across university campuses, hundreds of personal and academic belongings—such as student identification cards, laptops, scientific calculators, laboratory coats, and keys—are misplaced every academic term. Currently, campus lost-and-found management relies heavily on disconnected physical notebooks, unmonitored drop-off desks, and informal, chaotic social media posts. This lack of centralized tracking causes low item recovery rates, security vulnerabilities, fraudulent claims, and wasted administrative hours.
-
-Project HANAP addresses these challenges by delivering an auditable, role-restricted, and accessible web portal. The system empowers students and faculty to rapidly report lost items and search recovered property catalogs, while providing campus security officers, custodial personnel, and student affairs administrators with structured custody workflows, verification checks, status tracking, and claim validation logs.
+[![Platform](https://img.shields.io/badge/Platform-Node.js%20v18%2B%20%7C%20Express%205.x-09436B?style=for-the-badge&logo=nodedotjs)](https://nodejs.org/)
+[![Database](https://img.shields.io/badge/Database-MariaDB%20%2F%20MySQL%208.x-2B5B84?style=for-the-badge&logo=mysql)](https://www.mysql.com/)
+[![Frontend](https://img.shields.io/badge/Frontend-EJS%20%2B%20Tailwind%20CSS-0D9488?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
+[![Institution](https://img.shields.io/badge/Institution-CSPC%20Camarines%20Sur-1D63B8?style=for-the-badge)](https://my.cspc.edu.ph/)
+[![License](https://img.shields.io/badge/License-MIT-emerald?style=for-the-badge)](LICENSE)
 
 ---
 
-## Team Members
+## Table of Contents
 
-| Member Identifier | Full Name / GitHub Handle | Core Technical Responsibilities | Primary Feature Branch |
+1. [Executive Overview](#executive-overview)
+2. [Key Capabilities & Innovations](#key-capabilities--innovations)
+3. [Technology Stack](#technology-stack)
+4. [System Architecture & Lifecycle Workflow](#system-architecture--lifecycle-workflow)
+5. [Database Architecture & Data Model](#database-architecture--data-model)
+6. [Repository Structure](#repository-structure)
+7. [Installation & Setup Guide](#installation--setup-guide)
+8. [Configuration & Environment Variables](#configuration--environment-variables)
+9. [Pre-Configured Test Accounts](#pre-configured-test-accounts)
+10. [Comprehensive Route Directory](#comprehensive-route-directory)
+11. [Security, Privacy & Compliance Measures](#security-privacy--compliance-measures)
+12. [Academic Course Metadata & Team Attribution](#academic-course-metadata--team-attribution)
+13. [License](#license)
+
+---
+
+## Executive Overview
+
+**Project HANAP** (*Holistic Asset Notification & Access Portal*) is an institutional-grade, web-based Campus Lost and Found, Asset Tracking, and Item Recovery System engineered for **Camarines Sur Polytechnic Colleges (CSPC)** in Nabua, Camarines Sur.
+
+Across collegiate campus grounds, hundreds of critical personal and academic assets—such as institutional identification cards, laptops, scientific calculators, laboratory coats, keys, and wallets—are misplaced each semester. Traditional lost-and-found management relies heavily on disconnected physical paper logs, unmonitored drop-off counters, and disorganized social media feeds. This disjointed workflow leads to low recovery rates, lack of privacy, fraudulent claims, and heavy administrative overhead.
+
+Project HANAP solves these challenges with an auditable, role-restricted, responsive portal featuring:
+- **Direct Peer-to-Peer (P2P) Coordination** powered by an automated string-distance **Campus Match Engine** and private verification challenges.
+- **Centralized Security Desk Custody Handover** workflows for official property releases and physical logging.
+- **End-to-End Auditability** with automated 60-day disposition queues, administrative batch actions, and chronological security audit logs.
+- **Privacy Protections** including automatic phone number masking, Email Multi-Factor Authentication (MFA), and institutional email domain verification.
+
+---
+
+## Key Capabilities & Innovations
+
+### 1. Smart Campus Match Engine & Verification Stepper
+- **Algorithmic Confidence Scoring:** Evaluates claimant ownership proofs against secret challenge answers using normalized Levenshtein edit distance and token matching (`services/answerMatch.js`).
+- **Dynamic Radial SVG Progression Gauge:** Displays real-time match confidence ($0\%$ to $100\%$) on the item detail page, advancing claimants through a visual two-step verification workflow.
+- **Anti-Fraud Security Constraints:** Requires claimants to meet or exceed an $80\%$ minimum threshold before filing claims on private-challenge items, preventing guessing and social engineering.
+
+### 2. Dual Handover Architecture: P2P Chat vs. Security Custody
+- **Direct P2P Chat Thread:** Enables secure communication between finders and claimants with real-time status management (`pending`, `approved`, `escalated`, `returned`, `rejected`).
+- **In-Chat Contact Masking:** Automatically redacts raw phone numbers (`09**-***-**09`) to protect student privacy until mutual identity is verified.
+- **One-Click Security Escalation:** Allows any party to escalate disputes or high-value items directly to the Campus Security Office for arbitration.
+- **Physical Custody Handover Terminal:** Equips security personnel with dedicated terminals (`/admin/handover`) to verify student IDs, review item custody status, and sign off on physical release ledgers.
+
+### 3. Institutional Identity & Account Security
+- **Domain-Enforced RBAC:** Restricts institutional registration to verified `@my.cspc.edu.ph` (students) and `@cspc.edu.ph` (faculty and staff) domains, with dedicated Guest and Parent routing.
+- **Parent/Guardian Student Linkage:** Allows external parents and guardians to link accounts to verified student profiles subject to student approval in Account Settings.
+- **Email Multi-Factor Authentication (MFA):** Supports single-use, 6-digit TOTP verification codes (10-minute expiry, 5-attempt lockout, 60-second cooldown) with real SMTP delivery and a local development console fallback.
+
+### 4. 60-Day Lifecycle Automation & Administrative Governance
+- **Automated Stale Item Archiving:** Daily background scheduler (`services/lifecycle.js`) flags and transitions unclaimed active items older than 60 days into the administrative disposition queue.
+- **Batch Disposition Approval:** Administrative batch approval (`POST /admin/reports/batch-approve`) and single-report disposition actions with audit tracking.
+- **Interactive Analytics Dashboard:** Real-time metrics comparing P2P resolution efficiency vs. centralized office turn-ins, category breakdown distributions, and average turnaround times.
+- **Data Export:** Instant CSV ledger downloads of campus reports and disposition registries.
+
+### 5. UI/UX Design System
+- **Aurora Glass Aesthetics:** Built with Tailwind CSS, backdrop blurs, frosted glass panels, and smooth micro-interactions.
+- **Daylight & Night Mode Themes:** Complete theme toggle between **Light Horizon** and **Serene Horizon Night Mode**, persisted across sessions via `localStorage` and `html.dark`.
+- **Adaptive Floating Dock Navigation:** Responsive capsule dock with dynamic active states, unread notification counter badges, and responsive navigation drawers for mobile and tablet screens.
+
+---
+
+## Technology Stack
+
+| Layer | Component | Specification / Version | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Member 1** | Backend & Routing Architect (`Team Member 1`) | Server configuration, Express routing, controller business logic, server-side validation middleware, and API responses. | `feature/backend-routes` |
-| **Member 2** | Frontend & UI/UX Specialist (`Team Member 2`) | EJS view templates, partials (`header`, `footer`), responsive Bootstrap 5 styling, forms, client feedback, and UX accessibility. | `feature/frontend-pages` |
-| **Member 3** | Database, Auth & Security (`Team Member 3`) | MySQL schema design, connection pooling (`mysql2/promise`), `bcrypt` password hashing, `express-session` RBAC, and test suites. | `feature/database-auth` |
+| **Runtime** | Node.js | `>= 18.0.0` (LTS v20 / v24 tested) | Asynchronous JavaScript server runtime environment |
+| **Web Framework** | Express.js | `^5.3.0` | High-performance MVC routing, middleware pipeline, and REST handlers |
+| **View Engine** | EJS | `^7.0.2` | Server-rendered templates with dual lookup paths (`views/pages/` and `views/`) |
+| **Database** | MariaDB / MySQL | `10.4+` / `8.0+` | Relational storage engine with foreign keys, transactions, and UTF8MB4 |
+| **Database Driver** | `mysql2` | `^3.24.6` | Connection pooling (`mysql2/promise`) with prepared parameterized queries |
+| **Authentication** | `bcrypt` & `express-session` | `bcrypt ^6.0.0` / `session ^1.19.0` | Salted password hashing (cost factor 10) & secure HTTP-only sessions |
+| **Security Suite** | `helmet` | `^8.3.0` | HTTP headers with CSP tailored for Tailwind CDN, Google Fonts, and self-hosted assets |
+| **File Uploads** | `multer` | `^2.5.0` | Disk storage for item images with mime-type filters and sanitized filenames |
+| **Mailing / MFA** | `nodemailer` | `^10.2.1` | SMTP email transport with local development console fallback |
+| **Styling & Icons** | Tailwind CSS CDN & Material Symbols | Plus Jakarta Sans, Forms, Container Queries | Glassmorphic design tokens, responsive typography, and iconography |
+| **Development** | `nodemon` & `dotenv` | `nodemon ^3.1.14` / `dotenv ^18.0.9` | Hot reloading and multi-environment variable injection |
 
 ---
 
-## Assigned System
+## System Architecture & Lifecycle Workflow
 
-- **Course:** PTAppDev (Platform Technologies & Web Application Development)
-- **Academic Term / Year:** Midterm Project Evaluation (2026)
-- **Team / Pair Identifier:** Team Project HANAP &bull; Group 1
-- **Assigned System Domain:** Campus Lost and Found & Property Recovery Management System (Round 1 Baseline Specification)
-- **Repository Remote:** `https://github.com/veirubyte/projecthanap_ptappdev.git`
+### Item Lifecycle State Machine
 
----
+```mermaid
+stateDiagram-v2
+    [*] --> Active: Report Filed (Lost / Found)
+    Active --> UnderReview: Claim Filed with Proof
+    UnderReview --> Active: Claim Rejected / Withdrawn
+    UnderReview --> Claimed: Verification Approved (P2P / Security Handover)
+    UnderReview --> Escalated: Disputed / Escalated to Security
+    Escalated --> Claimed: Security Officer Confirms Custody Release
+    Escalated --> Active: Security Officer Rejects Dispute
+    Claimed --> Returned: Physical Handover Confirmed & Closed
+    Active --> Archived: 60 Days Inactive / Stale Lifecycle Job
+    Archived --> [*]: Administrative Disposition Approved
+    Returned --> [*]: Case Permanently Resolved
+```
 
-## Features
+### End-to-End User Verification Workflow
 
-- **Multi-Page Semantic Navigation:** Clean, modern layout rendered with server-side EJS templates, dynamic active link states, and responsive navigation across mobile and desktop viewports.
-- **Form Processing with Strict Server-Side Validation:** Reusable validation middleware validating required inputs, institutional email patterns, string boundary limits, numeric parameters, and database duplicate checks prior to storage.
-- **Persistent Relational Database CRUD:** Asynchronous MySQL operations powered by `mysql2/promise` with connection pooling, transactional integrity, and parameterized queries preventing SQL injection.
-- **Session-Based Authentication:** Stateful user session management using `express-session`, secure HTTP-only cookies, and encrypted passwords salted and hashed with `bcrypt`.
-- **Role-Based Access Control (RBAC):** Middleware protecting private routes (`isAuthenticated`) and restricting administrative endpoints (`authorizeRole('Admin', 'Staff')`), effectively preventing unauthorized users from bypassing restrictions via direct URL address bar tampering.
-- **Item Lifecycle Status Tracking:** Formal transitions tracking items from `Lost` / `Turned In` to `Verification Pending`, `Claim Approved`, and `Reunited`.
-
----
-
-## Technologies
-
-- **Runtime Environment:** [Node.js](https://nodejs.org/) (v18.x - v24.x LTS recommended)
-- **Web Framework:** [Express.js](https://expressjs.com/) (v5.x modular MVC architecture)
-- **Templating Engine:** [EJS](https://ejs.co/) (Embedded JavaScript Templates)
-- **Database Engine:** [MySQL](https://www.mysql.com/) (Relational database management)
-- **Database Driver:** [mysql2](https://github.com/sidorares/node-mysql2) (Promise-based asynchronous client)
-- **Authentication & Security:** [express-session](https://github.com/expressjs/session) & [bcrypt](https://github.com/kelektiv/node.bcrypt.js)
-- **Configuration Management:** [dotenv](https://github.com/motdotla/dotenv)
-- **Frontend Framework:** [Bootstrap 5.3.3](https://getbootstrap.com/) & [Bootstrap Icons](https://icons.getbootstrap.com/)
-- **Typography:** [Google Fonts (Inter)](https://fonts.google.com/specimen/Inter)
-- **Development Tooling:** [Nodemon](https://nodemon.io/) (Live file reloading)
-
----
-
-## Installation
-
-Ensure [Node.js](https://nodejs.org/) (v18+) and [Git](https://git-scm.com/) are installed on your machine.
-
-1. Clone the repository from GitHub:
-   ```bash
-   git clone https://github.com/veirubyte/projecthanap_ptappdev.git
-   cd projecthanap_ptappdev
-   ```
-
-2. Install all required production and development dependencies:
-   ```bash
-   npm install
-   ```
+```mermaid
+flowchart TD
+    A["Student Discovers Lost Belonging"] --> B["Submit Found Report on /items/new"]
+    B --> C["Optional: Set Secret Challenge & Answer"]
+    C --> D["Report Appears in Campus Catalog"]
+    E["Owner Browses /catalog or Search Feed"] --> F["Open Item Detail (/items/:id)"]
+    F --> G["Campus Match Engine: Enter Ownership Proof"]
+    G --> H{"Match Score >= 80%?"}
+    H -- "No (< 80%)" --> I["Guidance Banner & Refinement Prompt"]
+    I --> G
+    H -- "Yes (>= 80%)" --> J["Step 2: Submit Claim"]
+    J --> K["Open Direct Claim Chat (/claims/:id)"]
+    K --> L["Finder Reviews Statement & Chat Coordinates"]
+    L --> M{"Resolution Path"}
+    M -- "Safe Peer Handover" --> N["Finder Clicks 'Mark Returned'"]
+    M -- "Security Arbitration" --> O["Click 'Escalate to Security'"]
+    M -- "Invalid Claim" --> P["Click 'Reject Claim'"]
+    O --> Q["Security Custody Terminal (/admin/handover)"]
+    Q --> R["Officer Verifies ID & Confirms Release"]
+    N --> S["Case Closed: Item Marked Returned"]
+    R --> S
+```
 
 ---
 
-## Configuration
+## Database Architecture & Data Model
 
-1. Create a local environment file by duplicating the provided template:
-   ```bash
-   # On Windows (PowerShell):
-   Copy-Item .env.example .env
+The database is built on MariaDB / MySQL using InnoDB with UTF8MB4 character encoding, cascading foreign key constraints, connection pooling, and transactional integrity.
 
-   # On macOS/Linux:
-   cp .env.example .env
-   ```
+```mermaid
+erDiagram
+    account_roles ||--o{ users : "assigned to"
+    departments ||--o{ users : "belongs to"
+    users ||--o{ item_reports : "reports"
+    users ||--o{ claims : "submits"
+    users ||--o{ claim_messages : "sends"
+    users ||--o{ audit_logs : "triggers"
+    users ||--o{ guardian_links : "parent / student link"
+    users ||--o| user_mfa : "secures"
+    item_reports ||--o{ claims : "receives"
+    claims ||--o{ claim_messages : "contains"
 
-2. Open `.env` in your code editor and verify your local MySQL configuration:
-   ```env
-   PORT=3000
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASS=your_local_mysql_password
-   DB_NAME=projecthanap_db
-   SESSION_SECRET=projecthanap_ultra_secure_session_secret_key_2026
-   NODE_ENV=development
-   ```
+    account_roles {
+        int id PK
+        varchar role_code
+        varchar display_name
+    }
 
-> [!IMPORTANT]
-> The `.env` file contains sensitive local credentials and is strictly excluded from version control via `.gitignore`. Never commit `.env` to Git.
+    departments {
+        int id PK
+        varchar code
+        varchar name
+    }
+
+    users {
+        int id PK
+        varchar full_name
+        varchar email UK
+        varchar password_hash
+        int role_id FK
+        int department_id FK
+        varchar student_id
+        varchar phone_number
+        timestamp created_at
+    }
+
+    user_mfa {
+        int user_id PK, FK
+        varchar code_hash
+        datetime code_expires_at
+        int attempts
+        datetime last_sent_at
+    }
+
+    guardian_links {
+        int id PK
+        int parent_id FK
+        int student_id FK
+        enum status
+        timestamp created_at
+    }
+
+    item_reports {
+        int id PK
+        int user_id FK
+        enum report_type
+        varchar item_name
+        varchar category
+        text description
+        varchar location_found_lost
+        varchar image_path
+        varchar secret_challenge
+        varchar secret_answer
+        enum custody_mode
+        enum status
+        timestamp date_reported
+    }
+
+    claims {
+        int id PK
+        int item_id FK
+        int claimant_id FK
+        text proof_details
+        enum status
+        timestamp created_at
+    }
+
+    claim_messages {
+        int id PK
+        int claim_id FK
+        int sender_id FK
+        text message
+        timestamp sent_at
+    }
+
+    audit_logs {
+        int id PK
+        int admin_id FK
+        varchar action_description
+        varchar ip_address
+        timestamp timestamp
+    }
+```
 
 ---
 
-## Database Setup
+## Repository Structure
 
-1. Launch your MySQL service (via XAMPP, MySQL Workbench, Docker, or native CLI):
-   ```bash
-   mysql -u root -p
-   ```
-
-2. Create the database and execute the initial schema:
-   ```sql
-   CREATE DATABASE IF NOT EXISTS projecthanap_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   USE projecthanap_db;
-
-   -- 1. Users Table
-   CREATE TABLE IF NOT EXISTS users (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     full_name VARCHAR(120) NOT NULL,
-     email VARCHAR(150) NOT NULL UNIQUE,
-     password_hash VARCHAR(255) NOT NULL,
-     role ENUM('Admin', 'Staff', 'Student') NOT NULL DEFAULT 'Student',
-     department VARCHAR(100) NOT NULL DEFAULT 'General',
-     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-   ) ENGINE=InnoDB;
-
-   -- 2. Item Categories Table
-   CREATE TABLE IF NOT EXISTS categories (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     name VARCHAR(80) NOT NULL UNIQUE,
-     description VARCHAR(255)
-   ) ENGINE=InnoDB;
-
-   -- 3. Items Registry Table
-   CREATE TABLE IF NOT EXISTS items (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     item_code VARCHAR(30) NOT NULL UNIQUE,
-     title VARCHAR(150) NOT NULL,
-     description TEXT NOT NULL,
-     category_id INT,
-     location_found VARCHAR(150) NOT NULL,
-     item_status ENUM('Lost', 'Turned In', 'Claimed', 'Archived') DEFAULT 'Turned In',
-     reported_by INT NOT NULL,
-     date_logged DATE NOT NULL,
-     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-     FOREIGN KEY (reported_by) REFERENCES users(id) ON DELETE CASCADE
-   ) ENGINE=InnoDB;
-
-   -- 4. Seed Categories
-   INSERT IGNORE INTO categories (id, name, description) VALUES
-   (1, 'Electronics', 'Laptops, phones, chargers, storage devices, and calculators'),
-   (2, 'Personal Accessories', 'Bottles, umbrellas, eyeglasses, and jewelry'),
-   (3, 'Documents & Identification', 'Campus IDs, driver licenses, ATM cards, and notebooks'),
-   (4, 'Apparel & Bags', 'Jackets, backpacks, lab coats, and uniforms');
-
-   -- 5. Seed Test Users (Password: AdminPass123!, StaffPass123!, StudentPass123!)
-   INSERT IGNORE INTO users (id, full_name, email, password_hash, role, department) VALUES
-   (1, 'System Administrator', 'admin@hanap.campus.edu', '$2b$10$wTf7m339gP6aHjB7E20Wbe94WcIuT4f84R71rGz39uW10Vp6XbCke', 'Admin', 'Management Information Systems'),
-   (2, 'Campus Security Officer', 'staff@hanap.campus.edu', '$2b$10$yF1aX392pQ4bWzV8D31Vee02VbHtS3e73Q60qFy28tV09Uo5WaBjd', 'Staff', 'Campus Security & Custody Office'),
-   (3, 'Maria Santos', 'student@hanap.campus.edu', '$2b$10$zE2bY403qR5cXxW9E42Wff13WcIuT4f84R71rGz39uW10Vp6XbCke', 'Student', 'College of Computer Studies');
-   ```
+```ascii
+projectHanap/
+├── config/
+│   ├── db.js                      # MySQL2 connection pool with async connectivity check
+│   ├── roles.js                   # Institutional role constants, domain & password validators
+│   └── security.js                # Rate limiters & CSRF token injector and protection middleware
+├── controllers/
+│   ├── authController.js          # Authentication, registration, MFA login challenge & logout
+│   ├── homeController.js          # Public landing portal controller
+│   └── itemController.js          # Catalog, reporting, matching, claims, chat, settings, admin handlers
+├── middleware/
+│   ├── auth.js                    # Session gatekeepers (requireAuth, requireAdmin, requireNonAdminAuth)
+│   ├── csrf.js                    # CSRF verification middleware
+│   ├── reportUpload.js            # Multer diskStorage configuration & reportUploadBeforeCsrf parser
+│   └── viewLocals.js              # Injects authenticated user, admin flag & notification counts into res.locals
+├── models/
+│   ├── auditLogModel.js           # Admin audit trail queries
+│   ├── claimModel.js              # P2P claims, messages, handover queues & analytics metrics
+│   ├── connectionModel.js         # Connection pooling abstraction
+│   ├── guardianLinkModel.js       # Parent/Guardian student relationship verification
+│   ├── itemReportModel.js         # Item CRUD, catalog filtering, stats, and disposition queries
+│   ├── mfaModel.js                # TOTP verification codes, attempt counters & expiry logic
+│   ├── schemaModel.js             # DDL helper queries
+│   └── userModel.js               # User authentication, role queries, and profile management
+├── public/
+│   ├── css/
+│   │   └── style.css              # Custom utility styles, scrollbar hiding, and dark mode tokens
+│   ├── js/
+│   │   └── main.js                # Client-side helpers, timeAgo formatters, and flash dismissers
+│   └── uploads/                   # Multer image upload destination directory (auto-created)
+├── routes/
+│   ├── authRoutes.js              # Authentication endpoints (/login, /register, /logout)
+│   ├── homeRoutes.js              # Public root routing (/)
+│   └── itemRoutes.js              # Catalog, reports, claims, chat, settings & admin routing
+├── services/
+│   ├── answerMatch.js             # String distance normalization & answer confidence scoring
+│   ├── email.js                   # Nodemailer SMTP transporter with dev console fallback
+│   ├── lifecycle.js               # 60-day automated stale report background cleaner
+│   └── mfa.js                     # 6-digit TOTP code generation & bcrypt hash verification
+├── views/
+│   ├── pages/
+│   │   ├── 403.ejs                # Access denied & forbidden error display
+│   │   ├── adminAnalytics.ejs     # P2P vs. Centralized Handover statistical performance metrics
+│   │   ├── adminAuditLogs.ejs     # Chronological administrative security audit log
+│   │   ├── adminDashboard.ejs     # Administrator central hub & turnover overview
+│   │   ├── adminReports.ejs       # 60-day disposition queue, report matrix & CSV export
+│   │   ├── adminUsers.ejs         # User directory, role switcher & quota reset terminal
+│   │   ├── chat.ejs               # Real-time peer claim coordination chat with contact masking
+│   │   ├── claims.ejs             # Claims hub (made and received claims)
+│   │   ├── custodyHandover.ejs    # Security Desk physical property release terminal
+│   │   ├── dashboard.ejs          # Student/Staff personal dashboard & catalog browser
+│   │   ├── editReport.ejs         # Report edit form with category selection
+│   │   ├── guestClaim.ejs         # Security routing guidance for parents and guests
+│   │   ├── landing.ejs            # High-conversion public homepage & portal gateway
+│   │   ├── login.ejs              # Dual-tab login (Institution vs. Guest) with MFA challenge
+│   │   ├── myReports.ejs          # User's submitted reports management matrix
+│   │   ├── postDetail.ejs         # Item showcase, Campus Match Engine & verification stepper
+│   │   ├── register.ejs           # Dual-tab registration with password strength meter
+│   │   ├── reportItem.ejs         # Multi-step item submission form with photo upload
+│   │   ├── settings.ejs           # Account settings studio (Profile, Security, MFA, Posts, Logs)
+│   │   └── partials/              # Forwarding partials for template compatibility
+│   └── partials/
+│       ├── navbar.ejs             # Floating glass capsule navigation dock & mobile menu
+│       └── themeSetup.ejs         # Early dark-mode script preventing theme flash
+├── .env.example                   # Environment configuration template
+├── .gitignore                     # Git ignore rules for node_modules, .env, and uploads
+├── app.js                         # Core Express server entrypoint, middleware chain & scheduler
+├── package.json                   # Project metadata, dependencies, and NPM scripts
+├── project_hanap (4).sql          # Authoritative MariaDB/MySQL database schema and seed data
+└── README.md                      # Comprehensive system documentation
+```
 
 ---
 
-## How to Run
+## Installation & Setup Guide
 
-- **Development Mode (with auto-reloading):**
+### Prerequisites
+- **Node.js:** Version `18.x`, `20.x`, or `24.x` LTS ([Download Node.js](https://nodejs.org/))
+- **MariaDB / MySQL:** Version `10.4+` / `8.0+` (via XAMPP, MySQL Workbench, Docker, or native service)
+- **Git:** Version `2.x+` ([Download Git](https://git-scm.com/))
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/veirubyte/projecthanap_ptappdev.git
+cd projecthanap_ptappdev
+```
+
+### Step 2: Install Dependencies
+```bash
+npm install
+```
+
+### Step 3: Configure Local Environment
+Create your local `.env` configuration file from the template:
+
+```bash
+# Windows (PowerShell):
+Copy-Item .env.example .env
+
+# macOS / Linux:
+cp .env.example .env
+```
+
+Review and adjust `.env` parameters to match your local MySQL configuration:
+```env
+PORT=3000
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASS=
+DB_NAME=project_hanap
+SESSION_SECRET=project_hanap_super_secure_session_key_2026
+NODE_ENV=development
+```
+
+### Step 4: Import the Database Schema
+1. Start your MySQL/MariaDB server (e.g. start MySQL in the XAMPP Control Panel).
+2. Open a terminal or MySQL CLI and import `project_hanap (4).sql`:
+
+```bash
+# Using MySQL CLI:
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS project_hanap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p project_hanap < "project_hanap (4).sql"
+```
+
+> [!NOTE]
+> `project_hanap (4).sql` automatically creates all required tables (`account_roles`, `departments`, `users`, `user_mfa`, `guardian_links`, `item_reports`, `claims`, `claim_messages`, `audit_logs`) and populates seed departments, roles, test accounts, active item reports with secret challenges, and initial claims.
+
+### Step 5: Start the Application Server
+
+- **Development Mode (Auto-Reloading via Nodemon):**
   ```bash
   npm run dev
   ```
@@ -172,102 +378,144 @@ Ensure [Node.js](https://nodejs.org/) (v18+) and [Git](https://git-scm.com/) are
   npm start
   ```
 
-Once initiated, open your web browser and visit:
-`http://localhost:3000`
+Once started, open your browser and navigate to:
+**`http://localhost:3000`**
 
 ---
 
-## User Accounts
+## Configuration & Environment Variables
 
-The system includes pre-configured test user accounts representing each role level for instructor grading and peer review verification:
+| Variable Name | Required | Default Value | Description |
+| :--- | :---: | :--- | :--- |
+| `PORT` | No | `3000` | Port on which the Express HTTP server listens |
+| `DB_HOST` | Yes | `127.0.0.1` | MySQL/MariaDB database server hostname or IP |
+| `DB_PORT` | No | `3306` | MySQL server port |
+| `DB_USER` | Yes | `root` | Database authentication username |
+| `DB_PASS` / `DB_PASSWORD` | No | `""` (empty) | Database authentication password |
+| `DB_NAME` | Yes | `project_hanap` | Database schema name |
+| `SESSION_SECRET` | Yes | `project_hanap_secret...` | Secret key used to sign session cookies with `express-session` |
+| `NODE_ENV` | No | `development` | Environment mode (`development` enables dev logging & HTTP-safe cookies; `production` enforces HTTPS cookies and secure CSP) |
+| `SMTP_HOST` | Optional | `undefined` | SMTP server host (e.g. `smtp.gmail.com`). If omitted in dev, MFA codes log to terminal |
+| `SMTP_PORT` | Optional | `587` | SMTP port (`587` for STARTTLS, `465` for SSL) |
+| `SMTP_USER` | Optional | `undefined` | SMTP authentication username / email |
+| `SMTP_PASSWORD` | Optional | `undefined` | SMTP application password |
+| `SMTP_FROM` | Optional | `no-reply@cspc.edu.ph` | Outgoing email sender address |
+| `SMTP_FROM_NAME` | Optional | `Project HANAP` | Outgoing email sender name |
 
-| Role Level | Full Name | Email Address | Plaintext Password | Permitted Access Scope |
+> [!TIP]
+> In local development (`NODE_ENV=development`), if no SMTP credentials are configured, `services/email.js` automatically activates a **console fallback**. Verification codes and security notices are logged directly to your terminal (e.g., `[HANAP Email Fallback] MFA verification code for student@my.cspc.edu.ph: 123456`), allowing complete testing of the MFA flow without an external mail provider.
+
+---
+
+## Pre-Configured Test Accounts
+
+The seed database (`project_hanap (4).sql`) includes pre-configured, bcrypt-hashed test accounts representing every role:
+
+| Role Code | Role Name | Email Address | Password | Sample Data & Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **System Admin** | System Administrator | `admin@hanap.campus.edu` | `AdminPass123!` | Full system privileges, user role management, system settings, audit logs, and catalog administration. |
-| **Staff / Faculty** | Campus Security Officer | `staff@hanap.campus.edu` | `StaffPass123!` | Custody management, turn-in receipt generation, claim verification, status updates, and reporting. |
-| **Student** | Maria Santos | `student@hanap.campus.edu` | `StudentPass123!` | Public catalog browsing, reporting missing items, filing item claim requests, and tracking own submissions. |
+| **`admin`** | System Administrator | `admin@cspc.edu.ph` | `password123` | Full access to `/admin/*`, Custody Handover, 60-day Archive Disposition, User Directory, Analytics, and Audit Logs. |
+| **`student`** | Student (CCS) | `maria@my.cspc.edu.ph` | `password123` | Reporter of Lost Calculator (`fx-991EX`), Claimant on Item #1 (`Blue CSPC Lanyard`), Active P2P claim chat. |
+| **`student`** | Student (CCS) | `juan@my.cspc.edu.ph` | `password123` | Reporter of Found Item #1 (`Blue CSPC Lanyard`) and Item #4 (`Silver Water Bottle`) with active secret challenge questions. |
+| **`student`** | Student | `marta@my.cspc.edu.ph` | `password123` | Reporter of Item #5 with photo upload, eligible to file live claims on Item #1 and Item #4. |
+| **`parent` / `guest`**| Parent / Campus Guest | `parent@gmail.com` | `password123` | Guest portal browsing, student guardian linkage requests, and Security Desk handover routing. |
 
 ---
 
-## Project Structure
+## Comprehensive Route Directory
 
-```ascii
-campus-system/
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   └── task_issue.md          # Structured template for team member task tracking
-│   └── pull_request_template.md   # Standardized PR checklist and peer code review guide
-├── config/
-│   ├── .gitkeep
-│   └── db.js                      # MySQL2 connection pool & async connectivity testing
-├── controllers/
-│   ├── .gitkeep
-│   ├── authController.js          # User registration, login verification, and session logout
-│   └── indexController.js         # Dashboard overview, summary statistics, and static pages
-├── docs/
-│   ├── .gitkeep
-│   └── REQUIREMENTS.md            # Complete 5-section project system requirements specification
-├── middleware/
-│   ├── .gitkeep
-│   ├── authMiddleware.js          # Session gatekeeper (isAuthenticated) & RBAC (authorizeRole)
-│   └── validationMiddleware.js    # Reusable server-side input, length, email, and duplicate validation
-├── models/
-│   └── .gitkeep                   # Data models and database query abstractions
-├── public/
-│   ├── css/
-│   │   ├── .gitkeep
-│   │   └── style.css              # Custom design system tokens, typography, and card accents
-│   ├── images/
-│   │   └── .gitkeep               # Static graphical assets, campus logos, and placeholders
-│   └── js/
-│       ├── .gitkeep
-│       └── main.js                # Frontend UX interactions, live search filtering, and alerts
-├── routes/
-│   ├── .gitkeep
-│   ├── authRoutes.js              # Authentication endpoints (/auth/login, /auth/register, /auth/logout)
-│   └── indexRoutes.js             # Core navigation endpoints (/, /about)
-├── views/
-│   ├── pages/
-│   │   ├── .gitkeep
-│   │   ├── about.ejs              # System specifications and technical architecture details
-│   │   ├── error.ejs              # Standardized 400, 403, 404, and 500 error display view
-│   │   ├── index.ejs              # Main dashboard, summary metric cards, and catalog preview
-│   │   ├── login.ejs              # Login form with quick test credentials selector
-│   │   └── register.ejs           # User sign-up form with input validation highlights
-│   └── partials/
-│       ├── .gitkeep
-│       ├── footer.ejs             # Reusable footer markup, system links, and Bootstrap JS bundle
-│       └── header.ejs             # HTML head, Bootstrap 5 CSS, Google Fonts, and dynamic navbar
-├── .env.example                   # Safe configuration template containing placeholder variables
-├── .gitignore                     # Git exclusion rules blocking node_modules and secrets
-├── LICENSE                        # MIT License legal terms
-├── package.json                   # Project metadata, dependencies, and NPM execution scripts
-└── README.md                      # Mandatory 14-section project documentation and guide
-```
+### 1. Public & Core Authentication Routes
+| Method | Route | Controller Handler | Access Scope | Description |
+| :---: | :--- | :--- | :---: | :--- |
+| `GET` | `/` | `homeController.showLanding` | Public | Public landing homepage with feature spotlights and CTA |
+| `GET` | `/login` | `authController.showLogin` | Public (Guest) | Dual-tab sign-in page with MFA challenge support |
+| `POST` | `/login` | `authController.login` | Public (Guest) | Processes credentials, evaluates role, triggers MFA or redirects |
+| `GET` | `/register` | `authController.showRegistration` | Public (Guest) | Registration page with password complexity validation |
+| `POST` | `/register` | `authController.register` | Public (Guest) | Creates account with institutional domain verification |
+| `GET` | `/logout` | `authController.logout` | Authenticated | Destroys session, clears cookies, redirects to `/login` |
+
+### 2. Catalog & Item Reporting Routes
+| Method | Route | Controller Handler | Access Scope | Description |
+| :---: | :--- | :--- | :---: | :--- |
+| `GET` | `/catalog` | `itemController.showDashboard` | Public | Searchable campus catalog with filters (type, category, period, status) |
+| `GET` | `/dashboard` | `itemController.showDashboard` | Authenticated | Student/Staff dashboard with 4-step progress trackers and live claim widgets |
+| `GET` | `/items/new` | `itemController.showNewReportForm` | Authenticated | Multi-step form to report a lost or found item |
+| `POST` | `/items/report` | `itemController.createItemReport` | Authenticated | Processes new report with Multer photo upload |
+| `GET` | `/items/:id` | `itemController.showItemDetails` | Public | Item detail page with Campus Match Engine and verification stepper |
+| `POST` | `/items/:id/match-preview` | `itemController.previewOwnershipMatch` | Authenticated | AJAX endpoint calculating live answer match score percentage |
+| `POST` | `/items/:id/claim` | `itemController.createClaim` | Authenticated | Validates match threshold and files ownership claim |
+| `GET` | `/claims/guest-claim` | `itemController.showGuestClaimGuide` | Public | Routing guide for parents and guests to the Security Desk |
+
+### 3. Claims Coordination, P2P Chat & Reports Management
+| Method | Route | Controller Handler | Access Scope | Description |
+| :---: | :--- | :--- | :---: | :--- |
+| `GET` | `/claims` | `itemController.listClaims` | Authenticated | Claims hub displaying made and received ownership claims |
+| `GET` | `/claims/:id` | `itemController.showClaimChat` | Participant / Admin | P2P coordination chat with masked contact details |
+| `POST` | `/claims/:id/messages` | `itemController.sendClaimMessage` | Participant / Admin | Sends message inside active claim thread |
+| `POST` | `/claims/:id/status` | `itemController.updateClaimStatus` | Reporter / Admin | Updates claim state (`approved`, `rejected`, `escalated`, `returned`) |
+| `POST` | `/claims/:id/cancel` | `itemController.cancelClaim` | Claimant | Withdraws an active pending claim |
+| `GET` | `/my-reports` | `itemController.listMyReports` | Authenticated | Management matrix for all personal reported items |
+| `POST` | `/items/:id/status` | `itemController.updateItemStatus` | Owner / Admin | Updates item status (e.g. marks item as `returned`) |
+| `POST` | `/items/:id/delete` | `itemController.deleteItemReport` | Owner / Admin | Deletes item report from database |
+| `GET` | `/items/:id/edit` | `itemController.showEditItemForm` | Owner / Admin | Renders report edit form with category selection |
+| `POST` | `/items/:id/edit` | `itemController.updateItemReport` | Owner / Admin | Updates report details, locations, and verification challenge |
+
+### 4. Account Settings Studio
+| Method | Route | Controller Handler | Access Scope | Description |
+| :---: | :--- | :--- | :---: | :--- |
+| `GET` | `/settings` | `itemController.showSettings` | Authenticated | Tabbed settings studio (Profile, Security, MFA, Posts, Logs) |
+| `POST` | `/settings/profile` | `itemController.updateProfile` | Non-Admin | Updates display name and phone number |
+| `POST` | `/settings/security` | `itemController.updateSecurity` | Authenticated | Updates account password with strength validation |
+| `POST` | `/settings/mfa/enable` | `itemController.enableMfa` | Authenticated | Activates Email MFA with password re-authentication |
+| `POST` | `/settings/mfa/disable` | `itemController.disableMfa` | Authenticated | Deactivates Email MFA with password re-authentication |
+| `POST` | `/settings/notifications` | `itemController.updateNotificationSettings`| Authenticated | Saves email notification preferences |
+| `POST` | `/settings/guardian-links` | `itemController.createGuardianLink` | Parent / Guest | Submits linkage request to a student account |
+| `POST` | `/settings/guardian-links/:id/:decision` | `itemController.decideGuardianLink` | Student | Approves or rejects incoming parent linkage request |
+| `POST` | `/settings/delete-account` | `itemController.deleteAccount` | Non-Admin | Permanently deletes account with confirmation |
+
+### 5. Administrative Platform Governance
+| Method | Route | Controller Handler | Access Scope | Description |
+| :---: | :--- | :--- | :---: | :--- |
+| `GET` | `/admin/dashboard` | `itemController.showAdminDashboard` | Administrator | Central administrative command center & metrics |
+| `GET` | `/admin/handover` | `itemController.listHandoverClaims` | Administrator | Custody Handover Terminal queue for campus security |
+| `GET` | `/admin/handover/:claimId` | `itemController.showHandoverClaim` | Administrator | Single physical handover item verification terminal |
+| `POST` | `/admin/handover/:claimId/confirm`| `itemController.confirmHandover` | Administrator | Confirms physical custody release and closes claim |
+| `POST` | `/admin/handover/:claimId/reject` | `itemController.rejectHandover` | Administrator | Rejects physical custody release for security reasons |
+| `GET` | `/admin/users` | `itemController.listAdminUsers` | Administrator | User directory with department tracking & role management |
+| `POST` | `/admin/users/add` | `itemController.createAdminUser` | Administrator | Enrolls new institutional account directly |
+| `POST` | `/admin/users/:id/role` | `itemController.updateUserRole` | Administrator | Promotes or reassigns user role |
+| `POST` | `/admin/users/:id/quota-reset` | `itemController.resetUserQuota` | Administrator | Resets user submission quota limits |
+| `GET` | `/admin/reports` | `itemController.listAdminReports` | Administrator | 60-day disposition queue, report matrix & CSV export |
+| `POST` | `/admin/reports/:id/archive-approve`| `itemController.approveReportArchive` | Administrator | Approves single item for permanent disposition |
+| `POST` | `/admin/reports/batch-approve` | `itemController.batchApproveReportArchive` | Administrator | Batch-approves all overdue 60-day disposition items |
+| `GET` | `/admin/analytics` | `itemController.showAdminAnalytics` | Administrator | P2P vs Centralized Handover statistical performance overview |
+| `GET` | `/admin/audit-logs` | `itemController.listAuditLogs` | Administrator | Chronological administrative security audit log |
+| `POST` | `/admin/items/log` | `itemController.createAdminItemReport`| Administrator | Logs office turn-in directly with photo upload |
 
 ---
 
-## Known Limitations
+## Security, Privacy & Compliance Measures
 
-- **Round 1 Scope Boundary:** File attachment uploads (e.g. uploading high-resolution JPEG photos of lost/found items) are currently mocked with category badge placeholders; multipart file handling via `multer` is planned for Round 2.
-- **Email Notifications:** Automatic campus email dispatch upon claim status changes is currently simulated through system status logs rather than a live SMTP transport.
-- **SMS / Push Alerts:** Immediate SMS alerts for verified ID matches are planned for post-midterm integration with third-party telecom gateways.
+1. **SQL Injection Defense:** All database queries utilize parameterized prepared statements via `mysql2/promise`. User inputs are never concatenated directly into SQL query strings.
+2. **Cross-Site Request Forgery (CSRF):** Custom session-backed CSRF tokens are injected on every session and verified across all modifying HTTP methods (`POST`, `PUT`, `DELETE`). AJAX calls pass tokens via `CSRF-Token` / `x-csrf-token` headers.
+3. **Content Security Policy (CSP):** Configured through `helmet` to restrict script execution, block unauthorized frame injection, allow verified CDN stylesheets and fonts, and enforce secure communication while supporting local HTTP development.
+4. **Brute-Force & Rate Limiting:** Sliding-window in-memory rate limiting applied to `/login` (20 attempts / 15 minutes) and `/register` (10 attempts / 60 minutes) to prevent brute-force credential stuffing.
+5. **Password Security:** Cryptographically secure password hashing using `bcrypt` (10 salt rounds) paired with strict server-side complexity validation (minimum 8 characters, uppercase, lowercase, numeric digit, and special character).
+6. **In-Chat Privacy Protection:** Automated phone number masking replaces personal contact numbers (`09**-***-**09`) in active peer chats to protect students against harassment.
+7. **Institutional Email Whitelisting:** Rigid regular expressions enforce official CSPC domains (`@my.cspc.edu.ph`, `@cspc.edu.ph`) for institutional accounts, directing parents and campus guests into segregated workflows.
+8. **Security Audit Logging:** All administrative actions—such as role modifications, physical custody releases, report deletions, and 60-day disposition approvals—are immutably logged with the acting administrator's ID, description, client IP address, and timestamp.
 
 ---
 
-## AI Assistance Disclosure
+## Academic Course Metadata & Team Attribution
 
-In compliance with academic integrity guidelines, the team explicitly discloses that AI tools, including **Google Antigravity** and **Gemini**, were utilized during the development of this starter repository for:
-- Repository directory scaffolding and `.gitkeep` structural integrity,
-- Boilerplate architecture design across modular MVC folders,
-- Comprehensive markdown formatting for system requirements, PR templates, and issue templates, and
-- Syntactical verification of Express middleware and async connection handlers.
-
-**Team Confirmation & Defense Statement:**  
-All three team members have comprehensively reviewed, edited, tested, and understood every file, route, configuration setting, and middleware layer included in this repository. All members are fully prepared and equipped to individually defend the entire architectural codebase during oral evaluation and technical code review examinations.
+- **Course Title:** Platform Technologies & Web Application Development (`PTAppDev`)
+- **Institution:** Camarines Sur Polytechnic Colleges (CSPC) &bull; College of Computer Studies
+- **Academic Term / Year:** Academic Year 2025–2026
+- **System Scope:** Campus Lost and Found, Asset Tracking & Property Recovery Portal
+- **Repository Remote:** `https://github.com/veirubyte/projecthanap_ptappdev.git`
 
 ---
 
 ## License
 
-This project is licensed under the terms of the **MIT License**. For complete license terms and permissions, please refer to the [LICENSE](LICENSE) file located in the root directory.
+This project is licensed under the terms of the **MIT License**. For complete terms, permissions, and conditions, refer to the [LICENSE](LICENSE) file located in the root repository directory.

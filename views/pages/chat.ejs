@@ -84,7 +84,12 @@
                 <span class="text-[16px] sm:text-[18px] text-on-surface font-bold truncate leading-tight tracking-tight">
                   <%= claim.item_name %>
                 </span>
-                <% if (claim.status === 'approved') { %>
+                <% if (claim.status === 'returned') { %>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
+                    <span class="material-symbols-outlined text-[13px] font-bold">check_circle</span>
+                    <span>Item Returned</span>
+                  </span>
+                <% } else if (claim.status === 'approved') { %>
                   <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
                     <span class="material-symbols-outlined text-[13px] font-bold">check</span>
                     <span>Answer Verified</span>
@@ -115,7 +120,7 @@
           <!-- Right: Gradient Mark Returned CTA & Menu -->
           <div class="flex items-center gap-2 shrink-0 relative">
             <% const itemMarkedReturned = claim.item_status === 'returned' || claim.status === 'returned'; %>
-            <% if (!itemMarkedReturned && (claim.status === 'approved' || claim.status === 'pending') && (userIsReporter || userIsAdmin)) { %>
+            <% if (!itemMarkedReturned && (claim.status === 'approved' || claim.status === 'pending' || claim.status === 'escalated') && (userIsReporter || userIsAdmin)) { %>
               <form action="/claims/<%= claim.id %>/status" method="POST" class="inline" onsubmit="return confirm('Mark this item as returned and close the case?');">
                 <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
@@ -139,6 +144,19 @@
                 <span class="material-symbols-outlined text-[20px]">more_horiz</span>
               </button>
               <div class="hidden absolute right-0 top-12 w-56 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-xl py-1.5 z-30" id="optionsMenu">
+                <% if (claim.status === 'pending' && (userIsReporter || userIsAdmin)) { %>
+                  <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Approve this ownership claim?');">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                    <% } %>
+                    <input type="hidden" name="action" value="approved"/>
+                    <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
+                      <span>Approve Claim</span>
+                    </button>
+                  </form>
+                  <div class="h-px bg-slate-100 my-1"></div>
+                <% } %>
                 <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Escalate this case to Campus Security for arbitration?');">
                   <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
@@ -252,9 +270,9 @@
               <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
             <% } %>
 
-            <!-- Attachment Icon -->
-            <button aria-label="Add attachment" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors shrink-0" type="button" onclick="alert('Image attachments are routed through institutional storage.');">
-              <span class="material-symbols-outlined text-[20px]">attach_file</span>
+            <!-- Quick Handover Location Insert Icon -->
+            <button aria-label="Insert handover location" title="Insert campus handover location" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors shrink-0 cursor-pointer" type="button" id="quickHandoverLocationBtn">
+              <span class="material-symbols-outlined text-[20px]">add_location_alt</span>
             </button>
 
             <!-- Input 'Type a message...' -->
@@ -320,6 +338,17 @@
       const chatThread = document.getElementById('chatThread');
       if (chatThread) {
         chatThread.scrollTop = chatThread.scrollHeight;
+      }
+
+      // Quick handover location insertion
+      const quickLocationBtn = document.getElementById('quickHandoverLocationBtn');
+      const messageInput = document.getElementById('messageInput');
+      if (quickLocationBtn && messageInput) {
+        quickLocationBtn.addEventListener('click', () => {
+          const suggestion = "Let's meet at the Campus Security Office / Student Affairs Desk for safe handover.";
+          messageInput.value = messageInput.value ? `${messageInput.value} ${suggestion}` : suggestion;
+          messageInput.focus();
+        });
       }
     })();
   </script>

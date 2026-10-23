@@ -109,8 +109,8 @@
                 id="category-select" 
                 name="category"
               >
-                <% const categories = ['Documents & IDs', 'Electronics', 'Apparel & Bags', 'Stationery', 'Valuables', 'Other']; %>
-                <% categories.forEach(cat => { %>
+                <% const categoryOptions = (typeof categories !== 'undefined' && Array.isArray(categories) && categories.length) ? categories : ['Electronics', 'IDs & Cards', 'Keys & Lanyards', 'Bags & Wallets', 'Books & Notes', 'Clothing & Wearables', 'Tumblers & Bottles', 'Accessories', 'Others']; %>
+                <% categoryOptions.forEach(cat => { %>
                   <option value="<%= cat %>" <%= (item.category === cat) ? 'selected' : '' %>><%= cat %></option>
                 <% }) %>
               </select>

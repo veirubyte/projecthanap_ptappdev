@@ -5,7 +5,7 @@ async function showDashboard(params, values = [], connection = db) {
                      FROM claims c
                      JOIN item_reports r ON r.id = c.item_id
                      JOIN users u ON u.id = r.user_id
-                     WHERE c.status = 'approved' AND r.report_type = 'found'
+                     WHERE c.status IN ('approved', 'returned') AND r.report_type = 'found'
                      GROUP BY u.id, u.full_name
                      ORDER BY latest_at DESC
                      LIMIT 5`);
@@ -39,6 +39,10 @@ async function createClaimQuery2(params, values = [], connection = db) {
 
 async function createClaimQuery3(params, values = [], connection = db) {
     return connection.execute(`INSERT INTO claim_messages (claim_id, sender_id, message) VALUES (?, ?, ?)`, params);
+}
+
+async function cancelClaim(params, values = [], connection = db) {
+    return connection.execute(`DELETE FROM claims WHERE id = ? AND claimant_id = ? AND status = 'pending'`, params);
 }
 
 async function listClaims(params, values = [], connection = db) {
@@ -137,8 +141,8 @@ async function showAdminDashboard(params, values = [], connection = db) {
     return connection.execute(`
             SELECT 
                 COUNT(*) AS total,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN status IN ('pending', 'escalated') THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN status IN ('approved', 'returned') THEN 1 ELSE 0 END) AS approved,
                 SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
             FROM claims
         `);
@@ -165,7 +169,7 @@ async function showAdminDashboardQuery3(params, values = [], connection = db) {
             JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE c.status = 'pending'
+            WHERE c.status IN ('pending', 'escalated')
             ORDER BY c.created_at DESC
         `);
 }
@@ -174,7 +178,7 @@ async function listAdminUsers(params, values = [], connection = db) {
     return connection.execute(`
             SELECT u.id, u.full_name, u.email, ar.role_code AS role, ar.display_name AS role_label,
                    d.name AS department, u.student_id, u.created_at,
-                   (SELECT COUNT(*) FROM claims c WHERE c.claimant_id = u.id AND c.status = 'pending') AS claim_count
+                   (SELECT COUNT(*) FROM claims c WHERE c.claimant_id = u.id AND c.status IN ('pending', 'escalated')) AS claim_count
             FROM users u
             JOIN account_roles ar ON ar.id = u.role_id
             LEFT JOIN departments d ON d.id = u.department_id
@@ -190,7 +194,7 @@ async function listHandoverClaims(params, values = [], connection = db) {
             JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE c.status = 'pending'
+            WHERE c.status IN ('pending', 'escalated')
             ORDER BY c.created_at DESC
         `);
 }
@@ -228,15 +232,15 @@ async function rejectHandoverQuery2(params, values = [], connection = db) {
 }
 
 async function listAdminReports(params, values = [], connection = db) {
-    return connection.execute(`SELECT COUNT(*) as count FROM claims WHERE status = 'approved'`);
+    return connection.execute(`SELECT COUNT(*) as count FROM claims WHERE status IN ('approved', 'returned')`);
 }
 
 async function showAdminAnalytics(params, values = [], connection = db) {
     return connection.execute(`
             SELECT 
                 COUNT(*) as total_claims,
-                SUM(CASE WHEN c.status = 'approved' THEN 1 ELSE 0 END) as approved_claims,
-                SUM(CASE WHEN c.status = 'pending' THEN 1 ELSE 0 END) as pending_claims,
+                SUM(CASE WHEN c.status IN ('approved', 'returned') THEN 1 ELSE 0 END) as approved_claims,
+                SUM(CASE WHEN c.status IN ('pending', 'escalated') THEN 1 ELSE 0 END) as pending_claims,
                 SUM(CASE WHEN c.status = 'rejected' THEN 1 ELSE 0 END) as rejected_claims
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
@@ -250,8 +254,8 @@ async function showAdminAnalyticsQuery2(params, values = [], connection = db) {
     return connection.execute(`
             SELECT 
                 COUNT(*) as total_claims,
-                SUM(CASE WHEN c.status = 'approved' THEN 1 ELSE 0 END) as approved_claims,
-                SUM(CASE WHEN c.status = 'pending' THEN 1 ELSE 0 END) as pending_claims,
+                SUM(CASE WHEN c.status IN ('approved', 'returned') THEN 1 ELSE 0 END) as approved_claims,
+                SUM(CASE WHEN c.status IN ('pending', 'escalated') THEN 1 ELSE 0 END) as pending_claims,
                 SUM(CASE WHEN c.status = 'rejected' THEN 1 ELSE 0 END) as rejected_claims
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
@@ -266,7 +270,7 @@ async function showAdminAnalyticsQuery3(params, values = [], connection = db) {
             SELECT r.category, COUNT(c.id) as claim_count
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
-            WHERE c.status = 'approved'
+            WHERE c.status IN ('approved', 'returned')
             GROUP BY r.category
             ORDER BY claim_count DESC
         `);
@@ -278,7 +282,7 @@ async function showAdminAnalyticsQuery4(params, values = [], connection = db) {
             FROM claims c 
             JOIN users u ON u.id = c.claimant_id 
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE c.status = 'pending' AND ar.role_code IN ('parent', 'guest')
+            WHERE c.status IN ('pending', 'escalated') AND ar.role_code IN ('parent', 'guest')
         `);
 }
 
@@ -289,7 +293,7 @@ async function getUnreadNotificationCount(params, values = [], connection = db) 
             JOIN item_reports r ON r.id = c.item_id
             WHERE (r.user_id = ? OR c.claimant_id = ?)
               AND c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-              AND c.status IN ('pending', 'approved', 'rejected')
+              AND c.status IN ('pending', 'approved', 'rejected', 'escalated', 'returned')
         `, params);
 }
 
@@ -300,6 +304,7 @@ module.exports = {
     createClaim,
     createClaimQuery2,
     createClaimQuery3,
+    cancelClaim,
     listClaims,
     listClaimsQuery2,
     showClaimChat,

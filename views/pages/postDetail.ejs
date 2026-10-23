@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<%
+  const hasChallengeForView = typeof hasConfiguredChallenge !== 'undefined'
+    ? hasConfiguredChallenge
+    : Boolean(item.secret_challenge && item.secret_answer);
+  const matchScoreForView = typeof answerMatchScore !== 'undefined' ? answerMatchScore : null;
+  const matchThresholdForView = typeof answerMatchThreshold !== 'undefined' ? answerMatchThreshold : 80;
+  const meetsMatchThresholdForView = matchScoreForView !== null &&
+    Math.max(Number(matchScoreForView), Number(matchThresholdForView)) === Number(matchScoreForView);
+  const isOwnerOrAdminForView = Boolean(user && (user.id === item.user_id || user.role === 'admin' || (typeof isAdmin !== 'undefined' && isAdmin)));
+  const canEditReportForView = isOwnerOrAdminForView;
+  const isResolvedForView = item.status === 'claimed' || item.status === 'returned';
+  const challengePromptText = item.secret_challenge || 'Please provide identifiable proof of ownership (e.g. unique scratches, serial number, lockscreen wallpaper, or internal contents).';
+  const challengeLower = String(challengePromptText).toLowerCase();
+  const proofPlaceholder = challengeLower.includes('color')
+    ? 'e.g. Black / Silver'
+    : (challengeLower.includes('pin') || challengeLower.includes('clip') || challengeLower.includes('department')
+      ? 'e.g. College of Computer Studies'
+      : 'Enter a specific detail only the owner would know...');
+%>
+<html lang="en" class="h-full hanap-hide-scrollbar">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title><%= item.item_name %> - Project HANAP CSPC</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background": "#F4F7FB",
+            "primary": "#09436B",
+            "primary-container": "#2B5B84",
+            "on-surface": "#0F172A",
+            "text-muted": "#64748B",
+            "border-subtle": "#E2E8F0"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <%- include('partials/themeSetup') %>
+</head>
+<body class="min-h-full bg-[#F4F7FB] font-sans text-slate-800 antialiased flex flex-col justify-between relative overflow-x-hidden">
+  
+  <!-- Ambient Aurora Canvas Background -->
+  <div aria-hidden="true" class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 left-1/4 w-[600px] h-[500px] bg-gradient-to-br from-blue-300/30 via-teal-200/20 to-transparent rounded-full blur-[110px]"></div>
+    <div class="absolute top-1/3 -right-28 w-[500px] h-[450px] bg-gradient-to-bl from-indigo-200/25 via-sky-200/15 to-transparent rounded-full blur-[100px]"></div>
+    <div class="absolute -bottom-20 left-1/3 w-[550px] h-[450px] bg-gradient-to-tr from-teal-200/20 via-blue-200/15 to-transparent rounded-full blur-[120px]"></div>
+  </div>
+
+  <%- include('partials/navbar', { active: 'catalog' }) %>
+
+  <!-- Main Content: Wireframe & Design Matching Layout -->
+  <main class="w-full pt-3 pb-14 flex-1">
+    <div class="max-w-[1240px] mx-auto px-4 sm:px-6 space-y-4">
+      
+      <!-- Flash Toasts -->
+      <% if (typeof msg !== 'undefined' && msg) { %>
+        <div class="p-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-teal-600 text-[18px]">check_circle</span>
+          <span class="font-medium"><%= msg %></span>
+        </div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-rose-600 text-[18px]">error</span>
+          <span class="font-medium"><%= error %></span>
+        </div>
+      <% } %>
+
+      <!-- Top Bar: Back to Catalog + Case # Pill + Options -->
+      <div class="flex items-center justify-between gap-3 py-1">
+        <a href="/catalog" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-xs font-semibold text-[#09436B] border border-slate-200/80 shadow-2xs transition-all hover:shadow-xs group">
+          <span class="material-symbols-outlined text-[17px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+          <span>Back to Catalog</span>
+        </a>
+
+        <div class="flex items-center gap-2">
+          <!-- Case Pill with copy action -->
+          <button 
+            type="button" 
+            id="copyCaseBtn"
+            data-case-id="Case #<%= item.report_type === 'found' ? 'F' : 'L' %>-<%= item.id %>"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 text-[12px] font-bold text-slate-700 border border-slate-200/60 shadow-2xs transition cursor-pointer"
+            title="Click to copy case number"
+          >
+            <span id="copyCaseLabel">Case #<%= item.report_type === 'found' ? 'F' : 'L' %>-<%= item.id %></span>
+            <span class="material-symbols-outlined text-[15px] text-slate-500" id="copyCaseIcon">content_copy</span>
+          </button>
+
+          <% if (isOwnerOrAdminForView) { %>
+            <% if (canEditReportForView) { %>
+              <div class="h-4 w-px bg-slate-300 mx-0.5"></div>
+              <a href="/items/<%= item.id %>/edit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#09436B] hover:bg-white/80 transition-colors">
+                <span class="material-symbols-outlined text-[16px]">edit</span>
+                <span>Edit</span>
+              </a>
+            <% } %>
+            <!-- Delete Button -->
+            <form action="/items/<%= item.id %>/delete" method="POST" id="deleteReportForm" class="inline">
+              <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+              <% } %>
+              <button type="submit" class="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-rose-600 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+                <span>Delete</span>
+              </button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Main Split Grid (Left: Showcase, Right: Match Engine & Verification) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- ================= LEFT COLUMN: Item Showcase ================= -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          <div class="rounded-3xl p-5 bg-white/90 backdrop-blur-2xl border border-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06),0_1px_2px_rgba(0,0,0,0.02)] flex flex-col gap-4">
+            
+            <!-- Main Photo with Fullscreen / Expand Icon -->
+            <div class="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/70 flex items-center justify-center group">
+              <% if (item.image_path) { %>
+                <img id="mainDisplayImage" src="<%= item.image_path %>" alt="<%= item.item_name %>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"/>
+                <div id="imageFallbackPlaceholder" class="hidden flex-col items-center justify-center text-slate-400 p-6">
+                  <span class="material-symbols-outlined text-6xl">inventory_2</span>
+                  <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2"><%= item.category %></span>
+                </div>
+              <% } else { %>
+                <div class="flex flex-col items-center justify-center text-slate-400 p-6">
+                  <span class="material-symbols-outlined text-6xl">inventory_2</span>
+                  <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-2"><%= item.category %></span>
+                </div>
+              <% } %>
+
+              <!-- Expand / Maximize Button in Top-Right -->
+              <% if (item.image_path) { %>
+                <a id="expandImageLink" href="<%= item.image_path %>" target="_blank" rel="noopener" class="absolute top-3 right-3 w-9 h-9 rounded-xl bg-white/80 hover:bg-white text-slate-700 backdrop-blur-md flex items-center justify-center shadow-md transition-all active:scale-95" title="View full image">
+                  <span class="material-symbols-outlined text-[20px]">open_in_full</span>
+                </a>
+              <% } %>
+
+              <!-- Status Badge in Bottom-Left -->
+              <div class="absolute bottom-3 left-3 bg-slate-900/75 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_16px_rgba(0,0,0,0.35)] border border-white/20">
+                <span class="w-1.5 h-1.5 rounded-full <%= isResolvedForView ? 'bg-slate-400' : 'bg-emerald-400 animate-pulse' %>"></span>
+                <span><%= isResolvedForView ? 'Reunited / Resolved' : '🔒 Verified Report' %></span>
+              </div>
+            </div>
+
+            <!-- Dual Thumbnails row (preview gallery) -->
+            <% if (item.image_path) { %>
+              <div class="flex items-center gap-2.5" id="thumbnailGallery">
+                <button type="button" id="thumbStandardBtn" class="w-16 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-xs cursor-pointer transition-all" title="Standard view">
+                  <img src="<%= item.image_path %>" alt="Standard preview" class="w-full h-full object-cover"/>
+                </button>
+                <button type="button" id="thumbDetailBtn" class="w-16 h-12 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 flex items-center justify-center text-slate-400 opacity-70 cursor-pointer transition-all" title="Zoomed detail view">
+                  <img src="<%= item.image_path %>" alt="Detail preview" class="w-full h-full object-cover scale-125 filter brightness-95"/>
+                </button>
+              </div>
+            <% } %>
+
+            <!-- Item Title -->
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
+              <%= item.item_name %>
+            </h1>
+
+            <!-- 3 Metadata Chips -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 border border-slate-200/70 text-slate-700 text-xs font-semibold">
+                <span>📁</span>
+                <span><%= item.category %></span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 border border-slate-200/70 text-slate-700 text-xs font-semibold">
+                <span class="text-rose-600">📍</span>
+                <span><%= item.location_found_lost %></span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 border border-slate-200/70 text-slate-700 text-xs font-semibold">
+                <span>🕒</span>
+                <span><%= timeAgo(item.date_reported) %></span>
+              </span>
+            </div>
+
+            <!-- Description -->
+            <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+              <%= item.description %>
+            </p>
+
+            <!-- Additional Details Box -->
+            <div class="mt-2 pt-3 border-t border-slate-100 flex flex-col gap-2">
+              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">description</span>
+                <span>Additional Details</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-sky-50/60 border border-sky-100/80 text-xs">
+                <div>
+                  <span class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Category</span>
+                  <span class="font-bold text-slate-800"><%= item.category %></span>
+                </div>
+                <div>
+                  <span class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Location</span>
+                  <span class="font-bold text-slate-800"><%= item.location_found_lost %></span>
+                </div>
+                <div>
+                  <span class="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Report Date</span>
+                  <span class="font-bold text-slate-800"><%= new Date(item.date_reported).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= RIGHT COLUMN: Match Engine & Verification ================= -->
+        <div
+          class="lg:col-span-5 flex flex-col gap-4"
+          id="claim"
+          data-item-id="<%= item.id %>"
+          data-has-challenge="<%= hasChallengeForView ? 'true' : 'false' %>"
+          data-threshold="<%= matchThresholdForView %>"
+          data-initial-score="<%= matchScoreForView !== null ? matchScoreForView : 0 %>"
+        >
+          
+          <!-- POD 1: CAMPUS MATCH ENGINE with Dynamic Progression Circle -->
+          <div class="rounded-3xl p-5 bg-gradient-to-br from-teal-500/15 via-emerald-500/10 to-cyan-500/15 backdrop-blur-xl border border-teal-300/60 shadow-[0_12px_32px_rgba(13,148,136,0.10)] relative overflow-hidden flex flex-col gap-3.5">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#0D9488]/20 rounded-full blur-2xl pointer-events-none"></div>
+
+            <!-- Top Row: Engine Label + Radial Progression Circle -->
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-teal-700/20 shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+                </div>
+                <div>
+                  <span class="text-[10px] font-extrabold tracking-wider uppercase text-teal-800 block">CAMPUS MATCH ENGINE</span>
+                  <span id="matchConfidenceTitle" class="text-sm font-bold text-teal-950">
+                    <%= hasChallengeForView ? (matchScoreForView !== null ? (meetsMatchThresholdForView ? 'High Confidence Match' : 'Match Score Evaluated') : 'Real-Time Verification Engine') : 'Manual Review Engine' %>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Radial Progression Gauge SVG -->
+              <div class="relative w-14 h-14 flex items-center justify-center shrink-0" role="img" aria-label="Ownership match progression score">
+                <svg class="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                  <!-- Background Track -->
+                  <path 
+                    class="text-teal-200/70" 
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    stroke-width="3.5"
+                  ></path>
+                  <!-- Live Animated Progress Stroke -->
+                  <path 
+                    id="progressionStroke" 
+                    class="<%= matchScoreForView === null ? 'text-teal-600' : (meetsMatchThresholdForView ? 'text-emerald-600' : 'text-rose-600') %> transition-all duration-300" 
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    stroke-dasharray="<%= matchScoreForView === null ? 0 : matchScoreForView %>, 100" 
+                    stroke-linecap="round" 
+                    stroke-width="3.5"
+                  ></path>
+                </svg>
+                <!-- Percentage Number in Center -->
+                <span id="progressionPercent" class="absolute text-[12px] font-extrabold text-teal-950 tracking-tighter">
+                  <%= matchScoreForView === null ? '0%' : matchScoreForView + '%' %>
+                </span>
+              </div>
+            </div>
+
+            <!-- Sparkle Banner with Live Match Status -->
+            <div id="matchBanner" class="p-2.5 rounded-xl bg-white/85 backdrop-blur-md border border-teal-200/80 shadow-2xs flex items-center gap-2 text-xs font-bold text-teal-900 transition-all">
+              <span id="matchBannerIcon" class="text-amber-500">✨</span>
+              <span id="matchBannerText">
+                <% if (matchScoreForView !== null) { %>
+                  <%= matchScoreForView %>% Match · <%= meetsMatchThresholdForView ? `Meets the ${matchThresholdForView}% minimum` : `Below the ${matchThresholdForView}% minimum required` %>
+                <% } else if (hasChallengeForView) { %>
+                  Type your answer below to measure match confidence in real-time
+                <% } else { %>
+                  Direct review by reporter · No private challenge configured
+                <% } %>
+              </span>
+            </div>
+
+            <!-- Matching Attributes Chips -->
+            <div class="flex flex-col gap-1.5 pt-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-teal-800/80">Matching Attributes</span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/70 border border-teal-300/60 text-teal-900 text-[11px] font-bold">
+                  <span class="text-[10px]">◇</span> Category
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/70 border border-teal-300/60 text-teal-900 text-[11px] font-bold">
+                  <span class="text-rose-600 text-[10px]">📍</span> Location
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/70 border border-teal-300/60 text-teal-900 text-[11px] font-bold">
+                  <span class="text-[10px]">🕒</span> Timestamp
+                </span>
+                <span class="text-teal-700/60 material-symbols-outlined text-[15px] ml-auto">chevron_right</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- POD 2: Verify Ownership Card (Step 1 of 2 Stepper + Input + Submit) -->
+          <div class="rounded-3xl p-5 sm:p-6 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06),0_1px_2px_rgba(0,0,0,0.02)] flex flex-col gap-4">
+            
+            <!-- Header: Shield + Step 1 of 2 pill -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-[#09436B] text-white flex items-center justify-center shadow-xs">
+                  <span class="material-symbols-outlined text-[18px]">verified_user</span>
+                </div>
+                <span class="text-sm font-bold text-slate-800">Verify Ownership</span>
+              </div>
+              <span id="stepBadgePill" class="px-2.5 py-0.5 rounded-full <%= (existingClaim || meetsMatchThresholdForView) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600' %> text-[11px] font-bold">
+                <%= (existingClaim || meetsMatchThresholdForView) ? 'Step 2 of 2' : 'Step 1 of 2' %>
+              </span>
+            </div>
+
+            <!-- Stepper Progress Bar -->
+            <div class="flex items-center justify-between text-xs px-2 py-1">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-[#09436B] text-white font-bold text-[11px] flex items-center justify-center">1</span>
+                <span class="font-bold text-[#09436B]">Verify Ownership</span>
+              </div>
+              <div id="stepConnectorBar" class="flex-1 h-0.5 <%= (existingClaim || meetsMatchThresholdForView) ? 'bg-[#09436B]' : 'bg-slate-200' %> mx-3 transition-colors duration-300"></div>
+              <div id="step2Container" class="flex items-center gap-2 <%= (existingClaim || meetsMatchThresholdForView) ? 'text-[#09436B] font-bold' : 'text-slate-400' %> transition-colors duration-300">
+                <span id="step2Circle" class="w-6 h-6 rounded-full <%= (existingClaim || meetsMatchThresholdForView) ? 'bg-[#09436B] text-white' : 'bg-slate-100 text-slate-400' %> font-bold text-[11px] flex items-center justify-center transition-colors duration-300">2</span>
+                <span id="step2Label" class="hidden sm:inline font-medium">Review &amp; Submit</span>
+              </div>
+            </div>
+
+            <!-- State Checking -->
+            <% if (!user) { %>
+              <!-- Unauthenticated State -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
+                <p class="text-xs text-slate-600">Please sign in to your institutional or guest account to verify ownership and file a claim.</p>
+                <a href="/login" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#09436B] text-white text-xs font-bold shadow-xs hover:bg-[#204667] transition">
+                  <span>Sign In to Claim</span>
+                  <span class="material-symbols-outlined text-sm">login</span>
+                </a>
+              </div>
+            <% } else if (user.id === item.user_id) { %>
+              <!-- Owner State -->
+              <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 space-y-2">
+                <div class="flex items-center gap-2 font-bold text-xs">
+                  <span class="material-symbols-outlined text-sky-700 text-base">verified</span>
+                  <span>You reported this item</span>
+                </div>
+                <p class="text-xs text-sky-800">
+                  You are the creator of this report. You can review submitted claims or edit report settings.
+                </p>
+                <div class="pt-2 flex items-center gap-2">
+                  <a href="/claims" class="px-3 py-1.5 rounded-xl bg-white text-sky-900 text-xs font-bold border border-sky-300 shadow-2xs hover:bg-sky-100 transition">
+                    View Claims
+                  </a>
+                  <% if (canEditReportForView) { %>
+                    <a href="/items/<%= item.id %>/edit" class="px-3 py-1.5 rounded-xl bg-sky-700 text-white text-xs font-bold shadow-2xs hover:bg-sky-800 transition">
+                      Edit Report
+                    </a>
+                  <% } %>
+                </div>
+              </div>
+            <% } else if (existingClaim) { %>
+              <!-- Claim Already Submitted -->
+              <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
+                <div class="flex items-center gap-2 font-bold text-xs">
+                  <span class="material-symbols-outlined text-amber-700 text-base">pending_actions</span>
+                  <span>Claim Status: <%= existingClaim.status.toUpperCase() %></span>
+                </div>
+                <p class="text-xs text-amber-800">
+                  You already submitted an ownership claim for this case. Open the conversation thread to coordinate handover.
+                </p>
+                <div class="pt-1 flex flex-wrap items-center gap-2">
+                  <a href="/claims/<%= existingClaim.id %>" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-700 text-white text-xs font-bold shadow-2xs hover:bg-amber-800 transition">
+                    <span>Open Claim Chat</span>
+                    <span class="material-symbols-outlined text-sm">chat</span>
+                  </a>
+                  <% if (existingClaim.status === 'pending') { %>
+                    <form action="/claims/<%= existingClaim.id %>/cancel" method="POST" class="inline">
+                      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                      <% } %>
+                      <input type="hidden" name="item_id" value="<%= item.id %>"/>
+                      <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 text-xs font-semibold transition cursor-pointer">
+                        <span>Withdraw Claim</span>
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
+              </div>
+            <% } else if (isResolvedForView) { %>
+              <!-- Already Claimed -->
+              <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 text-slate-600 text-xs text-center space-y-1">
+                <span class="material-symbols-outlined text-slate-400 text-2xl">check_circle</span>
+                <p class="font-bold text-slate-800"><%= item.status === 'returned' ? 'This item has already been returned.' : 'This item has already been reunited.' %></p>
+                <p>No new claims can be filed on this case.</p>
+              </div>
+            <% } else if (item.report_type !== 'found' || item.status !== 'active') { %>
+              <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 text-slate-600 text-xs text-center">
+                Claims can only be submitted for active found-item reports.
+              </div>
+            <% } else { %>
+              <!-- Active Claim Verification Form -->
+              <!-- Finder Asks Speech Box -->
+              <div class="relative p-3.5 rounded-2xl bg-sky-50/80 border border-sky-100/90 shadow-2xs">
+                <div class="flex items-start gap-2.5">
+                  <div class="w-6 h-6 rounded-full bg-[#09436B] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                    ?
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">FINDER ASKS:</p>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-900 leading-snug" for="proofDetails">
+                      “<%= challengePromptText %>”
+                    </label>
+                    <p class="text-[11px] text-slate-500 font-medium">Enter a detail only the owner is likely to know.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Constraint Alert Notification -->
+              <div id="constraintAlert" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2">
+                <span class="material-symbols-outlined text-rose-600 text-[16px] shrink-0 mt-0.5">error</span>
+                <span id="constraintAlertText">Your answer must reach at least <%= matchThresholdForView %>% match before submitting.</span>
+              </div>
+
+              <!-- Claim Form -->
+              <form class="flex flex-col gap-3.5" id="claimSubmitForm" action="/items/<%= item.id %>/claim" method="POST">
+                <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                  <input type="hidden" name="_csrf" id="csrfTokenInput" value="<%= csrfToken %>"/>
+                <% } %>
+
+                <div class="relative">
+                  <input 
+                    type="text"
+                    id="proofDetails" 
+                    name="proof_details" 
+                    placeholder="<%= proofPlaceholder %>" 
+                    maxlength="500"
+                    required
+                    autocomplete="off"
+                    class="w-full h-12 px-4 rounded-xl border border-slate-200/90 bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] shadow-inner transition-all"
+                  />
+                </div>
+
+                <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <span class="material-symbols-outlined text-[14px]">schedule</span>
+                  <span id="matchStatusHelp">This information helps us confirm the item belongs to you.<%= hasChallengeForView ? ` Minimum ${matchThresholdForView}% match required.` : '' %></span>
+                </div>
+
+                <button 
+                  type="submit" 
+                  id="submitClaimBtn" 
+                  class="w-full h-11 sm:h-12 rounded-xl bg-gradient-to-r from-[#09436B] to-[#2B5B84] hover:brightness-110 active:scale-[0.99] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(9,67,107,0.25)] transition-all cursor-pointer"
+                >
+                  <span>Submit Claim</span>
+                  <span class="material-symbols-outlined text-base">arrow_forward</span>
+                </button>
+              </form>
+
+              <!-- Security Desk Link -->
+              <div class="pt-2 text-center border-t border-slate-100">
+                <a class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-primary transition-colors" href="/claims/guest-claim?case=<%= item.id %>">
+                  Parent or Guest? Route to Security &rarr;
+                </a>
+              </div>
+            <% } %>
+
+          </div>
+
+          <!-- Similar Items Carousel / Suggestions -->
+          <% if (typeof similar !== 'undefined' && similar && similar.length) { %>
+            <div class="p-4 rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 shadow-2xs space-y-2">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Other <%= item.category %> Items</h4>
+              <div class="space-y-2">
+                <% similar.forEach(function(sim) { %>
+                  <a href="/items/<%= sim.id %>" class="flex items-center justify-between p-2 rounded-xl bg-white/80 hover:bg-white border border-slate-200/60 text-xs transition">
+                    <span class="font-semibold text-slate-800 truncate max-w-[200px]"><%= sim.item_name %></span>
+                    <span class="text-[11px] text-slate-400"><%= sim.location_found_lost %></span>
+                  </a>
+                <% }) %>
+              </div>
+            </div>
+          <% } %>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-white/60 bg-white/50 backdrop-blur-md py-4 mt-8">
+    <div class="max-w-[1060px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 font-medium">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-700">Project HANAP</span>
+        <span>•</span>
+        <span>CSPC Camarines Sur</span>
+      </div>
+      <div>© 2026 CSPC Campus Care Network</div>
+    </div>
+  </footer>
+
+  <!-- Real-time Answer Progression Circle & Constraint Checking Script -->
+  <script>
+    (function() {
+      // 1. Copy Case Number Button
+      const copyCaseBtn = document.getElementById('copyCaseBtn');
+      const copyCaseLabel = document.getElementById('copyCaseLabel');
+      const copyCaseIcon = document.getElementById('copyCaseIcon');
+      if (copyCaseBtn) {
+        copyCaseBtn.addEventListener('click', async () => {
+          const caseText = copyCaseBtn.getAttribute('data-case-id') || '';
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(caseText);
+            }
+            if (copyCaseLabel && copyCaseIcon) {
+              const orig = copyCaseLabel.textContent;
+              copyCaseLabel.textContent = 'Copied!';
+              copyCaseIcon.textContent = 'check';
+              setTimeout(() => {
+                copyCaseLabel.textContent = orig;
+                copyCaseIcon.textContent = 'content_copy';
+              }, 1500);
+            }
+          } catch (err) {
+            console.error('Clipboard copy failed:', err);
+          }
+        });
+      }
+
+      // 2. Delete Report Confirmation
+      const deleteReportForm = document.getElementById('deleteReportForm');
+      if (deleteReportForm) {
+        deleteReportForm.addEventListener('submit', (e) => {
+          if (!window.confirm('Delete this report?')) {
+            e.preventDefault();
+          }
+        });
+      }
+
+      // 3. Image Gallery & Error Fallback
+      const mainImg = document.getElementById('mainDisplayImage');
+      const fallbackPlaceholder = document.getElementById('imageFallbackPlaceholder');
+      const expandImageLink = document.getElementById('expandImageLink');
+      const thumbnailGallery = document.getElementById('thumbnailGallery');
+      const thumbStandardBtn = document.getElementById('thumbStandardBtn');
+      const thumbDetailBtn = document.getElementById('thumbDetailBtn');
+
+      if (mainImg) {
+        mainImg.addEventListener('error', () => {
+          mainImg.classList.add('hidden');
+          if (fallbackPlaceholder) {
+            fallbackPlaceholder.classList.remove('hidden');
+            fallbackPlaceholder.classList.add('flex');
+          }
+          if (expandImageLink) expandImageLink.classList.add('hidden');
+          if (thumbnailGallery) thumbnailGallery.classList.add('hidden');
+        });
+      }
+
+      if (thumbStandardBtn && thumbDetailBtn && mainImg) {
+        thumbStandardBtn.addEventListener('click', () => {
+          mainImg.classList.remove('scale-125', 'brightness-95');
+          thumbStandardBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-xs cursor-pointer transition-all';
+          thumbDetailBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 flex items-center justify-center text-slate-400 opacity-70 cursor-pointer transition-all';
+        });
+        thumbDetailBtn.addEventListener('click', () => {
+          mainImg.classList.add('scale-125', 'brightness-95');
+          thumbDetailBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-xs cursor-pointer transition-all';
+          thumbStandardBtn.className = 'w-16 h-12 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 flex items-center justify-center text-slate-400 opacity-70 cursor-pointer transition-all';
+        });
+      }
+
+      // 4. Campus Match Engine & Live Ownership Verification
+      const claimContainer = document.getElementById('claim');
+      const itemId = claimContainer ? (claimContainer.getAttribute('data-item-id') || '') : '';
+      const hasChallenge = claimContainer ? claimContainer.getAttribute('data-has-challenge') === 'true' : false;
+      const threshold = claimContainer ? Number(claimContainer.getAttribute('data-threshold') || 80) : 80;
+      let currentScore = claimContainer ? Number(claimContainer.getAttribute('data-initial-score') || 0) : 0;
+
+      const proofInput = document.getElementById('proofDetails');
+      const claimForm = document.getElementById('claimSubmitForm');
+      const strokeEl = document.getElementById('progressionStroke');
+      const percentEl = document.getElementById('progressionPercent');
+      const bannerTextEl = document.getElementById('matchBannerText');
+      const bannerIconEl = document.getElementById('matchBannerIcon');
+      const titleEl = document.getElementById('matchConfidenceTitle');
+      const constraintAlert = document.getElementById('constraintAlert');
+      const constraintAlertText = document.getElementById('constraintAlertText');
+      const csrfInput = document.getElementById('csrfTokenInput');
+      const stepBadgePill = document.getElementById('stepBadgePill');
+      const stepConnectorBar = document.getElementById('stepConnectorBar');
+      const step2Container = document.getElementById('step2Container');
+      const step2Circle = document.getElementById('step2Circle');
+
+      let debounceTimer = null;
+      let lastEvaluatedAnswer = '';
+      let isSubmittingVerified = false;
+
+      function updateStepper(readyToSubmit) {
+        if (!stepBadgePill || !stepConnectorBar || !step2Container || !step2Circle) return;
+        if (readyToSubmit) {
+          stepBadgePill.textContent = 'Step 2 of 2';
+          stepBadgePill.className = 'px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold';
+          stepConnectorBar.className = 'flex-1 h-0.5 bg-[#09436B] mx-3 transition-colors duration-300';
+          step2Container.className = 'flex items-center gap-2 text-[#09436B] font-bold transition-colors duration-300';
+          step2Circle.className = 'w-6 h-6 rounded-full bg-[#09436B] text-white font-bold text-[11px] flex items-center justify-center transition-colors duration-300';
+        } else {
+          stepBadgePill.textContent = 'Step 1 of 2';
+          stepBadgePill.className = 'px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold';
+          stepConnectorBar.className = 'flex-1 h-0.5 bg-slate-200 mx-3 transition-colors duration-300';
+          step2Container.className = 'flex items-center gap-2 text-slate-400 transition-colors duration-300';
+          step2Circle.className = 'w-6 h-6 rounded-full bg-slate-100 text-slate-400 font-bold text-[11px] flex items-center justify-center transition-colors duration-300';
+        }
+      }
+
+      function updateGauge(score) {
+        currentScore = score;
+        if (percentEl) percentEl.textContent = score + '%';
+        if (strokeEl) {
+          strokeEl.setAttribute('stroke-dasharray', `${score}, 100`);
+          if (score >= threshold) {
+            strokeEl.setAttribute('class', 'text-emerald-500 transition-all duration-300');
+          } else if (score >= 40) {
+            strokeEl.setAttribute('class', 'text-amber-500 transition-all duration-300');
+          } else {
+            strokeEl.setAttribute('class', 'text-rose-500 transition-all duration-300');
+          }
+        }
+
+        if (score >= threshold) {
+          if (titleEl) titleEl.textContent = 'High Confidence Match';
+          if (bannerIconEl) bannerIconEl.textContent = '✨';
+          if (bannerTextEl) bannerTextEl.textContent = `High Confidence Match (${score}%) · Meets verification threshold`;
+          if (constraintAlert) constraintAlert.classList.add('hidden');
+          updateStepper(true);
+        } else if (score > 0) {
+          if (titleEl) titleEl.textContent = 'Moderate Match (Needs Refinement)';
+          if (bannerIconEl) bannerIconEl.textContent = '⚡';
+          if (bannerTextEl) bannerTextEl.textContent = `${score}% Match · Minimum ${threshold}% required to submit claim`;
+          updateStepper(false);
+        } else {
+          if (titleEl) titleEl.textContent = hasChallenge ? 'Real-Time Verification Engine' : 'Manual Review Engine';
+          if (bannerIconEl) bannerIconEl.textContent = '✨';
+          if (bannerTextEl) bannerTextEl.textContent = hasChallenge
+            ? 'Type your answer below to measure match confidence in real-time'
+            : 'Direct review by reporter · No private challenge configured';
+          updateStepper(false);
+        }
+      }
+
+      async function evaluateMatchOnServer(answerValue) {
+        if (!itemId) return null;
+        try {
+          const csrfTokenVal = csrfInput ? csrfInput.value : '';
+          const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+          if (csrfTokenVal) {
+            headers['CSRF-Token'] = csrfTokenVal;
+            headers['x-csrf-token'] = csrfTokenVal;
+          }
+          const res = await fetch(`/items/${encodeURIComponent(itemId)}/match-preview`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: headers,
+            body: JSON.stringify({ answer: answerValue, _csrf: csrfTokenVal })
+          });
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (typeof data.score === 'number') {
+            lastEvaluatedAnswer = answerValue;
+            updateGauge(data.score);
+            return data.score;
+          }
+          return null;
+        } catch (err) {
+          console.error('Match preview request error:', err);
+          return null;
+        }
+      }
+
+      if (proofInput) {
+        proofInput.addEventListener('input', () => {
+          clearTimeout(debounceTimer);
+          const val = proofInput.value.trim();
+          if (!val) {
+            lastEvaluatedAnswer = '';
+            updateGauge(0);
+            return;
+          }
+
+          if (!hasChallenge) {
+            lastEvaluatedAnswer = val;
+            updateGauge(100);
+            return;
+          }
+
+          debounceTimer = setTimeout(() => {
+            evaluateMatchOnServer(val);
+          }, 180);
+        });
+      }
+
+      // Enforce Constraint on Submission (with immediate evaluation if debounce is still pending)
+      if (claimForm && hasChallenge) {
+        claimForm.addEventListener('submit', async (e) => {
+          if (isSubmittingVerified) return;
+          const val = proofInput ? proofInput.value.trim() : '';
+          if (!val) return;
+
+          if (lastEvaluatedAnswer === val && currentScore >= threshold) {
+            return;
+          }
+
+          e.preventDefault();
+          clearTimeout(debounceTimer);
+
+          const evaluatedScore = await evaluateMatchOnServer(val);
+          if (evaluatedScore === null || evaluatedScore >= threshold) {
+            isSubmittingVerified = true;
+            claimForm.submit();
+            return;
+          }
+
+          if (constraintAlert && constraintAlertText) {
+            constraintAlertText.textContent = `Verification Constraint: Your answer scored ${currentScore}%. A match score of at least ${threshold}% is required before submitting your claim. Please specify identifying details.`;
+            constraintAlert.classList.remove('hidden');
+          }
+          if (proofInput) proofInput.focus();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

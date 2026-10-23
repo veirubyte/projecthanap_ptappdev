@@ -451,7 +451,7 @@ const register = async (req, res) => {
             values,
             invalidFields,
             errorTitle: 'Complete the required information',
-            errorMessage: missingErrors.map((e) => `ΓÇó ${e}`).join('\n'),
+            errorMessage: missingErrors.map((e) => `• ${e}`).join('\n'),
             errorType: 'missing_fields',
             status: 400
         });
@@ -516,7 +516,7 @@ const register = async (req, res) => {
             values,
             invalidFields: ['password'],
             errorTitle: 'Password does not meet requirements',
-            errorMessage: 'Please create a strong password containing:\nΓÇó Minimum 8 characters\nΓÇó At least one uppercase letter\nΓÇó At least one lowercase letter\nΓÇó At least one number\nΓÇó At least one special character',
+            errorMessage: 'Please create a strong password containing:\n• Minimum 8 characters\n• At least one uppercase letter\n• At least one lowercase letter\n• At least one number\n• At least one special character',
             errorType: 'weak_password',
             status: 400
         });

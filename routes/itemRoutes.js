@@ -49,6 +49,9 @@ router.post('/claims/:id/messages', requireAuth, controller.sendClaimMessage);
 // Update Claim Status (Approve or Reject)
 router.post('/claims/:id/status', requireAuth, controller.updateClaimStatus);
 
+// Withdraw / Cancel Pending Claim
+router.post('/claims/:id/cancel', requireAuth, controller.cancelClaim);
+
 /* ==========================================================================
    MY REPORTS MANAGEMENT
    ========================================================================== */
@@ -131,6 +134,7 @@ router.get('/admin/reports', requireAdmin, controller.listAdminReports);
 
 // Admin Approve Item Disposition / Archive
 router.post('/admin/reports/:id/archive-approve', requireAdmin, controller.approveReportArchive);
+router.post('/admin/reports/batch-approve', requireAdmin, controller.batchApproveReportArchive);
 
 // Admin Statistical Overview: P2P vs Centralized Handover Performance
 router.get('/admin/analytics', requireAdmin, controller.showAdminAnalytics);

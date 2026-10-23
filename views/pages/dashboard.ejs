@@ -115,7 +115,7 @@
                   </label>
                   <label class="relative sm:w-[112px]">
                     <span class="sr-only">Item type</span>
-                    <select name="type" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none">
+                    <select name="type" onchange="this.form.submit()" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none cursor-pointer">
                       <option value="">All Types</option>
                       <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost Items</option>
                       <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found Items</option>
@@ -124,7 +124,7 @@
                   </label>
                   <label class="relative sm:w-[112px]">
                     <span class="sr-only">Time range</span>
-                    <select name="period" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none">
+                    <select name="period" onchange="this.form.submit()" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none cursor-pointer">
                       <option value="">Any Time</option>
                       <option value="today" <%= filters.period === 'today' ? 'selected' : '' %>>Last 24 Hours</option>
                       <option value="week" <%= filters.period === 'week' ? 'selected' : '' %>>Last 7 Days</option>
@@ -399,7 +399,7 @@
       <!-- 4 Glass Bento KPI Tiles (Matching Screenshot Style) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Tile 1: Active Lost -->
-        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+        <a href="/catalog?type=lost" class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between group">
           <div class="flex items-center justify-between mb-4">
             <div class="w-11 h-11 rounded-full bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center">
               <span class="material-symbols-outlined text-[20px]">search</span>
@@ -410,13 +410,13 @@
             <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.active_lost %></div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Active Lost</span>
-              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+              <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
             </div>
           </div>
-        </div>
+        </a>
 
         <!-- Tile 2: Posted Found -->
-        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+        <a href="/catalog?type=found" class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between group">
           <div class="flex items-center justify-between mb-4">
             <div class="w-11 h-11 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
               <span class="material-symbols-outlined text-[20px]">inventory_2</span>
@@ -427,13 +427,13 @@
             <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.active_found %></div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Posted Found</span>
-              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+              <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
             </div>
           </div>
-        </div>
+        </a>
 
         <!-- Tile 3: Reunited Total -->
-        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+        <a href="/catalog?status=claimed" class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between group">
           <div class="flex items-center justify-between mb-4">
             <div class="w-11 h-11 rounded-full bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">
               <span class="material-symbols-outlined text-[20px]">handshake</span>
@@ -444,14 +444,14 @@
             <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.total_claimed %></div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Reunited Total</span>
-              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+              <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
             </div>
           </div>
-        </div>
+        </a>
 
         <!-- Tile 4: Recovery Rate -->
         <% const rate = stats.total_reports > 0 ? Math.min(100, Math.round((stats.total_claimed / stats.total_reports) * 100)) : 25; %>
-        <div class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between">
+        <a href="<%= user ? '/my-reports' : '/catalog' %>" class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between group">
           <div class="flex items-center justify-between mb-4">
             <div class="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
               <span class="material-symbols-outlined text-[20px]">verified_user</span>
@@ -462,10 +462,10 @@
             <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= rate %>%</div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Recovery Rate</span>
-              <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+              <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
             </div>
           </div>
-        </div>
+        </a>
       </div>
 
       <!-- Responsive dual-column dashboard with balanced side gutters -->
@@ -526,8 +526,9 @@
                         <div class="min-w-0">
                           <div class="flex items-center gap-2">
                             <h3 class="text-xs sm:text-sm font-bold text-slate-900 truncate"><%= r.item_name %></h3>
-                            <span class="shrink-0 px-2 py-0.5 rounded-full <%= r.status === 'claimed' ? 'bg-slate-100 text-slate-600' : 'bg-teal-500/10 text-teal-800' %> text-[10px] font-bold border border-teal-500/20">
-                              <%= r.status === 'claimed' ? 'Returned' : 'Active' %>
+                            <% const isResolvedReport = r.status === 'claimed' || r.status === 'returned'; %>
+                            <span class="shrink-0 px-2 py-0.5 rounded-full <%= isResolvedReport ? 'bg-slate-100 text-slate-600' : 'bg-teal-500/10 text-teal-800' %> text-[10px] font-bold border border-teal-500/20">
+                              <%= isResolvedReport ? 'Returned' : 'Active' %>
                             </span>
                           </div>
                           <p class="text-[11px] text-slate-500 truncate"><%= r.location_found_lost %> • Reported <%= timeAgo(r.date_reported) %></p>
@@ -551,21 +552,21 @@
                         <!-- Step 2: Matched -->
                         <div class="flex flex-col items-center">
                           <div class="w-5 h-5 rounded-full <%= r.status !== 'active' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white ring-4 ring-teal-100' %> flex items-center justify-center text-[10px] font-bold">
-                            <%= r.status === 'claimed' ? '✓' : '2' %>
+                            <%= isResolvedReport ? '✓' : '2' %>
                           </div>
                           <span class="text-[10px] font-bold text-teal-700 mt-1">Matched</span>
                         </div>
                         <!-- Step 3: Verifying -->
-                        <div class="flex flex-col items-center <%= r.status === 'claimed' ? '' : 'opacity-50' %>">
-                          <div class="w-5 h-5 rounded-full <%= r.status === 'claimed' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600' %> flex items-center justify-center text-[10px] font-bold">
-                            <%= r.status === 'claimed' ? '✓' : '3' %>
+                        <div class="flex flex-col items-center <%= isResolvedReport ? '' : 'opacity-50' %>">
+                          <div class="w-5 h-5 rounded-full <%= isResolvedReport ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600' %> flex items-center justify-center text-[10px] font-bold">
+                            <%= isResolvedReport ? '✓' : '3' %>
                           </div>
                           <span class="text-[10px] font-medium text-slate-500 mt-1">Verifying</span>
                         </div>
                         <!-- Step 4: Returned -->
-                        <div class="flex flex-col items-center <%= r.status === 'claimed' ? '' : 'opacity-50' %>">
-                          <div class="w-5 h-5 rounded-full <%= r.status === 'claimed' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600' %> flex items-center justify-center text-[10px] font-bold">
-                            <%= r.status === 'claimed' ? '✓' : '4' %>
+                        <div class="flex flex-col items-center <%= isResolvedReport ? '' : 'opacity-50' %>">
+                          <div class="w-5 h-5 rounded-full <%= isResolvedReport ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600' %> flex items-center justify-center text-[10px] font-bold">
+                            <%= isResolvedReport ? '✓' : '4' %>
                           </div>
                           <span class="text-[10px] font-medium text-slate-500 mt-1">Returned</span>
                         </div>
@@ -719,7 +720,7 @@
                         <span><%= item.report_type === 'found' ? 'Found' : 'Lost' %></span>
                       </span>
 
-                      <% if (item.status === 'claimed') { %>
+                      <% if (item.status === 'claimed' || item.status === 'returned') { %>
                         <span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-slate-900/80 text-white text-[10px] font-bold">
                           Claimed
                         </span>
