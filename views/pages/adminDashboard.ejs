@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<%
+  const safeStats = typeof stats !== 'undefined' ? stats : (typeof metrics !== 'undefined' ? metrics : {});
+  const safeVaulted = typeof safeStats.vaulted !== 'undefined' ? safeStats.vaulted : (safeStats.vaultedItems || 0);
+  const safeGuestClaims = typeof safeStats.guestClaims !== 'undefined' ? safeStats.guestClaims : 0;
+  const safeDisputes = typeof safeStats.disputes !== 'undefined' ? safeStats.disputes : 0;
+  const safeOverdue = typeof safeStats.overdue !== 'undefined' ? safeStats.overdue : 0;
+  const safeGuestList = typeof guestClaims !== 'undefined' ? guestClaims : [];
+  const safeDisputeList = typeof disputes !== 'undefined' ? disputes : [];
+  const safeVaultedList = typeof vaultedItems !== 'undefined' ? vaultedItems : (typeof surrendered !== 'undefined' ? surrendered : []);
+%>
+<html class="hanap-hide-scrollbar" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Security Admin Dashboard - Project HANAP</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-surface": "#131b2e",
+            "on-primary-fixed": "#001d33",
+            "on-secondary-container": "#fefcff",
+            "inverse-primary": "#9ecbfa",
+            "on-error-container": "#93000a",
+            "surface-container-highest": "#dae2fd",
+            "surface-tint": "#33628b",
+            "tertiary-fixed": "#dce3ea",
+            "tertiary-container": "#52595f",
+            "secondary-fixed": "#d8e2ff",
+            "on-tertiary-fixed": "#151c21",
+            "surface": "#faf8ff",
+            "error": "#ba1a1a",
+            "background": "#faf8ff",
+            "on-primary-fixed-variant": "#154a72",
+            "surface-container-low": "#f2f3ff",
+            "primary-container": "#2b5b84",
+            "primary": "#09436b",
+            "surface-dim": "#d2d9f4",
+            "on-primary": "#ffffff",
+            "on-error": "#ffffff",
+            "primary-fixed-dim": "#9ecbfa",
+            "surface-container-lowest": "#ffffff",
+            "surface-variant": "#dae2fd",
+            "inverse-surface": "#283044",
+            "on-tertiary-fixed-variant": "#40484d",
+            "secondary": "#0058be",
+            "on-background": "#131b2e",
+            "on-tertiary-container": "#c8cfd6",
+            "tertiary-fixed-dim": "#c0c7ce",
+            "on-secondary-fixed": "#001a42",
+            "on-primary-container": "#a8d2ff",
+            "inverse-on-surface": "#eef0ff",
+            "on-secondary-fixed-variant": "#004395",
+            "secondary-container": "#2170e4",
+            "surface-bright": "#faf8ff",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "surface-container-high": "#e2e7ff",
+            "outline": "#72777f",
+            "primary-fixed": "#cfe5ff",
+            "surface-container": "#eaedff",
+            "on-surface-variant": "#42474e",
+            "on-secondary": "#ffffff",
+            "tertiary": "#3a4247",
+            "secondary-fixed-dim": "#adc6ff",
+            "outline-variant": "#c2c7cf"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <%- include('partials/themeSetup') %>
+</head>
+<body class="relative bg-[#f6f8fc] font-sans text-on-surface min-h-screen antialiased selection:bg-primary selection:text-white overflow-x-hidden flex flex-col justify-between">
+
+  <!-- Ambient Aurora Glow Canvas Mesh Blobs -->
+  <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+    <div class="absolute -top-32 left-1/4 w-[520px] h-[520px] bg-gradient-to-tr from-sky-200/50 via-indigo-200/40 to-teal-100/30 rounded-full blur-[100px] animate-pulse" style="animation-duration: 9s;"></div>
+    <div class="absolute top-1/3 -right-28 w-[460px] h-[460px] bg-gradient-to-br from-blue-200/45 via-purple-200/35 to-rose-100/30 rounded-full blur-[110px]"></div>
+    <div class="absolute bottom-10 left-10 w-[420px] h-[420px] bg-gradient-to-tl from-cyan-100/60 via-blue-100/40 to-indigo-100/30 rounded-full blur-[90px]"></div>
+  </div>
+
+  <%- include('partials/navbar', { active: 'admin-dashboard' }) %>
+
+  <!-- Main Responsive Layout -->
+  <main class="w-full pt-2 sm:pt-4 pb-12 flex flex-col flex-1">
+    <div class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 xl:px-8 flex flex-col gap-6">
+    
+    <!-- Main Dashboard Content Area -->
+    <div class="min-w-0 flex-1 w-full flex flex-col gap-6">
+    
+    <!-- Flash Toasts -->
+    <% if (typeof msg !== 'undefined' && msg) { %>
+      <div class="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs sm:text-sm flex items-center gap-3 shadow-xs">
+        <span class="material-symbols-outlined text-teal-600">check_circle</span>
+        <span class="font-medium"><%= msg %></span>
+      </div>
+    <% } %>
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-3 shadow-xs">
+        <span class="material-symbols-outlined text-rose-600">error</span>
+        <span class="font-medium"><%= error %></span>
+      </div>
+    <% } %>
+
+    <!-- 4 Glowing Admin Glass Bento KPI Tiles (from ZIP 1) -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      
+      <!-- Tile 1: Vaulted Items -->
+      <div class="relative p-5 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(9,67,107,0.1)] hover:-translate-y-0.5 transition-all group overflow-hidden">
+        <div class="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+          </span>
+          <span class="material-symbols-outlined text-[19px] text-primary/70 group-hover:text-primary transition-colors">inventory_2</span>
+        </div>
+        <div class="text-3xl font-extrabold tracking-tight text-on-surface"><%= safeVaulted %></div>
+        <div class="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-wider">Vaulted Items</div>
+      </div>
+
+      <!-- Tile 2: Guest Claims -->
+      <div class="relative p-5 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(217,119,6,0.12)] hover:-translate-y-0.5 transition-all group overflow-hidden">
+        <div class="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]"></span>
+          <span class="material-symbols-outlined text-[19px] text-amber-600/70 group-hover:text-amber-600 transition-colors">person_pin</span>
+        </div>
+        <div class="text-3xl font-extrabold tracking-tight text-secondary"><%= safeGuestClaims %></div>
+        <div class="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-wider">Guest Claims</div>
+      </div>
+
+      <!-- Tile 3: Frozen Dispute -->
+      <div class="relative p-5 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(186,26,26,0.12)] hover:-translate-y-0.5 transition-all group overflow-hidden">
+        <div class="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"></span>
+          <span class="material-symbols-outlined text-[19px] text-error/70 group-hover:text-error transition-colors">warning</span>
+        </div>
+        <div class="text-3xl font-extrabold tracking-tight text-error"><%= safeDisputes %></div>
+        <div class="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-wider">Frozen Dispute</div>
+      </div>
+
+      <!-- Tile 4: Overdue Archive -->
+      <div class="relative p-5 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all group overflow-hidden">
+        <div class="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+          <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100/90 text-on-surface-variant">60d</span>
+          <span class="material-symbols-outlined text-[19px] text-on-surface-variant/70 group-hover:text-on-surface transition-colors">archive</span>
+        </div>
+        <div class="text-3xl font-extrabold tracking-tight text-on-surface"><%= safeOverdue %></div>
+        <div class="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-wider">Overdue Archive</div>
+      </div>
+    </section>
+
+    <!-- Tabbed Glass Table Card (from ZIP 1) -->
+    <section class="bg-white/70 backdrop-blur-2xl border border-white/80 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
+      <!-- Tabs Bar -->
+      <div class="flex items-center border-b border-white/80 px-6 pt-3.5 gap-6 bg-white/40" role="tablist" aria-label="Security dashboard tabs">
+        <button id="tab-btn-guest" data-tab="guest" class="pb-3 text-xs font-bold text-primary border-b-2 border-primary -mb-px flex items-center gap-1.5 cursor-pointer" type="button" aria-selected="true">
+          <span>Guest Claims</span>
+          <span class="px-1.5 py-0.2 bg-primary/10 text-primary text-[10px] rounded-full font-semibold"><%= safeGuestList.length %></span>
+        </button>
+        <button id="tab-btn-disputes" data-tab="disputes" class="pb-3 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5 cursor-pointer" type="button" aria-selected="false">
+          <span>Disputes</span>
+          <span class="px-1.5 py-0.2 bg-slate-200/60 text-on-surface-variant text-[10px] rounded-full font-semibold"><%= safeDisputeList.length %></span>
+        </button>
+        <button id="tab-btn-surrendered" data-tab="surrendered" class="pb-3 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5 cursor-pointer" type="button" aria-selected="false">
+          <span>Surrendered</span>
+          <span class="px-1.5 py-0.2 bg-slate-200/60 text-on-surface-variant text-[10px] rounded-full font-semibold"><%= safeVaultedList.length %></span>
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Guest Claims -->
+      <div id="tab-content-guest" class="divide-y divide-white/60">
+        <% if (!safeGuestList || safeGuestList.length === 0) { %>
+          <div class="px-6 py-8 text-center text-xs text-on-surface-variant">
+            No active guest claims pending at the security desk.
+          </div>
+        <% } else { %>
+          <% safeGuestList.forEach(c => { %>
+            <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/50 transition-colors">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <% if (c.image_path) { %>
+                  <img class="w-12 h-12 rounded-xl object-cover bg-white shrink-0 border border-white/80 shadow-xs" src="<%= c.image_path %>" alt="<%= c.item_name %>"/>
+                <% } else { %>
+                  <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 border border-white/80 shadow-xs">
+                    <span class="material-symbols-outlined text-2xl">category</span>
+                  </div>
+                <% } %>
+                <div class="min-w-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                  <span class="font-bold text-sm text-on-surface truncate"><%= c.item_name %></span>
+                  <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50/80 text-secondary border border-blue-200/60 shrink-0 w-fit">
+                    <%= c.claimant_name %> (Guest)
+                  </span>
+                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= c.location_found_lost %></span>
+                </div>
+              </div>
+              <a class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-primary to-secondary hover:from-primary-container hover:to-secondary-container text-white text-xs font-semibold rounded-lg shadow-sm shadow-primary/25 hover:shadow transition-all" href="/admin/handover/<%= c.id %>">
+                <span>Handover -&gt;</span>
+              </a>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <!-- Tab Content 2: Disputes -->
+      <div id="tab-content-disputes" class="hidden divide-y divide-white/60">
+        <% if (!safeDisputeList || safeDisputeList.length === 0) { %>
+          <div class="px-6 py-8 text-center text-xs text-on-surface-variant">
+            No disputed ownership claims requiring security intervention.
+          </div>
+        <% } else { %>
+          <% safeDisputeList.forEach(d => { %>
+            <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/50 transition-colors">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <% if (d.image_path) { %>
+                  <img class="w-12 h-12 rounded-xl object-cover bg-white shrink-0 border border-white/80 shadow-xs" src="<%= d.image_path %>" alt="<%= d.item_name %>"/>
+                <% } else { %>
+                  <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 border border-white/80 shadow-xs">
+                    <span class="material-symbols-outlined text-2xl">category</span>
+                  </div>
+                <% } %>
+                <div class="min-w-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                  <span class="font-bold text-sm text-on-surface truncate"><%= d.item_name %></span>
+                  <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50/90 text-error border border-rose-200/70 shrink-0 w-fit">
+                    Claim Dispute (#<%= d.id %>)
+                  </span>
+                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= d.location_found_lost %></span>
+                </div>
+              </div>
+              <a class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/90 hover:bg-white text-on-surface text-xs font-semibold rounded-lg border border-white/80 shadow-xs hover:shadow transition-all" href="/claims/<%= d.id %>">
+                <span>Review Chat</span>
+              </a>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <!-- Tab Content 3: Surrendered -->
+      <div id="tab-content-surrendered" class="hidden divide-y divide-white/60">
+        <% if (!safeVaultedList || safeVaultedList.length === 0) { %>
+          <div class="px-6 py-8 text-center text-xs text-on-surface-variant">
+            No items currently surrendered in the security custody locker.
+          </div>
+        <% } else { %>
+          <% safeVaultedList.forEach(v => { %>
+            <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-white/50 transition-colors">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <% if (v.image_path) { %>
+                  <img class="w-12 h-12 rounded-xl object-cover bg-white shrink-0 border border-white/80 shadow-xs" src="<%= v.image_path %>" alt="<%= v.item_name %>"/>
+                <% } else { %>
+                  <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 border border-white/80 shadow-xs">
+                    <span class="material-symbols-outlined text-2xl">inventory_2</span>
+                  </div>
+                <% } %>
+                <div class="min-w-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                  <span class="font-bold text-sm text-on-surface truncate"><%= v.item_name %></span>
+                  <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200/60 shrink-0 w-fit">
+                    In Custody
+                  </span>
+                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= v.location_found_lost %></span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-all" href="/items/<%= v.id %>/edit">
+                  <span>Edit</span>
+                </a>
+                <a class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-container text-white text-xs font-semibold rounded-lg shadow-xs transition-all" href="/items/<%= v.id %>">
+                  <span>View Item</span>
+                </a>
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- Bottom Quick Custody Intake Strip (from ZIP 1) -->
+    <section class="p-4 sm:p-5 bg-white/70 backdrop-blur-2xl border border-white/80 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.03)] ring-1 ring-black/[0.02]">
+      <form class="flex flex-col sm:flex-row items-center gap-3" action="/admin/items/log" method="POST">
+        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+        <% } %>
+        <input class="w-full sm:flex-1 h-10 px-3.5 text-xs bg-white/60 border border-white/80 rounded-xl text-on-surface placeholder:text-on-surface-variant/70 focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all shadow-inner/5" name="item_name" placeholder="Item description" required="" type="text"/>
+        <input class="w-full sm:flex-1 h-10 px-3.5 text-xs bg-white/60 border border-white/80 rounded-xl text-on-surface placeholder:text-on-surface-variant/70 focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all shadow-inner/5" name="location_found_lost" placeholder="Location found" required="" type="text"/>
+        <button class="w-full sm:w-auto h-10 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary-container hover:to-secondary-container text-white text-xs font-semibold rounded-xl shrink-0 shadow-sm shadow-primary/30 hover:shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer" type="submit">
+          <span>+ Log Item</span>
+        </button>
+      </form>
+    </section>
+
+    </div>
+    </div>
+  </main>
+
+  <footer class="w-full bg-white/60 backdrop-blur-xl border-t border-slate-200/60 py-4 mt-auto">
+    <div class="max-w-[1080px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant">
+      <div class="flex items-center gap-2 text-[13px]">
+        <span class="material-symbols-outlined text-[16px] text-primary">shield</span>
+        <span class="font-semibold text-primary">Project HANAP</span>
+        <span>— Camarines Sur Polytechnic Colleges Security Administration</span>
+      </div>
+      <div class="text-[12px] text-slate-400">© 2026 CSPC Campus Care &amp; Security Network</div>
+    </div>
+  </footer>
+
+  <script>
+    function switchAdminTab(tab) {
+      const tabs = ['guest', 'disputes', 'surrendered'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const content = document.getElementById(`tab-content-${t}`);
+        if (!btn || !content) return;
+
+        const isActive = t === tab;
+        btn.className = isActive
+          ? 'pb-3 text-xs font-bold text-primary border-b-2 border-primary -mb-px flex items-center gap-1.5 cursor-pointer'
+          : 'pb-3 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5 cursor-pointer';
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        content.classList.toggle('hidden', !isActive);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-tab]').forEach((button) => {
+        button.addEventListener('click', () => switchAdminTab(button.dataset.tab));
+      });
+    });
+  </script>
+</body>
+</html>
