@@ -32,7 +32,7 @@
   </script>
   <%- include('partials/themeSetup') %>
 </head>
-<body class="min-h-full bg-[#F4F7FB] font-sans text-slate-800 antialiased flex flex-col justify-between relative overflow-x-hidden">
+<body class="claims-page min-h-full bg-[#F4F7FB] font-sans text-slate-800 antialiased flex flex-col justify-between relative overflow-x-hidden">
   
   <!-- Ambient Aurora Canvas Background -->
   <div aria-hidden="true" class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -60,7 +60,7 @@
     <% } %>
 
     <!-- Header Section -->
-    <div class="rounded-2xl p-5 bg-white/75 backdrop-blur-xl border border-white/80 shadow-[0_4px_24px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="claims-page-header rounded-2xl p-5 bg-white/75 backdrop-blur-xl border border-white/80 shadow-[0_4px_24px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Claims Resolution Hub</h1>
         <p class="text-xs text-slate-500 mt-0.5">Track ownership verification, communicate with finders/owners, and coordinate handovers.</p>
@@ -79,7 +79,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       
       <!-- Panel 1: Claims on Items You Reported (Received Claims) -->
-      <div class="rounded-3xl p-5 sm:p-6 bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-4">
+      <div class="claims-panel rounded-3xl p-5 sm:p-6 bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
@@ -96,7 +96,7 @@
         <% } else { %>
           <div class="space-y-3">
             <% receivedClaims.forEach(claim => { %>
-              <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:border-[#2B5B84] transition-all space-y-3">
+              <div class="claim-list-card p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:border-[#2B5B84] transition-all space-y-3">
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0 overflow-hidden">
@@ -111,12 +111,12 @@
                       <p class="text-[11px] text-slate-500">Claimant: <strong class="text-slate-700"><%= claim.claimant_name %></strong> • <%= timeAgo(claim.created_at) %></p>
                     </div>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
+                  <span data-claim-status="<%= claim.status %>" class="claim-status-badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
                     <%= claim.status %>
                   </span>
                 </div>
                 
-                <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2 italic">
+                <p class="claim-list-proof text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2 italic">
                   "<%= claim.proof_details %>"
                 </p>
 
@@ -134,7 +134,7 @@
       </div>
 
       <!-- Panel 2: Claims You Filed (Claims Made) -->
-      <div class="rounded-3xl p-5 sm:p-6 bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-4">
+      <div class="claims-panel rounded-3xl p-5 sm:p-6 bg-white/80 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span>
@@ -152,7 +152,7 @@
         <% } else { %>
           <div class="space-y-3">
             <% madeClaims.forEach(claim => { %>
-              <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:border-[#2B5B84] transition-all space-y-3">
+              <div class="claim-list-card p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:border-[#2B5B84] transition-all space-y-3">
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2B5B84] shrink-0 overflow-hidden">
@@ -167,12 +167,12 @@
                       <p class="text-[11px] text-slate-500">Finder: <strong class="text-slate-700"><%= claim.reporter_name %></strong> • <%= timeAgo(claim.created_at) %></p>
                     </div>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
+                  <span data-claim-status="<%= claim.status %>" class="claim-status-badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
                     <%= claim.status %>
                   </span>
                 </div>
 
-                <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2">
+                <p class="claim-list-proof text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2">
                   <span class="font-semibold text-slate-500">Your proof:</span> "<%= claim.proof_details %>"
                 </p>
 
@@ -192,7 +192,7 @@
   </main>
 
   <!-- Footer -->
-  <footer class="w-full border-t border-slate-200/60 bg-white/50 backdrop-blur-md py-4 mt-8">
+  <footer class="claims-page-footer w-full border-t border-slate-200/60 bg-white/50 backdrop-blur-md py-4 mt-8">
     <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 font-medium">
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-700">Project HANAP</span>

@@ -105,8 +105,15 @@ app.use('/', require('./routes/itemRoutes'));
 // 404 Not Found Handler
 app.use((req, res) => {
     res.status(404).render('403', {
-        title: '404 - Page Not Found',
-        message: 'The requested campus page or resource could not be found.'
+        httpStatus: 404,
+        statusLabel: 'Not Found',
+        errorTitle: 'Page Not Found',
+        errorMessage: 'The requested campus page or resource could not be found.',
+        attemptedPath: req.originalUrl,
+        user: req.session.user || null,
+        returnUrl: req.session.user && ['admin', 'administrator'].includes(String(req.session.user.role || '').toLowerCase())
+            ? '/admin/dashboard'
+            : '/dashboard'
     });
 });
 
@@ -115,8 +122,12 @@ app.use((err, req, res, next) => {
     console.error('[SERVER ERROR]:', err.stack || err);
     if (res.headersSent) return next(err);
     res.status(err.status || 500).render('403', {
-        title: '500 - Internal Server Error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected server error occurred.'
+        httpStatus: err.status || 500,
+        statusLabel: 'Error',
+        errorTitle: 'Request Could Not Be Completed',
+        errorMessage: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected server error occurred.',
+        attemptedPath: req.originalUrl,
+        user: req.session.user || null
     });
 });
 

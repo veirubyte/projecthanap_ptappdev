@@ -275,6 +275,158 @@ html.dark body:not(.landing-page):not(.login-page):not(.register-page) .ownershi
   opacity: 1;
 }
 
+/* Claims screens need opaque, layered surfaces in dark mode rather than translucent
+ * light gradients over the dark canvas. */
+html.dark body.claims-page {
+  background-color: #0b1120 !important;
+}
+
+html.dark body.claims-page .claims-page-header,
+html.dark body.claims-page .claims-panel {
+  background-color: #111c2e !important;
+  border-color: #2c3b50 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+html.dark body.claims-page .claim-list-card {
+  background-color: #172438 !important;
+  border-color: #34465d !important;
+}
+
+html.dark body.claims-page .claim-list-card:hover {
+  border-color: #4d8fbd !important;
+}
+
+html.dark body.claims-page .claim-list-proof {
+  background-color: #101b2b !important;
+  border-color: #2c3b50 !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark body.claims-page .claims-page-footer {
+  background-color: #0b1120 !important;
+  border-color: #26364a !important;
+}
+
+html.dark body.claims-page .claim-status-badge[data-claim-status="approved"],
+html.dark body.claims-page .claim-status-badge[data-claim-status="returned"],
+html.dark body.claim-chat-page .claim-status-badge[data-claim-status="approved"] {
+  background-color: #123b36 !important;
+  border-color: #23675c !important;
+  color: #99f6e4 !important;
+}
+
+html.dark body.claim-chat-page .claim-status-badge[data-claim-status="returned"] {
+  background-color: #123b36 !important;
+  border-color: #23675c !important;
+  color: #99f6e4 !important;
+}
+
+html.dark body.claims-page .claim-status-badge[data-claim-status="rejected"],
+html.dark body.claim-chat-page .claim-status-badge[data-claim-status="rejected"] {
+  background-color: #48232c !important;
+  border-color: #873e4a !important;
+  color: #fecdd3 !important;
+}
+
+html.dark body.claims-page .claim-status-badge[data-claim-status="escalated"] {
+  background-color: #252e53 !important;
+  border-color: #47569a !important;
+  color: #c7d2fe !important;
+}
+
+html.dark body.claim-chat-page .claim-status-badge[data-claim-status="escalated"] {
+  background-color: #252e53 !important;
+  border-color: #47569a !important;
+  color: #c7d2fe !important;
+}
+
+html.dark body.claims-page .claim-status-badge:not([data-claim-status="approved"]):not([data-claim-status="returned"]):not([data-claim-status="rejected"]):not([data-claim-status="escalated"]),
+html.dark body.claim-chat-page .claim-status-badge[data-claim-status="pending"] {
+  background-color: #44351a !important;
+  border-color: #80612a !important;
+  color: #fde68a !important;
+}
+
+html.dark body.claim-chat-page {
+  background-color: #0b1120 !important;
+}
+
+html.dark body.claim-chat-page > div[aria-hidden="true"] {
+  opacity: 0.35;
+}
+
+html.dark body.claim-chat-page .claim-chat-workspace {
+  background-color: #111c2e !important;
+  border-color: #2c3b50 !important;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark body.claim-chat-page .claim-chat-header,
+html.dark body.claim-chat-page .claim-chat-composer,
+html.dark body.claim-chat-page .claim-chat-footer {
+  background-color: #111c2e !important;
+  border-color: #2c3b50 !important;
+}
+
+html.dark body.claim-chat-page .claim-chat-thread {
+  background-image: none !important;
+  background-color: #0d1728 !important;
+}
+
+html.dark body.claim-chat-page .claim-proof-banner,
+html.dark body.claim-chat-page .claim-incoming-message,
+html.dark body.claim-chat-page .claim-chat-timestamp,
+html.dark body.claim-chat-page .claim-privacy-pill {
+  background-color: #172438 !important;
+  border-color: #34465d !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark body.claim-chat-page .claim-proof-label {
+  color: #7dd3fc !important;
+}
+
+html.dark body.claim-chat-page .claim-proof-banner p {
+  color: #f1f5f9 !important;
+}
+
+html.dark body.claim-chat-page .claim-incoming-message {
+  color: #f1f5f9 !important;
+}
+
+html.dark body.claim-chat-page .claim-outgoing-message {
+  background-image: linear-gradient(135deg, #17618b, #16466b) !important;
+  border-color: #397ca2 !important;
+}
+
+html.dark body.claim-chat-page .claim-message-meta {
+  color: #a8b6c9 !important;
+}
+
+html.dark body.claim-chat-page .claim-privacy-pill span {
+  color: #cbd5e1 !important;
+}
+
+html.dark body.claim-chat-page .claim-chat-form {
+  background-color: #0b1628 !important;
+  border-color: #34465d !important;
+}
+
+html.dark body.claim-chat-page .claim-chat-form input {
+  background-color: transparent !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark body.claim-chat-page .claim-chat-form input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
+}
+
+html.dark body.claim-chat-page .claim-empty-state {
+  color: #a8b6c9 !important;
+}
+
 /* ============================================================================== 
  * BRANDED LANDING & AUTH PAGE STYLES
  * Micro-animations and layout rules for landing radar & beacon

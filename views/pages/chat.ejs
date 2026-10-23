@@ -32,7 +32,7 @@
   </script>
   <%- include('partials/themeSetup') %>
 </head>
-<body class="min-h-full bg-slate-50/50 font-sans text-on-surface antialiased flex flex-col justify-between relative overflow-x-hidden">
+<body class="claim-chat-page min-h-full bg-slate-50/50 font-sans text-on-surface antialiased flex flex-col justify-between relative overflow-x-hidden">
   
   <!-- Ambient Aurora Glowing Backdrops -->
   <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden="true">
@@ -62,10 +62,10 @@
       <% } %>
 
       <!-- Elevated Frosted Glass Workspace Card -->
-      <div class="bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/90 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.02)] flex flex-col h-[740px] overflow-hidden relative">
+      <div class="claim-chat-workspace bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/90 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.02)] flex flex-col h-[740px] overflow-hidden relative">
         
         <!-- Top Glass Header Bar -->
-        <div class="px-4 sm:px-6 py-3.5 border-b border-slate-200/60 bg-white/60 backdrop-blur-xl flex items-center justify-between gap-3 select-none shrink-0 z-20">
+        <div class="claim-chat-header px-4 sm:px-6 py-3.5 border-b border-slate-200/60 bg-white/60 backdrop-blur-xl flex items-center justify-between gap-3 select-none shrink-0 z-20">
           
           <!-- Left: Back Button + Thumbnail + Verified Meta -->
           <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
@@ -85,27 +85,27 @@
                   <%= claim.item_name %>
                 </span>
                 <% if (claim.status === 'returned') { %>
-                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
+                  <span data-claim-status="returned" class="claim-status-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
                     <span class="material-symbols-outlined text-[13px] font-bold">check_circle</span>
                     <span>Item Returned</span>
                   </span>
                 <% } else if (claim.status === 'approved') { %>
-                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
+                  <span data-claim-status="approved" class="claim-status-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
                     <span class="material-symbols-outlined text-[13px] font-bold">check</span>
                     <span>Answer Verified</span>
                   </span>
                 <% } else if (claim.status === 'escalated') { %>
-                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-400/40 text-[11px] font-semibold leading-none">
+                  <span data-claim-status="escalated" class="claim-status-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-400/40 text-[11px] font-semibold leading-none">
                     <span class="material-symbols-outlined text-[13px] font-bold">shield</span>
                     <span>Escalated to Security</span>
                   </span>
                 <% } else if (claim.status === 'rejected') { %>
-                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-700 border border-rose-400/40 text-[11px] font-semibold leading-none">
+                  <span data-claim-status="rejected" class="claim-status-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-700 border border-rose-400/40 text-[11px] font-semibold leading-none">
                     <span class="material-symbols-outlined text-[13px] font-bold">close</span>
                     <span>Claim Rejected</span>
                   </span>
                 <% } else { %>
-                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-400/40 text-[11px] font-semibold leading-none">
+                  <span data-claim-status="<%= claim.status %>" class="claim-status-badge inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-400/40 text-[11px] font-semibold leading-none">
                     <span class="material-symbols-outlined text-[13px] font-bold">hourglass_top</span>
                     <span>Coordination in Progress</span>
                   </span>
@@ -186,17 +186,17 @@
         </div>
 
         <!-- Chat Canvas & Floating Message Stream -->
-        <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-5 space-y-4 bg-gradient-to-b from-white/30 via-slate-50/20 to-sky-50/20" id="chatThread">
+        <div class="claim-chat-thread flex-1 overflow-y-auto px-4 sm:px-8 py-5 space-y-4 bg-gradient-to-b from-white/30 via-slate-50/20 to-sky-50/20" id="chatThread">
           
           <!-- Proof Statement / Finder Prompt Banner -->
-          <div class="p-3.5 rounded-2xl bg-white/70 backdrop-blur-md border border-slate-200/70 shadow-2xs text-xs text-slate-700">
-            <span class="font-bold text-[#09436B]">Ownership Claim Statement:</span>
+          <div class="claim-proof-banner p-3.5 rounded-2xl bg-white/70 backdrop-blur-md border border-slate-200/70 shadow-2xs text-xs text-slate-700">
+            <span class="claim-proof-label font-bold text-[#09436B]">Ownership Claim Statement:</span>
             <p class="mt-1 text-slate-800 leading-relaxed font-medium">"<%= claim.proof_details %>"</p>
           </div>
 
           <!-- Timestamp separator -->
           <div class="flex items-center justify-center my-1">
-            <span class="px-3 py-1 rounded-full bg-white/60 backdrop-blur-md border border-slate-200/50 text-[11px] text-slate-500 font-medium tracking-wide uppercase shadow-2xs">
+            <span class="claim-chat-timestamp px-3 py-1 rounded-full bg-white/60 backdrop-blur-md border border-slate-200/50 text-[11px] text-slate-500 font-medium tracking-wide uppercase shadow-2xs">
               Case opened • <%= new Date(claim.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) %>
             </span>
           </div>
@@ -214,10 +214,10 @@
                     <%= initials %>
                   </div>
                   <div class="flex flex-col items-start">
-                    <div class="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white/90 backdrop-blur-md border border-slate-200/60 text-slate-800 text-xs sm:text-sm shadow-[0_2px_8px_rgba(15,23,42,0.04)] leading-relaxed">
+                    <div class="claim-incoming-message px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white/90 backdrop-blur-md border border-slate-200/60 text-slate-800 text-xs sm:text-sm shadow-[0_2px_8px_rgba(15,23,42,0.04)] leading-relaxed">
                       <%= msg.message %>
                     </div>
-                    <span class="text-[11px] text-slate-400 mt-1 px-1 font-medium">
+                    <span class="claim-message-meta text-[11px] text-slate-400 mt-1 px-1 font-medium">
                       <%= msg.sender_name %> • <%= new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
                     </span>
                   </div>
@@ -226,10 +226,10 @@
                 <!-- Right Bubble (Current User) -->
                 <div class="flex items-end justify-end gap-2.5 max-w-[85%] sm:max-w-[65%] ml-auto">
                   <div class="flex flex-col items-end">
-                    <div class="px-4 py-2.5 rounded-2xl rounded-br-sm bg-gradient-to-br from-[#2B5B84] to-[#194060] text-white text-xs sm:text-sm shadow-md shadow-blue-950/15 border border-white/20 leading-relaxed">
+                    <div class="claim-outgoing-message px-4 py-2.5 rounded-2xl rounded-br-sm bg-gradient-to-br from-[#2B5B84] to-[#194060] text-white text-xs sm:text-sm shadow-md shadow-blue-950/15 border border-white/20 leading-relaxed">
                       <%= msg.message %>
                     </div>
-                    <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-1 px-1 font-medium">
+                    <div class="claim-message-meta flex items-center gap-1 text-[11px] text-slate-400 mt-1 px-1 font-medium">
                       <span><%= new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
                       <span class="material-symbols-outlined text-[13px] text-sky-600 font-semibold">done_all</span>
                     </div>
@@ -241,7 +241,7 @@
               <% } %>
             <% }) %>
           <% } else { %>
-            <div class="text-center py-10 text-slate-400 text-xs">
+            <div class="claim-empty-state text-center py-10 text-slate-400 text-xs">
               <span class="material-symbols-outlined text-3xl mb-1 text-slate-300">chat</span>
               <p>No messages yet. Send a message below to coordinate handover details.</p>
             </div>
@@ -249,7 +249,7 @@
 
           <!-- Inline Frosted Privacy Pill -->
           <div class="flex items-center justify-center py-2">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-sky-200/60 shadow-2xs text-[11px] sm:text-xs text-slate-600">
+            <div class="claim-privacy-pill inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-sky-200/60 shadow-2xs text-[11px] sm:text-xs text-slate-600">
               <span class="inline-flex items-center gap-1 font-semibold text-slate-700">
                 <span class="material-symbols-outlined text-[14px] text-sky-600">lock</span>
                 <span>Contact details auto-masked for privacy</span>
@@ -264,8 +264,8 @@
         </div>
 
         <!-- Bottom Floating Glass Pill Input Bar -->
-        <div class="p-3 sm:px-6 sm:py-4 bg-white/60 backdrop-blur-xl border-t border-slate-200/60 shrink-0">
-          <form class="flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-full px-3 py-1.5 sm:px-4 sm:py-2 border border-slate-200/80 shadow-[0_4px_16px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-sky-500/40 focus-within:border-sky-400 focus-within:bg-white transition-all" id="chatForm" action="/claims/<%= claim.id %>/messages" method="POST">
+        <div class="claim-chat-composer p-3 sm:px-6 sm:py-4 bg-white/60 backdrop-blur-xl border-t border-slate-200/60 shrink-0">
+          <form class="claim-chat-form flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-full px-3 py-1.5 sm:px-4 sm:py-2 border border-slate-200/80 shadow-[0_4px_16px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-sky-500/40 focus-within:border-sky-400 focus-within:bg-white transition-all" id="chatForm" action="/claims/<%= claim.id %>/messages" method="POST">
             <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
             <% } %>
@@ -296,7 +296,7 @@
     </div>
   </main>
 
-  <footer class="w-full bg-white/60 backdrop-blur-xl border-t border-slate-200/60 py-4 mt-auto">
+  <footer class="claim-chat-footer w-full bg-white/60 backdrop-blur-xl border-t border-slate-200/60 py-4 mt-auto">
     <div class="max-w-[960px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant">
       <div class="flex items-center gap-2 text-[13px]">
         <span class="material-symbols-outlined text-[16px] text-[#2B5B84]">explore</span>

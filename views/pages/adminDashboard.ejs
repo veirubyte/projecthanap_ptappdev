@@ -128,7 +128,7 @@
           <span class="material-symbols-outlined text-[19px] text-primary/70 group-hover:text-primary transition-colors">inventory_2</span>
         </div>
         <div class="text-3xl font-extrabold tracking-tight text-on-surface"><%= safeVaulted %></div>
-        <div class="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-wider">Vaulted Items</div>
+        <div class="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-wider">Physical Custody</div>
       </div>
 
       <!-- Tile 2: Guest Claims -->
@@ -265,13 +265,26 @@
                 <% } %>
                 <div class="min-w-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                   <span class="font-bold text-sm text-on-surface truncate"><%= v.item_name %></span>
-                  <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50/80 text-emerald-800 border border-emerald-200/60 shrink-0 w-fit">
-                    In Custody
+                  <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full <%= v.custody_received_at ? 'bg-emerald-50/80 text-emerald-800 border border-emerald-200/60' : 'bg-amber-50 text-amber-800 border border-amber-200' %> shrink-0 w-fit">
+                    <%= v.custody_received_at ? 'In Custody' : 'Awaiting Receipt' %>
                   </span>
                   <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= v.location_found_lost %></span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
+                <% if (!v.custody_received_at) { %>
+                  <form action="/admin/items/<%= v.id %>/accept-custody" method="POST" class="inline">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                    <% } %>
+                    <button type="submit" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all">
+                      <span class="material-symbols-outlined text-[15px]">check</span>
+                      <span>Accept Item</span>
+                    </button>
+                  </form>
+                <% } else { %>
+                  <span class="hidden lg:inline text-[10px] text-on-surface-variant">Received by <%= v.custody_received_by_name || 'Security staff' %></span>
+                <% } %>
                 <a class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-all" href="/items/<%= v.id %>/edit">
                   <span>Edit</span>
                 </a>
@@ -335,6 +348,10 @@
       document.querySelectorAll('[data-tab]').forEach((button) => {
         button.addEventListener('click', () => switchAdminTab(button.dataset.tab));
       });
+      const requestedTab = new URLSearchParams(window.location.search).get('tab');
+      if (['guest', 'disputes', 'surrendered'].includes(requestedTab)) {
+        switchAdminTab(requestedTab);
+      }
     });
   </script>
 </body>

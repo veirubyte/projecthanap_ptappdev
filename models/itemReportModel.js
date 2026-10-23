@@ -231,12 +231,26 @@ async function showAdminDashboard(params, values = [], connection = db) {
 
 async function showAdminDashboardQuery2(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name
+            SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name,
+                   receiver.full_name AS custody_received_by_name
             FROM item_reports r
             JOIN users u ON u.id = r.user_id
-            WHERE r.report_type = 'found' AND r.status = 'active'
+            LEFT JOIN users receiver ON receiver.id = r.custody_received_by
+            WHERE r.report_type = 'found'
+              AND r.status = 'active'
+              AND r.custody_mode = 'security_desk'
             ORDER BY r.date_reported DESC
         `);
+}
+
+async function acceptItemCustody(params, values = [], connection = db) {
+    return connection.execute(`UPDATE item_reports
+             SET custody_received_at = CURRENT_TIMESTAMP, custody_received_by = ?
+             WHERE id = ?
+               AND report_type = 'found'
+               AND status = 'active'
+               AND custody_mode = 'security_desk'
+               AND custody_received_at IS NULL`, params);
 }
 
 async function showAdminDashboardQuery3(params, values = [], connection = db) {
@@ -295,8 +309,8 @@ async function description(params, imagePaths = []) {
     try {
         await connection.beginTransaction();
         transactionOpen = true;
-        const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, status)
-                 VALUES (?, 'found', ?, ?, ?, ?, 'active')`, params.slice(0, 5));
+        const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, custody_mode, custody_received_at, custody_received_by, status)
+                 VALUES (?, 'found', ?, ?, ?, ?, 'security_desk', CURRENT_TIMESTAMP, ?, 'active')`, params);
         for (let index = 0; index < imagePaths.length; index += 1) {
             await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
                      VALUES (?, ?, ?, ?)`, [result.insertId, imagePaths[index], index === 0 ? 1 : 0, index]);
@@ -346,6 +360,7 @@ module.exports = {
     showSettings,
     showAdminDashboard,
     showAdminDashboardQuery2,
+    acceptItemCustody,
     showAdminDashboardQuery3,
     showAdminDashboardQuery4,
     confirmHandover,
