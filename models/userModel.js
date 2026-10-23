@@ -1,5 +1,6 @@
 const db = require('../config/db');
 
+<<<<<<< HEAD
 async function login(params, values = [], connection = db) {
     return connection.execute(`SELECT u.id, u.full_name, u.email, u.password_hash, ar.role_code AS role
              FROM users u
@@ -174,3 +175,25 @@ module.exports = {
     updateUserRole,
     updateUserRoleQuery2
 };
+=======
+const User = {
+  findByEmail: async (email) => {
+    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    return rows[0];
+  },
+  findById: async (id) => {
+    const [rows] = await db.query('SELECT id, full_name, email, role, department FROM users WHERE id = ?', [id]);
+    return rows[0];
+  },
+  create: async (userData) => {
+    const { full_name, email, password_hash, role, department } = userData;
+    const [result] = await db.query(
+      'INSERT INTO users (full_name, email, password_hash, role, department) VALUES (?, ?, ?, ?, ?)',
+      [full_name, email, password_hash, role || 'Student', department || 'General']
+    );
+    return result.insertId;
+  }
+};
+
+module.exports = User;
+>>>>>>> 3f22ea3b830880e80bb60d51cdff21285aedaa0f

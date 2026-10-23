@@ -1,9 +1,100 @@
+/* ==============================================================================
+ * PROJECT HANAP - CAMPUS SYSTEM STYLESHEET
+ * Modern Design System Tokens & Custom Utilities
+ * ============================================================================== */
+
+:root {
+  --primary-color: #1e3a8a;
+  --primary-hover: #1e40af;
+  --secondary-color: #0f172a;
+  --accent-color: #f59e0b;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --bg-surface: #ffffff;
+  --bg-canvas: #f8fafc;
+  --border-subtle: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font-family-base);
+  color: var(--text-primary);
+  background-color: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Helpers */
+.fw-extrabold { font-weight: 800; }
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-wider { letter-spacing: 0.05em; }
+.fs-xs { font-size: 0.785rem; }
+.fs-sm { font-size: 0.875rem; }
+
+/* Navbar */
+.main-navbar {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+}
+
+/* Hero Section */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+}
+
+.text-white-80 {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Cards & Surfaces */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+.backdrop-blur {
+  backdrop-filter: blur(8px);
+}
+
+/* Monospace item codes */
+.fw-mono {
+  font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Links & Hover States */
+.hover-white:hover {
+  color: #ffffff !important;
+}
+
+/* Form Controls */
+.form-control:focus, .form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.15);
+}
+
+/* ==============================================================================
+ * BRANDED LANDING & AUTH PAGE STYLES
+ * Micro-animations and layout rules for landing radar & beacon
+ * ============================================================================== */
+
 .landing-page,
 .login-page,
 .register-page {
-	margin: 0;
-	padding: 0;
-	overscroll-behavior: none;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
 }
 
 html.landing-page::-webkit-scrollbar,
@@ -12,41 +103,41 @@ html.login-page::-webkit-scrollbar,
 body.login-page::-webkit-scrollbar,
 html.register-page::-webkit-scrollbar,
 body.register-page::-webkit-scrollbar {
-	display: none;
+  display: none;
 }
 
 body.login-page main > :first-child,
 body.register-page main > :first-child {
-	margin-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 body.login-page main > :last-child,
 body.register-page main > :last-child {
-	margin-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 body.landing-page .landing-aurora-one {
-	animation-duration: 9s;
+  animation-duration: 9s;
 }
 
 body.landing-page .landing-aurora-two {
-	animation-duration: 11s;
-	animation-delay: 2s;
+  animation-duration: 11s;
+  animation-delay: 2s;
 }
 
 body.landing-page .landing-aurora-three {
-	animation-duration: 8s;
-	animation-delay: 1s;
+  animation-duration: 8s;
+  animation-delay: 1s;
 }
 
 body.landing-page .landing-ripple {
-	animation-duration: 6s;
+  animation-duration: 6s;
 }
 
 body.landing-page .landing-radar {
-	animation-duration: 120s;
+  animation-duration: 120s;
 }
 
 body.landing-page .landing-orbit {
-	animation-duration: 16s;
+  animation-duration: 16s;
 }
