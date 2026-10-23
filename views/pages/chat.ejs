@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html class="h-full hanap-hide-scrollbar hanap-reset-main-gutters" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Project HANAP - Case Claim &amp; Chat #<%= claim.id %></title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#09436b",
+            "primary-container": "#2b5b84",
+            "secondary": "#0058be",
+            "on-surface": "#131b2e",
+            "on-surface-variant": "#42474e",
+            "error": "#ba1a1a"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <%- include('partials/themeSetup') %>
+</head>
+<body class="min-h-full bg-slate-50/50 font-sans text-on-surface antialiased flex flex-col justify-between relative overflow-x-hidden">
+  
+  <!-- Ambient Aurora Glowing Backdrops -->
+  <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden="true">
+    <div class="absolute -top-[18%] -left-[10%] w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sky-300/35 via-blue-400/25 to-teal-200/20 blur-[130px]"></div>
+    <div class="absolute top-[35%] -right-[12%] w-[620px] h-[620px] rounded-full bg-gradient-to-br from-indigo-200/30 via-slate-300/35 to-sky-200/25 blur-[140px]"></div>
+    <div class="absolute -bottom-[20%] left-[25%] w-[550px] h-[550px] rounded-full bg-gradient-to-t from-cyan-200/25 via-blue-100/35 to-transparent blur-[120px]"></div>
+  </div>
+
+  <%- include('partials/navbar', { active: 'claims' }) %>
+
+  <main class="w-full pt-20 sm:pt-24 pb-8 flex-1 flex flex-col items-center">
+    <!-- Minimalist Centered Messenger Workspace (max-width 960px) -->
+    <div class="w-full max-w-[960px] mx-auto px-3 sm:px-6 flex flex-col flex-1">
+      
+      <!-- Flash Notifications -->
+      <% if (typeof msg !== 'undefined' && msg) { %>
+        <div class="mb-3 p-3.5 rounded-2xl bg-teal-50 border border-teal-200 text-teal-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-teal-600 text-[18px]">check_circle</span>
+          <span><%= msg %></span>
+        </div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="mb-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+          <span class="material-symbols-outlined text-rose-600 text-[18px]">error</span>
+          <span><%= error %></span>
+        </div>
+      <% } %>
+
+      <!-- Elevated Frosted Glass Workspace Card -->
+      <div class="bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/90 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),0_1px_3px_rgba(0,0,0,0.02)] flex flex-col h-[740px] overflow-hidden relative">
+        
+        <!-- Top Glass Header Bar -->
+        <div class="px-4 sm:px-6 py-3.5 border-b border-slate-200/60 bg-white/60 backdrop-blur-xl flex items-center justify-between gap-3 select-none shrink-0 z-20">
+          
+          <!-- Left: Back Button + Thumbnail + Verified Meta -->
+          <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <a class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-white/80 border border-slate-200/50 transition-all shrink-0" href="/claims" title="Back to claims">
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </a>
+            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-sky-50 to-blue-100/80 border border-blue-200/70 flex items-center justify-center shrink-0 shadow-xs text-primary overflow-hidden">
+              <% if (claim.image_path) { %>
+                <img src="<%= claim.image_path %>" alt="" class="w-full h-full object-cover"/>
+              <% } else { %>
+                <span class="material-symbols-outlined text-[22px] text-[#2B5B84]">badge</span>
+              <% } %>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[16px] sm:text-[18px] text-on-surface font-bold truncate leading-tight tracking-tight">
+                  <%= claim.item_name %>
+                </span>
+                <% if (claim.status === 'approved') { %>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)] text-[11px] font-semibold leading-none">
+                    <span class="material-symbols-outlined text-[13px] font-bold">check</span>
+                    <span>Answer Verified</span>
+                  </span>
+                <% } else if (claim.status === 'escalated') { %>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 border border-indigo-400/40 text-[11px] font-semibold leading-none">
+                    <span class="material-symbols-outlined text-[13px] font-bold">shield</span>
+                    <span>Escalated to Security</span>
+                  </span>
+                <% } else if (claim.status === 'rejected') { %>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-700 border border-rose-400/40 text-[11px] font-semibold leading-none">
+                    <span class="material-symbols-outlined text-[13px] font-bold">close</span>
+                    <span>Claim Rejected</span>
+                  </span>
+                <% } else { %>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-400/40 text-[11px] font-semibold leading-none">
+                    <span class="material-symbols-outlined text-[13px] font-bold">hourglass_top</span>
+                    <span>Coordination in Progress</span>
+                  </span>
+                <% } %>
+              </div>
+              <span class="text-[11px] sm:text-[12px] text-on-surface-variant/80 mt-0.5 truncate">
+                Direct handover coordination with <%= userIsClaimant ? (claim.reporter_name + ' (Finder)') : (claim.claimant_name + ' (Claimant)') %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Right: Gradient Mark Returned CTA & Menu -->
+          <div class="flex items-center gap-2 shrink-0 relative">
+            <% const itemMarkedReturned = claim.item_status === 'returned' || claim.status === 'returned'; %>
+            <% if (!itemMarkedReturned && (claim.status === 'approved' || claim.status === 'pending') && (userIsReporter || userIsAdmin)) { %>
+              <form action="/claims/<%= claim.id %>/status" method="POST" class="inline" onsubmit="return confirm('Mark this item as returned and close the case?');">
+                <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                <% } %>
+                <input type="hidden" name="action" value="returned"/>
+                <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 h-9 sm:h-10 rounded-xl bg-gradient-to-r from-[#2B5B84] to-[#1d4d73] hover:from-[#204464] hover:to-[#173a56] text-white text-xs sm:text-sm shadow-md shadow-blue-950/15 hover:shadow-lg transition-all font-semibold active:scale-[0.98] border border-white/20 cursor-pointer">
+                  <span class="material-symbols-outlined text-[17px] sm:text-[18px]">check_circle</span>
+                  <span>Mark Returned</span>
+                </button>
+              </form>
+            <% } else if (itemMarkedReturned) { %>
+              <div class="inline-flex items-center gap-1 px-3 h-9 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                <span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+                <span>Returned</span>
+              </div>
+            <% } %>
+
+            <!-- '⋯' overflow menu -->
+            <div class="relative" id="menuDropdownWrapper">
+              <button aria-expanded="false" aria-haspopup="true" aria-label="More options" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-on-surface bg-slate-100/70 hover:bg-white border border-slate-200/60 transition-all cursor-pointer" id="moreOptionsBtn" type="button">
+                <span class="material-symbols-outlined text-[20px]">more_horiz</span>
+              </button>
+              <div class="hidden absolute right-0 top-12 w-56 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-xl py-1.5 z-30" id="optionsMenu">
+                <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Escalate this case to Campus Security for arbitration?');">
+                  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                  <% } %>
+                  <input type="hidden" name="action" value="escalated"/>
+                  <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-error hover:bg-rose-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">shield_person</span>
+                    <span>Escalate to Security</span>
+                  </button>
+                </form>
+                <% if (claim.status === 'pending' && (userIsReporter || userIsAdmin)) { %>
+                  <div class="h-px bg-slate-100 my-1"></div>
+                  <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Reject this ownership claim?');">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                    <% } %>
+                    <input type="hidden" name="action" value="rejected"/>
+                    <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px] text-slate-400">cancel</span>
+                      <span>Reject Claim</span>
+                    </button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Canvas & Floating Message Stream -->
+        <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-5 space-y-4 bg-gradient-to-b from-white/30 via-slate-50/20 to-sky-50/20" id="chatThread">
+          
+          <!-- Proof Statement / Finder Prompt Banner -->
+          <div class="p-3.5 rounded-2xl bg-white/70 backdrop-blur-md border border-slate-200/70 shadow-2xs text-xs text-slate-700">
+            <span class="font-bold text-[#09436B]">Ownership Claim Statement:</span>
+            <p class="mt-1 text-slate-800 leading-relaxed font-medium">"<%= claim.proof_details %>"</p>
+          </div>
+
+          <!-- Timestamp separator -->
+          <div class="flex items-center justify-center my-1">
+            <span class="px-3 py-1 rounded-full bg-white/60 backdrop-blur-md border border-slate-200/50 text-[11px] text-slate-500 font-medium tracking-wide uppercase shadow-2xs">
+              Case opened • <%= new Date(claim.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) %>
+            </span>
+          </div>
+
+          <!-- Loop Real Messages -->
+          <% if (messages && messages.length > 0) { %>
+            <% messages.forEach(msg => { %>
+              <% const isMe = msg.sender_id === user.id; %>
+              <% const initials = (msg.sender_name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(); %>
+              
+              <% if (!isMe) { %>
+                <!-- Left Bubble (Other User) -->
+                <div class="flex items-end gap-2.5 max-w-[85%] sm:max-w-[65%]">
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-100 to-indigo-100 text-[#2B5B84] border border-blue-200/60 text-[11px] font-bold flex items-center justify-center shrink-0 mb-0.5 shadow-2xs">
+                    <%= initials %>
+                  </div>
+                  <div class="flex flex-col items-start">
+                    <div class="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white/90 backdrop-blur-md border border-slate-200/60 text-slate-800 text-xs sm:text-sm shadow-[0_2px_8px_rgba(15,23,42,0.04)] leading-relaxed">
+                      <%= msg.message %>
+                    </div>
+                    <span class="text-[11px] text-slate-400 mt-1 px-1 font-medium">
+                      <%= msg.sender_name %> • <%= new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
+                    </span>
+                  </div>
+                </div>
+              <% } else { %>
+                <!-- Right Bubble (Current User) -->
+                <div class="flex items-end justify-end gap-2.5 max-w-[85%] sm:max-w-[65%] ml-auto">
+                  <div class="flex flex-col items-end">
+                    <div class="px-4 py-2.5 rounded-2xl rounded-br-sm bg-gradient-to-br from-[#2B5B84] to-[#194060] text-white text-xs sm:text-sm shadow-md shadow-blue-950/15 border border-white/20 leading-relaxed">
+                      <%= msg.message %>
+                    </div>
+                    <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-1 px-1 font-medium">
+                      <span><%= new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+                      <span class="material-symbols-outlined text-[13px] text-sky-600 font-semibold">done_all</span>
+                    </div>
+                  </div>
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-500 to-blue-700 text-white text-[11px] font-bold flex items-center justify-center shrink-0 mb-0.5 shadow-2xs">
+                    ME
+                  </div>
+                </div>
+              <% } %>
+            <% }) %>
+          <% } else { %>
+            <div class="text-center py-10 text-slate-400 text-xs">
+              <span class="material-symbols-outlined text-3xl mb-1 text-slate-300">chat</span>
+              <p>No messages yet. Send a message below to coordinate handover details.</p>
+            </div>
+          <% } %>
+
+          <!-- Inline Frosted Privacy Pill -->
+          <div class="flex items-center justify-center py-2">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-sky-200/60 shadow-2xs text-[11px] sm:text-xs text-slate-600">
+              <span class="inline-flex items-center gap-1 font-semibold text-slate-700">
+                <span class="material-symbols-outlined text-[14px] text-sky-600">lock</span>
+                <span>Contact details auto-masked for privacy</span>
+              </span>
+              <span class="h-3 w-px bg-slate-300"></span>
+              <span class="font-mono text-slate-500 font-medium">09**-***-**09</span>
+            </div>
+          </div>
+
+          <!-- Dynamic New Bubbles Area -->
+          <div class="space-y-4" id="dynamicBubbleArea"></div>
+        </div>
+
+        <!-- Bottom Floating Glass Pill Input Bar -->
+        <div class="p-3 sm:px-6 sm:py-4 bg-white/60 backdrop-blur-xl border-t border-slate-200/60 shrink-0">
+          <form class="flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-full px-3 py-1.5 sm:px-4 sm:py-2 border border-slate-200/80 shadow-[0_4px_16px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-sky-500/40 focus-within:border-sky-400 focus-within:bg-white transition-all" id="chatForm" action="/claims/<%= claim.id %>/messages" method="POST">
+            <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+            <% } %>
+
+            <!-- Attachment Icon -->
+            <button aria-label="Add attachment" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors shrink-0" type="button" onclick="alert('Image attachments are routed through institutional storage.');">
+              <span class="material-symbols-outlined text-[20px]">attach_file</span>
+            </button>
+
+            <!-- Input 'Type a message...' -->
+            <input 
+              autocomplete="off" 
+              class="flex-1 bg-transparent border-0 text-slate-800 placeholder:text-slate-400 text-xs sm:text-sm focus:ring-0 focus:outline-none px-2 py-1" 
+              id="messageInput" 
+              name="message" 
+              placeholder="Type a message..." 
+              required 
+              type="text"
+            />
+
+            <!-- Glowing Azure Send Button -->
+            <button aria-label="Send message" class="w-9 h-9 rounded-full bg-gradient-to-r from-sky-500 to-[#2B5B84] hover:from-sky-400 hover:to-[#224869] text-white flex items-center justify-center transition-all shadow-[0_0_16px_rgba(14,165,233,0.4)] shrink-0 active:scale-95 border border-white/30 cursor-pointer" id="sendMessageBtn" type="submit">
+              <span class="material-symbols-outlined text-[19px]">arrow_upward</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="w-full bg-white/60 backdrop-blur-xl border-t border-slate-200/60 py-4 mt-auto">
+    <div class="max-w-[960px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant">
+      <div class="flex items-center gap-2 text-[13px]">
+        <span class="material-symbols-outlined text-[16px] text-[#2B5B84]">explore</span>
+        <span class="font-semibold text-primary">Project HANAP</span>
+        <span>— Camarines Sur Polytechnic Colleges</span>
+      </div>
+      <div class="text-[12px] text-slate-400">© 2026 CSPC Student Council &amp; IT Services</div>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      // Dropdown toggle logic
+      const moreBtn = document.getElementById('moreOptionsBtn');
+      const optionsMenu = document.getElementById('optionsMenu');
+
+      if (moreBtn && optionsMenu) {
+        moreBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isHidden = optionsMenu.classList.contains('hidden');
+          if (isHidden) {
+            optionsMenu.classList.remove('hidden');
+            moreBtn.setAttribute('aria-expanded', 'true');
+          } else {
+            optionsMenu.classList.add('hidden');
+            moreBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!optionsMenu.contains(e.target) && e.target !== moreBtn) {
+            optionsMenu.classList.add('hidden');
+            moreBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      // Auto-scroll chat thread to bottom on page load
+      const chatThread = document.getElementById('chatThread');
+      if (chatThread) {
+        chatThread.scrollTop = chatThread.scrollHeight;
+      }
+    })();
+  </script>
+</body>
+</html>
