@@ -100,6 +100,7 @@ app.post('/register', registerLimiter);
 // Application Routes
 app.use('/', require('./routes/homeRoutes'));
 app.use('/', require('./routes/authRoutes'));
+app.use('/api/assistant', require('./routes/assistantRoutes'));
 app.use('/', require('./routes/itemRoutes'));
 
 // 404 Not Found Handler
