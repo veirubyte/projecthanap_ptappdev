@@ -229,6 +229,10 @@
   </div>
 </header>
 
+<% if (typeof user !== 'undefined' && user) { %>
+  <%- include('assistantWidget') %>
+<% } %>
+
 <script>
   // Global Dark Mode Controller
   function updateThemeUI(isDark) {

@@ -1,0 +1,40 @@
+<div class="hanap-assistant" id="hanapAssistant" data-csrf-token="<%= csrfToken %>">
+  <section class="hanap-assistant__panel" id="hanapAssistantPanel" aria-label="HANAP AI Assistant" hidden>
+    <header class="hanap-assistant__header">
+      <span class="hanap-assistant__brand-icon material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+      <div class="hanap-assistant__heading">
+        <strong>HANAP AI Assistant</strong>
+        <span>Ask about using Project HANAP</span>
+      </div>
+      <button class="hanap-assistant__icon-button" id="hanapAssistantClose" type="button" aria-label="Close assistant">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <div class="hanap-assistant__messages" id="hanapAssistantMessages" aria-live="polite" aria-relevant="additions">
+      <div class="hanap-assistant__message hanap-assistant__message--assistant">
+        Hi! I can help you find your way around HANAP, report an item, or understand the claims process.
+      </div>
+      <div class="hanap-assistant__suggestions" id="hanapAssistantSuggestions">
+        <button type="button" data-assistant-prompt="How do I report a lost item?">How do I report a lost item?</button>
+        <button type="button" data-assistant-prompt="How does the ownership claim process work?">How do claims work?</button>
+      </div>
+    </div>
+
+    <form class="hanap-assistant__form" id="hanapAssistantForm">
+      <label class="hanap-assistant__sr-only" for="hanapAssistantInput">Ask the HANAP assistant</label>
+      <input id="hanapAssistantInput" name="message" type="text" maxlength="1000" autocomplete="off" placeholder="Ask HANAP AI anything..." required/>
+      <button class="hanap-assistant__send" id="hanapAssistantSend" type="submit" aria-label="Send message">
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+      </button>
+    </form>
+    <p class="hanap-assistant__disclaimer">AI can make mistakes. Do not share passwords or sensitive information.</p>
+  </section>
+
+  <button class="hanap-assistant__launcher" id="hanapAssistantToggle" type="button" aria-label="Open HANAP AI Assistant" aria-expanded="false" aria-controls="hanapAssistantPanel">
+    <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+    <span>HANAP AI</span>
+  </button>
+</div>
+
+<script src="/js/assistant.js" defer></script>
