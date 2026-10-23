@@ -168,41 +168,36 @@
         <!-- Smart Photo Dropzone -->
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-slate-800 uppercase tracking-wider">Photo</label>
+            <label class="text-xs font-bold text-slate-800 uppercase tracking-wider">Photos</label>
             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20 text-[11px] font-semibold">
               ⚡ Safe Storage • Privacy Protected
             </span>
           </div>
           <div class="flex flex-col sm:flex-row items-center gap-3">
             <label class="flex-1 w-full border-2 border-dashed border-sky-300/70 bg-white/50 hover:bg-white/80 backdrop-blur-md rounded-2xl p-4 flex items-center justify-center gap-2 cursor-pointer hover:border-[#2B5B84] transition-all group shadow-inner">
-              <input accept="image/jpeg,image/png,image/webp" class="hidden" id="photoInput" name="photo" type="file" onchange="handlePhotoSelect(event)"/>
+              <input accept="image/jpeg,image/png,image/webp" class="hidden" id="photoInput" name="photos" type="file" multiple onchange="handlePhotoSelect(event)"/>
               <span class="material-symbols-outlined text-[#2B5B84] group-hover:scale-110 transition-transform text-[24px]">photo_camera</span>
-              <span class="text-xs font-bold text-slate-600 group-hover:text-[#2B5B84] transition-colors" id="photoLabel">
-                Click to attach photo (JPEG, PNG, WebP)
+              <span class="text-xs font-bold text-slate-600 group-hover:text-[#2B5B84] transition-colors text-center" id="photoLabel">
+                Click to attach photos (up to 6, JPEG, PNG, WebP)
               </span>
             </label>
-            <!-- Thumbnail Preview Chip -->
-            <div id="photoPreviewChip" class="hidden items-center gap-2.5 p-2 pr-3 rounded-2xl border border-white/80 bg-white/85 backdrop-blur-xl shadow-xs shrink-0">
-              <img id="photoPreviewImg" alt="Thumbnail" class="w-10 h-10 rounded-xl object-cover ring-1 ring-black/5" src=""/>
-              <span id="photoPreviewName" class="text-xs font-semibold text-slate-800 truncate max-w-[120px]">photo.jpg</span>
-              <button aria-label="Remove" class="text-slate-400 hover:text-rose-600 transition-colors p-1" type="button" onclick="removePhoto()">
-                <span class="material-symbols-outlined text-[16px]">close</span>
-              </button>
-            </div>
           </div>
+          <p class="text-[11px] text-slate-500">Each image must be 5 MB or smaller. The first image will be used as the report cover.</p>
+          <p id="photoUploadError" class="hidden text-xs font-semibold text-rose-600" role="alert"></p>
+          <div id="photoPreviewGallery" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
         </div>
 
         <!-- Found Verification Glass Pod (Shown for Found Items, optional for Lost) -->
-        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-sky-500/10 via-slate-50/60 to-indigo-500/5 backdrop-blur-xl border border-sky-200/60 shadow-xs flex flex-col gap-4">
-          <div class="flex items-center gap-2 text-[#09436B] font-bold text-sm">
+        <div class="ownership-verification-card p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-sky-500/10 via-slate-50/60 to-indigo-500/5 backdrop-blur-xl border border-sky-200/60 shadow-xs flex flex-col gap-4">
+          <div class="ownership-verification-heading flex items-center gap-2 text-[#09436B] font-bold text-sm">
             <span class="material-symbols-outlined text-[20px]">key</span>
             <span>Ownership Verification Challenge (Optional)</span>
           </div>
-          <p class="text-xs text-slate-600 -mt-2">
+          <p class="ownership-verification-description text-xs text-slate-600 -mt-2">
             Add a private question and its correct answer. Both are optional, but you must enter both or leave both blank. Claimants never see the correct answer.
           </p>
           <input 
-            class="w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs" 
+            class="ownership-challenge-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs" 
             id="verificationChallenge" 
             name="secret_challenge" 
             placeholder="e.g. What specific pin, keychain, or sticker is attached to it?" 
@@ -210,7 +205,7 @@
             type="text"
           />
           <input
-            class="w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs"
+            class="ownership-challenge-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs"
             id="verificationAnswer"
             name="secret_answer"
             placeholder="Private correct answer (never shown to claimants)"
@@ -221,16 +216,16 @@
 
           <!-- Custody Card Toggle -->
           <div class="flex flex-col gap-2 pt-1">
-            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Custody Preference</span>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-sky-300 bg-white text-[#09436B] shadow-xs hover:shadow-sm font-semibold text-xs">
+            <span class="ownership-custody-title text-xs font-bold text-slate-700 uppercase tracking-wider">Custody Preference</span>
+            <div class="ownership-custody-options grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-sky-300 bg-white text-[#09436B] shadow-xs hover:shadow-sm font-semibold text-xs">
                 <input checked class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer" name="custody_mode" type="radio" value="peer_meetup"/>
                 <div>
                   <span class="block font-bold">🤝 Peer Meetup</span>
                   <span class="text-[11px] font-normal text-slate-500">Coordinate secure campus handover once verified</span>
                 </div>
               </label>
-              <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-slate-200 bg-white/70 hover:bg-white text-slate-700 shadow-xs hover:shadow-sm font-semibold text-xs">
+              <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-slate-200 bg-white/70 hover:bg-white text-slate-700 shadow-xs hover:shadow-sm font-semibold text-xs">
                 <input class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer" name="custody_mode" type="radio" value="security_desk"/>
                 <div>
                   <span class="block font-bold">🛡️ Security Desk</span>
@@ -270,6 +265,12 @@
   <script>
     const challengeInput = document.getElementById('verificationChallenge');
     const answerInput = document.getElementById('verificationAnswer');
+    const MAX_REPORT_PHOTOS = 6;
+    const photoInput = document.getElementById('photoInput');
+    const photoLabel = document.getElementById('photoLabel');
+    const photoPreviewGallery = document.getElementById('photoPreviewGallery');
+    const photoUploadError = document.getElementById('photoUploadError');
+    let photoPreviewUrls = [];
 
     function validateChallengePair() {
       const hasChallenge = challengeInput.value.trim().length > 0;
@@ -312,36 +313,71 @@
       }
     }
 
-    function handlePhotoSelect(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    function renderPhotoPreviews() {
+      photoPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+      photoPreviewUrls = [];
+      photoPreviewGallery.replaceChildren();
 
-      const previewChip = document.getElementById('photoPreviewChip');
-      const previewImg = document.getElementById('photoPreviewImg');
-      const previewName = document.getElementById('photoPreviewName');
-      const photoLabel = document.getElementById('photoLabel');
+      const files = Array.from(photoInput.files || []);
+      photoLabel.textContent = files.length
+        ? `${files.length} photo${files.length === 1 ? '' : 's'} selected`
+        : 'Click to attach photos (up to 6, JPEG, PNG, WebP)';
+      photoPreviewGallery.classList.toggle('hidden', files.length === 0);
 
-      previewName.textContent = file.name;
-      photoLabel.textContent = `Selected: ${file.name}`;
+      files.forEach((file, index) => {
+        const previewUrl = URL.createObjectURL(file);
+        photoPreviewUrls.push(previewUrl);
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        previewImg.src = e.target.result;
-        previewChip.classList.remove('hidden');
-        previewChip.classList.add('flex');
-      };
-      reader.readAsDataURL(file);
+        const preview = document.createElement('div');
+        preview.className = 'relative overflow-hidden rounded-xl border border-slate-200 bg-white/80';
+
+        const image = document.createElement('img');
+        image.src = previewUrl;
+        image.alt = `Selected photo ${index + 1}: ${file.name}`;
+        image.className = 'w-full h-28 object-cover';
+
+        const footer = document.createElement('div');
+        footer.className = 'flex items-center justify-between gap-2 p-2';
+
+        const name = document.createElement('span');
+        name.className = 'text-[11px] font-semibold text-slate-700 truncate';
+        name.textContent = file.name;
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'shrink-0 text-slate-500 hover:text-rose-600';
+        removeButton.setAttribute('aria-label', `Remove ${file.name}`);
+        removeButton.innerHTML = '<span class="material-symbols-outlined text-[18px]">close</span>';
+        removeButton.addEventListener('click', () => removePhoto(index));
+
+        footer.append(name, removeButton);
+        preview.append(image, footer);
+        photoPreviewGallery.append(preview);
+      });
     }
 
-    function removePhoto() {
-      const fileInput = document.getElementById('photoInput');
-      const previewChip = document.getElementById('photoPreviewChip');
-      const photoLabel = document.getElementById('photoLabel');
+    function handlePhotoSelect(event) {
+      const files = Array.from(event.target.files || []);
+      photoUploadError.textContent = '';
+      photoUploadError.classList.add('hidden');
 
-      fileInput.value = '';
-      previewChip.classList.add('hidden');
-      previewChip.classList.remove('flex');
-      photoLabel.textContent = 'Click to attach photo (JPEG, PNG, WebP)';
+      if (files.length > MAX_REPORT_PHOTOS) {
+        photoInput.value = '';
+        photoUploadError.textContent = `Choose no more than ${MAX_REPORT_PHOTOS} photos per report.`;
+        photoUploadError.classList.remove('hidden');
+      }
+
+      renderPhotoPreviews();
+    }
+
+    function removePhoto(index) {
+      const files = Array.from(photoInput.files || []);
+      files.splice(index, 1);
+
+      const transfer = new DataTransfer();
+      files.forEach((file) => transfer.items.add(file));
+      photoInput.files = transfer.files;
+      renderPhotoPreviews();
     }
   </script>
 </body>

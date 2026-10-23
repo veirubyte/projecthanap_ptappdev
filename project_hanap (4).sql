@@ -395,6 +395,30 @@ ALTER TABLE `users`
   ADD CONSTRAINT `fk_users_account_role` FOREIGN KEY (`role_id`) REFERENCES `account_roles` (`id`),
   ADD CONSTRAINT `fk_users_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
+CREATE TABLE item_report_images (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  report_id INT NOT NULL,
+  image_path VARCHAR(255) NOT NULL,
+  is_primary TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_item_report_images_report_order (report_id, sort_order),
+  CONSTRAINT fk_item_report_images_report
+    FOREIGN KEY (report_id) REFERENCES item_reports(id)
+    ON DELETE CASCADE
+);
+
+INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
+SELECT r.id, r.image_path, 1, 0
+FROM item_reports r
+WHERE r.image_path IS NOT NULL
+  AND r.image_path <> ''
+  AND NOT EXISTS (
+    SELECT 1
+    FROM item_report_images existing_image
+    WHERE existing_image.report_id = r.id
+      AND existing_image.image_path = r.image_path
+  );
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

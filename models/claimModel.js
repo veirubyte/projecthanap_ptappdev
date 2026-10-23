@@ -1,4 +1,9 @@
 const db = require('../config/db');
+const primaryImageSelect = `COALESCE((SELECT report_image.image_path
+             FROM item_report_images report_image
+             WHERE report_image.report_id = r.id
+             ORDER BY report_image.is_primary DESC, report_image.sort_order ASC, report_image.id ASC
+             LIMIT 1), r.image_path) AS primary_image_path`;
 
 async function showDashboard(params, values = [], connection = db) {
     return connection.execute(`SELECT u.id, u.full_name, COUNT(c.id) AS handover_count, MAX(c.created_at) AS latest_at
@@ -13,7 +18,7 @@ async function showDashboard(params, values = [], connection = db) {
 
 async function showDashboardQuery2(params, values = [], connection = db) {
     return connection.execute(`
-                SELECT c.*, r.item_name, r.image_path, claimant.full_name AS claimant_name, reporter.full_name AS reporter_name,
+                SELECT c.*, r.item_name, ${primaryImageSelect}, claimant.full_name AS claimant_name, reporter.full_name AS reporter_name,
                        (SELECT message FROM claim_messages WHERE claim_id = c.id ORDER BY sent_at DESC LIMIT 1) AS last_message,
                        (SELECT sent_at FROM claim_messages WHERE claim_id = c.id ORDER BY sent_at DESC LIMIT 1) AS last_message_at
                 FROM claims c
@@ -46,7 +51,7 @@ async function cancelClaim(params, values = [], connection = db) {
 }
 
 async function listClaims(params, values = [], connection = db) {
-    return connection.execute(`SELECT c.*, r.item_name, r.report_type, r.image_path, r.location_found_lost, r.status AS item_status, u.full_name AS reporter_name
+    return connection.execute(`SELECT c.*, r.item_name, r.report_type, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status, u.full_name AS reporter_name
              FROM claims c
              JOIN item_reports r ON r.id = c.item_id
              JOIN users u ON u.id = r.user_id
@@ -55,7 +60,7 @@ async function listClaims(params, values = [], connection = db) {
 }
 
 async function listClaimsQuery2(params, values = [], connection = db) {
-    return connection.execute(`SELECT c.*, r.item_name, r.report_type, r.image_path, r.location_found_lost, r.status AS item_status, u.full_name AS claimant_name
+    return connection.execute(`SELECT c.*, r.item_name, r.report_type, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status, u.full_name AS claimant_name
              FROM claims c
              JOIN item_reports r ON r.id = c.item_id
              JOIN users u ON u.id = c.claimant_id
@@ -65,7 +70,7 @@ async function listClaimsQuery2(params, values = [], connection = db) {
 
 async function showClaimChat(params, values = [], connection = db) {
     return connection.execute(`SELECT c.*, 
-                    r.item_name, r.category, r.description AS item_description, r.location_found_lost, r.image_path, r.status AS item_status, r.user_id AS reporter_id,
+                    r.item_name, r.category, r.description AS item_description, r.location_found_lost, ${primaryImageSelect}, r.status AS item_status, r.user_id AS reporter_id,
                     claimant.full_name AS claimant_name, claimant.email AS claimant_email, claimant_role.role_code AS claimant_role,
                     reporter.full_name AS reporter_name, reporter.email AS reporter_email, reporter_role.role_code AS reporter_role
              FROM claims c
@@ -129,7 +134,7 @@ async function updateClaimStatusQuery6(params, values = [], connection = db) {
 }
 
 async function showSettings(params, values = [], connection = db) {
-    return connection.execute(`SELECT c.*, r.item_name, r.report_type, r.location_found_lost, r.image_path, r.status AS item_status, u.full_name AS reporter_name
+    return connection.execute(`SELECT c.*, r.item_name, r.report_type, r.location_found_lost, ${primaryImageSelect}, r.status AS item_status, u.full_name AS reporter_name
              FROM claims c
              JOIN item_reports r ON r.id = c.item_id
              JOIN users u ON u.id = r.user_id
@@ -150,7 +155,7 @@ async function showAdminDashboard(params, values = [], connection = db) {
 
 async function showAdminDashboardQuery2(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, r.image_path, r.location_found_lost, r.status AS item_status,
+            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
@@ -163,7 +168,7 @@ async function showAdminDashboardQuery2(params, values = [], connection = db) {
 
 async function showAdminDashboardQuery3(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, r.image_path, r.location_found_lost, r.status AS item_status,
+            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
@@ -188,7 +193,7 @@ async function listAdminUsers(params, values = [], connection = db) {
 
 async function listHandoverClaims(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, r.image_path, r.location_found_lost,
+            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role, u.email AS claimant_email, u.student_id
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
@@ -201,7 +206,7 @@ async function listHandoverClaims(params, values = [], connection = db) {
 
 async function showHandoverClaim(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, r.image_path, r.location_found_lost, r.status AS item_status,
+            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role, u.email AS claimant_email, u.student_id
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
