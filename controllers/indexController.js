@@ -1,30 +1,10 @@
 /**
- * Index / Dashboard Controller
+ * Index Controller (Starter Scaffold)
  * Project HANAP - Campus System Round 1
  */
 
-/**
- * Render Home / Overview Page
- */
 exports.getHomePage = (req, res) => {
   res.render('pages/index', {
-    title: 'Project HANAP - Campus System',
-    user: req.session ? req.session.user : null,
-    stats: {
-      reportedLost: 18,
-      reportedFound: 24,
-      reunited: 15,
-      activeOffices: 4
-    }
-  });
-};
-
-/**
- * Render About / System Specs Page
- */
-exports.getAboutPage = (req, res) => {
-  res.render('pages/about', {
-    title: 'About Project HANAP',
-    user: req.session ? req.session.user : null
+    title: 'Project HANAP - Starter Baseline'
   });
 };
