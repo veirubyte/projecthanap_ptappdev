@@ -1,4 +1,4 @@
-﻿const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const userModel = require('../models/userModel');
 const guardianLinkModel = require('../models/guardianLinkModel');
@@ -12,7 +12,7 @@ const {
     isInstitutional,
     isGuest
 } = require('../config/roles');
-const { issueCode, verifyCode } = require('../services/mfa');
+const { issueCode, verifyCode, issuePasswordResetCode } = require('../services/mfa');
 
 
 /**
@@ -625,10 +625,344 @@ const logout = (req, res, next) => {
     });
 };
 
+/**
+ * Helper to render the password recovery view with consistent states.
+ */
+function renderForgotPassword(res, options = {}) {
+    return res.status(options.status || 200).render('forgotPassword', {
+        step: options.step || 'request', // 'request', 'verify', 'reset', 'success'
+        tab: options.tab || 'self_service', // 'self_service' or 'institutional_info'
+        category: options.category || 'institution',
+        email: options.email || '',
+        maskedEmail: options.maskedEmail || '',
+        cooldownSeconds: Math.max(0, Number(options.cooldownSeconds) || 0),
+        attemptsRemaining: Math.max(0, Math.min(5, Number(options.attemptsRemaining ?? 5))),
+        errorTitle: options.errorTitle || null,
+        errorMessage: options.errorMessage || null,
+        errorType: options.errorType || null,
+        action: options.action || null,
+        invalidFields: options.invalidFields || [],
+        msg: options.msg || null,
+        resetToken: options.resetToken || null
+    });
+}
+
+// GET /forgot-password
+const showForgotPassword = (req, res) => {
+    if (req.session.user) {
+        return res.redirect(isAdmin(req.session.user) ? '/admin/dashboard' : '/dashboard');
+    }
+
+    if (req.query.reset === '1') {
+        delete req.session.pwdReset;
+        return res.redirect('/forgot-password');
+    }
+
+    const resetState = req.session.pwdReset;
+    const tab = req.query.tab === 'institutional' ? 'institutional_info' : 'self_service';
+    const initialEmail = typeof req.query.email === 'string' ? req.query.email : '';
+    const initialCategory = req.query.category === 'guest' || (!isInstitutionalEmail(initialEmail) && initialEmail.length > 0) ? 'guest' : 'institution';
+
+    if (!resetState) {
+        return renderForgotPassword(res, {
+            step: 'request',
+            tab,
+            category: initialCategory,
+            email: initialEmail
+        });
+    }
+
+    const cooldownSeconds = resetState.cooldownUntil
+        ? Math.max(0, Math.ceil((resetState.cooldownUntil - Date.now()) / 1000))
+        : 0;
+
+    return renderForgotPassword(res, {
+        step: resetState.step || 'request',
+        tab,
+        category: resetState.category || 'institution',
+        email: resetState.email || '',
+        maskedEmail: resetState.email ? maskEmail(resetState.email) : '',
+        cooldownSeconds,
+        attemptsRemaining: resetState.attemptsRemaining ?? 5,
+        resetToken: resetState.resetToken || null
+    });
+};
+
+// POST /forgot-password/request
+const requestPasswordReset = async (req, res) => {
+    const rawEmail = typeof req.body.email === 'string' ? req.body.email.trim() : '';
+    const category = req.body.category === 'guest' ? 'guest' : 'institution';
+
+    if (!rawEmail || !isValidEmailSyntax(rawEmail)) {
+        return renderForgotPassword(res, {
+            step: 'request',
+            tab: 'self_service',
+            category,
+            email: rawEmail,
+            invalidFields: ['email'],
+            errorTitle: 'Valid email required',
+            errorMessage: 'Please enter a valid email address to request password recovery.',
+            status: 400
+        });
+    }
+
+    try {
+        const [rows] = await userModel.login([rawEmail]);
+        if (rows.length === 0) {
+            return renderForgotPassword(res, {
+                step: 'request',
+                tab: 'self_service',
+                category,
+                email: rawEmail,
+                invalidFields: ['email'],
+                errorTitle: 'Account not found',
+                errorMessage: 'No Project HANAP account was found with this email address. Please double-check your email or register a new account.',
+                action: 'register',
+                status: 404
+            });
+        }
+
+        const user = rows[0];
+        const issueResult = await issuePasswordResetCode(user.id, user.email);
+
+        req.session.pwdReset = {
+            userId: user.id,
+            email: user.email,
+            fullName: user.full_name,
+            role: user.role,
+            category: isInstitutionalEmail(user.email) ? 'institution' : 'guest',
+            step: 'verify',
+            verified: false,
+            cooldownUntil: Date.now() + ((issueResult.retryAfterSeconds || 60) * 1000),
+            attemptsRemaining: issueResult.attemptsRemaining ?? 5
+        };
+
+        return res.redirect('/forgot-password');
+    } catch (error) {
+        console.error('Password reset request error:', error);
+        return renderForgotPassword(res, {
+            step: 'request',
+            tab: 'self_service',
+            category,
+            email: rawEmail,
+            errorTitle: 'Service error',
+            errorMessage: 'Could not send verification code at this time. Please try again later or contact the campus helpdesk.',
+            status: 500
+        });
+    }
+};
+
+// POST /forgot-password/resend
+const resendPasswordResetCode = async (req, res) => {
+    const resetState = req.session.pwdReset;
+    if (!resetState || !resetState.userId) {
+        return res.redirect('/forgot-password');
+    }
+
+    const now = Date.now();
+    if (resetState.cooldownUntil && resetState.cooldownUntil > now) {
+        return res.redirect('/forgot-password');
+    }
+
+    try {
+        const result = await issuePasswordResetCode(resetState.userId, resetState.email);
+        resetState.cooldownUntil = Date.now() + ((result.retryAfterSeconds || 60) * 1000);
+        resetState.attemptsRemaining = result.attemptsRemaining ?? 5;
+        return res.redirect('/forgot-password');
+    } catch (error) {
+        console.error('Resend reset code error:', error);
+        return renderForgotPassword(res, {
+            step: 'verify',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            errorTitle: 'Delivery error',
+            errorMessage: 'Unable to resend verification code right now. Please try again.',
+            status: 500
+        });
+    }
+};
+
+// POST /forgot-password/verify
+const verifyPasswordResetCode = async (req, res) => {
+    const resetState = req.session.pwdReset;
+    if (!resetState || !resetState.userId) {
+        return res.redirect('/forgot-password');
+    }
+
+    const submittedCode = typeof req.body.code === 'string' ? req.body.code.trim() : '';
+
+    if (!/^\d{6}$/.test(submittedCode)) {
+        return renderForgotPassword(res, {
+            step: 'verify',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            attemptsRemaining: resetState.attemptsRemaining,
+            cooldownSeconds: resetState.cooldownUntil ? Math.max(0, Math.ceil((resetState.cooldownUntil - Date.now()) / 1000)) : 0,
+            invalidFields: ['code'],
+            errorTitle: 'Invalid code format',
+            errorMessage: 'Please enter the full 6-digit numerical verification code sent to your email.',
+            status: 400
+        });
+    }
+
+    try {
+        const outcome = await verifyCode(resetState.userId, submittedCode);
+
+        if (outcome.status === 'verified') {
+            const token = crypto.randomBytes(32).toString('hex');
+            resetState.step = 'reset';
+            resetState.verified = true;
+            resetState.resetToken = token;
+            return res.redirect('/forgot-password');
+        }
+
+        resetState.attemptsRemaining = outcome.attemptsRemaining;
+
+        if (outcome.status === 'expired') {
+            return renderForgotPassword(res, {
+                step: 'verify',
+                category: resetState.category,
+                email: resetState.email,
+                maskedEmail: maskEmail(resetState.email),
+                attemptsRemaining: outcome.attemptsRemaining,
+                cooldownSeconds: 0,
+                errorTitle: 'Code expired',
+                errorMessage: 'This verification code has expired. Please request a new code to continue.',
+                status: 410
+            });
+        }
+
+        if (outcome.status === 'locked') {
+            return renderForgotPassword(res, {
+                step: 'verify',
+                category: resetState.category,
+                email: resetState.email,
+                maskedEmail: maskEmail(resetState.email),
+                attemptsRemaining: 0,
+                errorTitle: 'Verification attempts exceeded',
+                errorMessage: 'Too many incorrect verification attempts. For security reasons, please request a new verification code.',
+                status: 429
+            });
+        }
+
+        return renderForgotPassword(res, {
+            step: 'verify',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            attemptsRemaining: outcome.attemptsRemaining,
+            cooldownSeconds: resetState.cooldownUntil ? Math.max(0, Math.ceil((resetState.cooldownUntil - Date.now()) / 1000)) : 0,
+            invalidFields: ['code'],
+            errorTitle: 'Incorrect verification code',
+            errorMessage: `The 6-digit code entered is incorrect. You have ${outcome.attemptsRemaining} attempt(s) remaining.`,
+            status: 400
+        });
+    } catch (error) {
+        console.error('Password reset code verify error:', error);
+        return renderForgotPassword(res, {
+            step: 'verify',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            errorTitle: 'Verification error',
+            errorMessage: 'An unexpected error occurred while verifying your code. Please try again.',
+            status: 500
+        });
+    }
+};
+
+// POST /forgot-password/reset
+const completePasswordReset = async (req, res) => {
+    const resetState = req.session.pwdReset;
+    if (!resetState || !resetState.userId || !resetState.verified || !resetState.resetToken) {
+        return res.redirect('/forgot-password');
+    }
+
+    const { new_password, confirm_password, token } = req.body;
+
+    if (!token || token !== resetState.resetToken) {
+        return renderForgotPassword(res, {
+            step: 'reset',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            resetToken: resetState.resetToken,
+            errorTitle: 'Security token mismatch',
+            errorMessage: 'Your recovery session has expired or is invalid. Please restart the recovery process.',
+            status: 403
+        });
+    }
+
+    const passwordVal = typeof new_password === 'string' ? new_password : '';
+    const confirmVal = typeof confirm_password === 'string' ? confirm_password : '';
+
+    if (passwordVal !== confirmVal) {
+        return renderForgotPassword(res, {
+            step: 'reset',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            resetToken: resetState.resetToken,
+            invalidFields: ['confirm_password'],
+            errorTitle: 'Passwords do not match',
+            errorMessage: 'The new password and confirmation password do not match. Please re-enter both.',
+            status: 400
+        });
+    }
+
+    const strength = validatePasswordStrength(passwordVal);
+    if (!strength.valid) {
+        return renderForgotPassword(res, {
+            step: 'reset',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            resetToken: resetState.resetToken,
+            invalidFields: ['new_password'],
+            errorTitle: 'Password does not meet campus security standards',
+            errorMessage: `Password requirements not satisfied:\n• ${strength.errors.join('\n• ')}`,
+            status: 400
+        });
+    }
+
+    try {
+        const passwordHash = await bcrypt.hash(passwordVal, 10);
+        await userModel.updateSecurityQuery2([passwordHash, resetState.userId]);
+
+        // Clean up reset session
+        delete req.session.pwdReset;
+
+        return renderForgotPassword(res, {
+            step: 'success',
+            category: resetState.category,
+            msg: 'Your password has been reset successfully! You can now log into Project HANAP with your new credentials.'
+        });
+    } catch (error) {
+        console.error('Password reset completion error:', error);
+        return renderForgotPassword(res, {
+            step: 'reset',
+            category: resetState.category,
+            email: resetState.email,
+            maskedEmail: maskEmail(resetState.email),
+            resetToken: resetState.resetToken,
+            errorTitle: 'Update error',
+            errorMessage: 'Failed to update your password at this time. Please try again.',
+            status: 500
+        });
+    }
+};
+
 module.exports = {
     showLogin,
     login,
     showRegistration,
     register,
-    logout
+    logout,
+    showForgotPassword,
+    requestPasswordReset,
+    resendPasswordResetCode,
+    verifyPasswordResetCode,
+    completePasswordReset
 };
