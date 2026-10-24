@@ -33,7 +33,7 @@
 **Project HANAP** (*Holistic Asset Notification & Access Portal*) is an institutional-grade, web-based **Campus Lost and Found, Asset Tracking, and Item Recovery System** engineered for **Camarines Sur Polytechnic Colleges (CSPC)** in Nabua, Camarines Sur.
 
 ### Problem Being Addressed
-Across collegiate campus grounds, hundreds of critical personal and academic assets—such as institutional identification cards, laptops, scientific calculators, laboratory coats, keys, and wallets are misplaced each semester. Traditional lost-and-found management relies heavily on disconnected physical paper logs, unmonitored drop-off counters, and disorganized social media feeds. This disjointed workflow leads to low recovery rates, lack of privacy, fraudulent claims, and heavy administrative overhead.
+Across collegiate campus grounds, hundreds of critical personal and academic assets, such as institutional identification cards, laptops, scientific calculators, laboratory coats, keys, and wallets are misplaced each semester. Traditional lost-and-found management relies heavily on disconnected physical paper logs, unmonitored drop-off counters, and disorganized social media feeds. This disjointed workflow leads to low recovery rates, lack of privacy, fraudulent claims, and heavy administrative overhead.
 
 ### Main Purpose
 Project HANAP replaces fragmented manual tracking with an auditable, role-restricted, responsive web portal featuring:
