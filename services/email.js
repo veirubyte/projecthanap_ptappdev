@@ -72,6 +72,45 @@ async function sendMfaEnabledNotice(email) {
     return info;
 }
 
+async function sendPasswordResetCode(email, code) {
+    const mailer = getTransporter();
+    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@cspc.edu.ph';
+    const fromName = process.env.SMTP_FROM_NAME || 'Project HANAP';
+
+    const info = await mailer.sendMail({
+        from: `"${fromName}" <${fromAddress}>`,
+        to: email,
+        subject: 'Password Recovery Code - Project HANAP CSPC',
+        text: `Your Project HANAP password recovery code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this password reset, please ignore this email.`,
+        html: `
+        <div style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background: #F4F7FB; border-radius: 16px; color: #0F172A;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-block; background: #2B5B84; color: #ffffff; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px;">
+              HANAP <span style="font-size: 12px; background: rgba(255,255,255,0.25); padding: 2px 6px; border-radius: 6px; margin-left: 4px;">CSPC</span>
+            </div>
+          </div>
+          <div style="background: #ffffff; border-radius: 16px; padding: 28px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(15,23,42,0.04);">
+            <h2 style="margin: 0 0 12px 0; color: #0F172A; font-size: 20px; font-weight: 700;">Password Recovery Code</h2>
+            <p style="margin: 0 0 20px 0; color: #64748B; font-size: 14px; line-height: 1.5;">We received a request to reset your Project HANAP account password. Use the verification code below to proceed with setting a new password:</p>
+            <div style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 20px;">
+              <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #2B5B84;">${code}</span>
+            </div>
+            <p style="margin: 0; color: #94A3B8; font-size: 12px; line-height: 1.5;">⏳ This code expires in <strong>10 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #94A3B8; font-size: 11px;">
+            Project HANAP &bull; Camarines Sur Polytechnic Colleges, Nabua &bull; Lost &amp; Found Portal
+          </div>
+        </div>
+        `
+    });
+
+    if (!process.env.SMTP_HOST) {
+        console.log(`[HANAP Email Fallback] Password reset verification code for ${email}: ${code}`);
+    }
+
+    return info;
+}
+
 async function verifyEmailTransport() {
     const mailer = getTransporter();
     if (typeof mailer.verify === 'function' && process.env.SMTP_HOST) {
@@ -79,4 +118,4 @@ async function verifyEmailTransport() {
     }
 }
 
-module.exports = { sendMfaCode, sendMfaEnabledNotice, verifyEmailTransport };
+module.exports = { sendMfaCode, sendMfaEnabledNotice, sendPasswordResetCode, verifyEmailTransport };

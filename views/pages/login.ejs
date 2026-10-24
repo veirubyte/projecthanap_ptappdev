@@ -279,9 +279,9 @@
                 <span class="text-xs font-medium text-slate-600">Keep me signed in</span>
               </label>
 
-              <button type="button" data-auth-action="open-recovery" class="text-xs font-semibold text-[#2B5B84] hover:text-[#0058be] hover:underline transition-colors cursor-pointer">
+              <a href="/forgot-password" class="text-xs font-semibold text-[#2B5B84] hover:text-[#0058be] hover:underline transition-colors">
                 Forgot Password?
-              </button>
+              </a>
             </div>
             <!-- Primary CTA Button -->
             <div class="pt-2">
@@ -356,39 +356,7 @@
   </div>
   <% } %>
 
-  <!-- Forgot Password Informational Modal Dialog -->
-  <dialog id="forgotPasswordModal" class="rounded-3xl p-0 backdrop:bg-slate-900/40 backdrop:backdrop-blur-sm border border-slate-200/80 shadow-2xl max-w-md w-full">
-    <div class="p-6 sm:p-8 space-y-5 bg-white text-on-surface rounded-3xl">
-      <div class="flex items-center justify-between">
-        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#09436B] flex items-center justify-center">
-          <span class="material-symbols-outlined text-2xl">lock_reset</span>
-        </div>
-        <button type="button" data-auth-action="close-recovery" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
-          <span class="material-symbols-outlined text-lg">close</span>
-        </button>
-      </div>
 
-      <div>
-        <h3 class="text-lg font-bold text-slate-900">Account Password Recovery</h3>
-        <p class="text-xs text-slate-500 mt-1">Guidance for resetting your CSPC or Guest credentials.</p>
-      </div>
-
-      <div class="space-y-3 text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-        <div>
-          <strong class="text-slate-900 block font-bold">Institutional Accounts (@cspc.edu.ph / @my.cspc.edu.ph):</strong>
-          <span>Please contact the CSPC MIS / ICT Office or the Campus Security Desk to verify your identity and reset your institutional portal credentials.</span>
-        </div>
-        <div class="pt-2 border-t border-slate-200">
-          <strong class="text-slate-900 block font-bold">Parent &amp; Guest Accounts:</strong>
-          <span>Please visit or call the Lost &amp; Found Office Desk at the Student Center to update your account password with administrative assistance.</span>
-        </div>
-      </div>
-
-      <button type="button" data-auth-action="close-recovery" class="w-full py-2.5 rounded-xl text-xs font-semibold text-white bg-[#09436B] hover:bg-[#204667] transition shadow-xs">
-        Understood
-      </button>
-    </div>
-  </dialog>
 
   <script>
     let activeCategory = document.getElementById('categoryInput').value;
@@ -590,20 +558,6 @@
       return true;
     }
 
-    function openForgotPasswordModal() {
-      const modal = document.getElementById('forgotPasswordModal');
-      if (modal) {
-        modal.showModal();
-      }
-    }
-
-    function closeForgotPasswordModal() {
-      const modal = document.getElementById('forgotPasswordModal');
-      if (modal) {
-        modal.close();
-      }
-    }
-
     document.addEventListener('click', (event) => {
       const categoryButton = event.target.closest('[data-login-category]');
       if (categoryButton) {
@@ -616,10 +570,6 @@
         togglePasswordVisibility(passwordButton.dataset.passwordField, passwordButton.dataset.passwordIcon);
         return;
       }
-
-      const actionButton = event.target.closest('[data-auth-action]');
-      if (actionButton?.dataset.authAction === 'open-recovery') openForgotPasswordModal();
-      if (actionButton?.dataset.authAction === 'close-recovery') closeForgotPasswordModal();
     });
 
     document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);

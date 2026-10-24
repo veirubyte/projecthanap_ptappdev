@@ -84,7 +84,16 @@ app.use(reportUploadBeforeCsrf);
 app.use(csrfTokenInjector);
 
 // Global CSRF check with auth exemptions
-const CSRF_EXEMPT = new Set(['/login', '/register', '/logout']);
+const CSRF_EXEMPT = new Set([
+    '/login', 
+    '/register', 
+    '/logout',
+    '/forgot-password',
+    '/forgot-password/request',
+    '/forgot-password/verify',
+    '/forgot-password/reset',
+    '/forgot-password/resend'
+]);
 app.use((req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     if (CSRF_EXEMPT.has(req.path)) return next();
@@ -94,8 +103,13 @@ app.use((req, res, next) => {
 // Rate limiters on auth endpoints
 const loginLimiter = rateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
 const registerLimiter = rateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
+const resetLimiter = rateLimiter({ max: 15, windowMs: 15 * 60 * 1000 });
 app.post('/login', loginLimiter);
 app.post('/register', registerLimiter);
+app.post('/forgot-password/request', resetLimiter);
+app.post('/forgot-password/verify', resetLimiter);
+app.post('/forgot-password/reset', resetLimiter);
+app.post('/forgot-password/resend', resetLimiter);
 
 // Application Routes
 app.use('/', require('./routes/homeRoutes'));
