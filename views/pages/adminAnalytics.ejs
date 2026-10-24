@@ -216,7 +216,7 @@
                     <span><%= Math.round((p2p.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%</span>
                   </div>
                   <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-400" style="width: <%= Math.round((p2p.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-400" <%- 'style="width: ' + Math.round((p2p.approved / (p2p.approved + centralized.approved || 1)) * 100) + '%;"' %>></div>
                   </div>
                 </div>
 
@@ -226,7 +226,7 @@
                     <span><%= Math.round((centralized.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%</span>
                   </div>
                   <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-[#09436b] to-[#2B5B84]" style="width: <%= Math.round((centralized.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#09436b] to-[#2B5B84]" <%- 'style="width: ' + Math.round((centralized.approved / (p2p.approved + centralized.approved || 1)) * 100) + '%;"' %>></div>
                   </div>
                 </div>
               </div>
@@ -254,7 +254,7 @@
                       <span class="font-medium text-slate-700 truncate"><%= cat.category %></span>
                     </div>
                     <div class="w-1/2 h-2 rounded-full bg-slate-100 overflow-hidden mx-2">
-                      <div class="h-full rounded-full bg-[#2B5B84]" style="width: <%= Math.min(100, (cat.claim_count / 10) * 100) %>%"></div>
+                      <div class="h-full rounded-full bg-[#2B5B84]" <%- 'style="width: ' + Math.min(100, Math.round((cat.claim_count / 10) * 100)) + '%;"' %>></div>
                     </div>
                     <span class="w-12 text-right font-bold text-slate-900"><%= cat.claim_count %> cases</span>
                   </div>
