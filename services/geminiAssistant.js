@@ -8,7 +8,8 @@ const SYSTEM_INSTRUCTION = [
     'Do not ask users to send passwords, verification answers, identity documents, full contact details, or other sensitive information in chat.'
 ].join(' ');
 
-const REQUEST_TIMEOUT_MS = 120000;
+const CLIENT_TIMEOUT_MS = 5000;
+const API_TIMEOUT_MS = 10000;
 const NETWORK_ERROR_CODES = new Set([
     'ECONNRESET',
     'ECONNREFUSED',
@@ -31,10 +32,10 @@ async function generateAssistantReply(messages) {
 
     const model = process.env.GEMINI_MODEL && process.env.GEMINI_MODEL.trim()
         ? process.env.GEMINI_MODEL.trim()
-        : 'gemini-3.8-flash';
+        : 'gemini-3.6-flash';
     const ai = new GoogleGenAI({ apiKey });
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
 
     try {
         const response = await ai.models.generateContent({
@@ -51,7 +52,7 @@ async function generateAssistantReply(messages) {
                     thinkingLevel: 'low'
                 },
                 httpOptions: {
-                    timeout: REQUEST_TIMEOUT_MS,
+                    timeout: API_TIMEOUT_MS,
                     retryOptions: { attempts: 1 }
                 },
                 abortSignal: controller.signal
