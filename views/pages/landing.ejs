@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>HANAP - CSPC Campus Lost &amp; Found Portal</title>
+  <title>PROJECT HANAP - CSPC Campus Lost &amp; Found Portal</title>
   <%- include('../partials/themeSetup') %>
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
@@ -37,25 +37,213 @@
       }
     };
   </script>
+  <style>
+    /* Smooth Drifting Living Aurora Canvas */
+    @keyframes auroraFloat1 {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+        opacity: 0.22;
+      }
+      33% {
+        transform: translate3d(45px, -35px, 0) scale(1.12) rotate(6deg);
+        opacity: 0.32;
+      }
+      66% {
+        transform: translate3d(-30px, 40px, 0) scale(0.94) rotate(-5deg);
+        opacity: 0.24;
+      }
+    }
+
+    @keyframes auroraFloat2 {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+        opacity: 0.18;
+      }
+      40% {
+        transform: translate3d(-55px, 35px, 0) scale(1.15) rotate(-8deg);
+        opacity: 0.28;
+      }
+      75% {
+        transform: translate3d(35px, -45px, 0) scale(0.92) rotate(5deg);
+        opacity: 0.20;
+      }
+    }
+
+    @keyframes auroraFloat3 {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+        opacity: 0.16;
+      }
+      50% {
+        transform: translate3d(40px, -50px, 0) scale(1.18) rotate(10deg);
+        opacity: 0.26;
+      }
+    }
+
+    /* Sweeping Radar Beam (Discovery Radar Cone) */
+    @keyframes radarBeamSweep {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Sonar Wave Propagation (Expanding pulses from center) */
+    @keyframes sonarPulseWave {
+      0% {
+        transform: scale(0.35);
+        opacity: 0.65;
+      }
+      45% {
+        opacity: 0.35;
+      }
+      100% {
+        transform: scale(2.6);
+        opacity: 0;
+      }
+    }
+
+    /* Micro Node Floating & Hovering */
+    @keyframes nodeFloatA {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+      }
+      50% {
+        transform: translate3d(14px, -18px, 0) rotate(3deg);
+      }
+    }
+
+    @keyframes nodeFloatB {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+      }
+      50% {
+        transform: translate3d(-16px, 16px, 0) rotate(-4deg);
+      }
+    }
+
+    @keyframes nodeFloatC {
+      0%, 100% {
+        transform: translate3d(0, 0, 0);
+      }
+      50% {
+        transform: translate3d(12px, 15px, 0);
+      }
+    }
+
+    @keyframes pulseNodeGlow {
+      0%, 100% {
+        opacity: 0.5;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.3);
+      }
+    }
+
+    .landing-aurora-drift-1 {
+      animation: auroraFloat1 22s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .landing-aurora-drift-2 {
+      animation: auroraFloat2 28s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .landing-aurora-drift-3 {
+      animation: auroraFloat3 20s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+
+    .landing-radar-beam {
+      animation: radarBeamSweep 14s linear infinite;
+      will-change: transform;
+    }
+
+    .landing-sonar-wave-1 {
+      animation: sonarPulseWave 7s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+    }
+    .landing-sonar-wave-2 {
+      animation: sonarPulseWave 7s cubic-bezier(0.2, 0.6, 0.4, 1) infinite 2.3s;
+    }
+    .landing-sonar-wave-3 {
+      animation: sonarPulseWave 7s cubic-bezier(0.2, 0.6, 0.4, 1) infinite 4.6s;
+    }
+
+    .node-drift-a {
+      animation: nodeFloatA 15s ease-in-out infinite;
+    }
+    .node-drift-b {
+      animation: nodeFloatB 19s ease-in-out infinite;
+    }
+    .node-drift-c {
+      animation: nodeFloatC 13s ease-in-out infinite;
+    }
+    .node-glow-pulse {
+      animation: pulseNodeGlow 4s ease-in-out infinite;
+    }
+  </style>
 </head>
 <body class="landing-page h-full w-full overflow-hidden bg-background text-on-surface font-sans antialiased select-none">
   <main class="h-full w-full flex flex-col items-center justify-center overflow-hidden relative">
     <div class="flex flex-col w-full h-screen overflow-hidden select-none relative items-center justify-between py-10 px-6 sm:py-12 sm:px-8 bg-surface">
       
-      <!-- Dynamic Living Aurora Light Canvas -->
-      <div aria-hidden="true" class="absolute inset-0 pointer-events-none overflow-hidden">
-        <div class="absolute -top-32 -left-20 w-[600px] h-[600px] rounded-full bg-primary/20 blur-[130px] animate-pulse landing-aurora-one"></div>
-        <div class="absolute top-1/3 -right-28 w-[540px] h-[540px] rounded-full bg-secondary/15 blur-[120px] animate-pulse landing-aurora-two"></div>
-        <div class="absolute -bottom-24 left-1/3 w-[580px] h-[580px] rounded-full bg-blue-500/15 blur-[140px] animate-pulse landing-aurora-three"></div>
-        <div class="absolute inset-0 bg-surface/40 backdrop-blur-[40px]"></div>
+      <!-- Dynamic Living Aurora Light Canvas (Moving Ambient Fluids) -->
+      <div aria-hidden="true" class="absolute inset-0 pointer-events-none overflow-hidden select-none">
+        <div class="absolute -top-32 -left-20 w-[620px] h-[620px] rounded-full bg-gradient-to-br from-[#09436b]/25 via-[#2B5B84]/20 to-transparent blur-[120px] landing-aurora-drift-1"></div>
+        <div class="absolute top-1/4 -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-bl from-[#0058be]/20 via-[#3B82F6]/15 to-transparent blur-[130px] landing-aurora-drift-2"></div>
+        <div class="absolute -bottom-24 left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-[#0D9488]/20 via-[#38BDF8]/15 to-transparent blur-[125px] landing-aurora-drift-3"></div>
+        <div class="absolute inset-0 bg-surface/30 backdrop-blur-[45px]"></div>
       </div>
 
-      <!-- Concentric Sonar Ripple Rings (Discovery Radar Motif) -->
-      <div aria-hidden="true" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="w-[340px] h-[340px] rounded-full border border-secondary/20 animate-ping opacity-25 landing-ripple"></div>
-        <div class="absolute w-[500px] h-[500px] rounded-full border border-secondary/15 shadow-[0_0_30px_rgba(0,88,190,0.04)]"></div>
-        <div class="absolute w-[680px] h-[680px] rounded-full border border-dashed border-primary/20 animate-spin landing-radar"></div>
-        <div class="absolute w-[880px] h-[880px] rounded-full border border-secondary-fixed-dim/40 opacity-40"></div>
+      <!-- Concentric Sonar Discovery Radar Canvas with Rotating Sweep Cone -->
+      <div aria-hidden="true" class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden select-none" id="radarContainer">
+        <!-- Expanding Periodic Sonar Waves -->
+        <div class="absolute w-[360px] h-[360px] rounded-full border border-[#0058be]/30 landing-sonar-wave-1"></div>
+        <div class="absolute w-[360px] h-[360px] rounded-full border border-[#3B82F6]/25 landing-sonar-wave-2"></div>
+        <div class="absolute w-[360px] h-[360px] rounded-full border border-[#0D9488]/20 landing-sonar-wave-3"></div>
+
+        <!-- 360° Rotating Radar Sweep Cone (Subtle Sapphire Glow) -->
+        <div class="absolute w-[860px] h-[860px] rounded-full landing-radar-beam opacity-40 dark:opacity-60" style="background: conic-gradient(from 0deg, transparent 0deg, transparent 275deg, rgba(0, 88, 190, 0.03) 325deg, rgba(59, 130, 246, 0.14) 360deg);"></div>
+
+        <!-- Concentric Discovery Perimeter Rings -->
+        <div class="absolute w-[340px] h-[340px] rounded-full border border-secondary/20 shadow-[0_0_24px_rgba(0,88,190,0.04)]"></div>
+        <div class="absolute w-[520px] h-[520px] rounded-full border border-secondary/15 shadow-[0_0_36px_rgba(0,88,190,0.03)]"></div>
+        <div class="absolute w-[720px] h-[720px] rounded-full border border-dashed border-primary/20 animate-spin landing-radar"></div>
+        <div class="absolute w-[940px] h-[940px] rounded-full border border-secondary-fixed-dim/35 opacity-40"></div>
+      </div>
+
+      <!-- Ethereal Floating Discovery Nodes (Campus Coordinates & Constellations) -->
+      <div aria-hidden="true" class="absolute inset-0 pointer-events-none overflow-hidden select-none" id="constellationLayer">
+        <!-- Node 1: Top Left - Student Discovery Orbit -->
+        <div class="absolute top-[17%] left-[10%] hidden sm:flex items-center gap-2 p-1.5 pr-3 rounded-full bg-white/70 dark:bg-slate-900/50 backdrop-blur-md border border-white/80 dark:border-slate-700/50 shadow-xs node-drift-a">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 node-glow-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+          <span class="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 font-semibold uppercase">CCS • Matched</span>
+        </div>
+
+        <!-- Node 2: Top Right - Custody Vault Beacon -->
+        <div class="absolute top-[21%] right-[12%] hidden md:flex items-center gap-2 p-1.5 pr-3 rounded-full bg-white/70 dark:bg-slate-900/50 backdrop-blur-md border border-white/80 dark:border-slate-700/50 shadow-xs node-drift-b">
+          <span class="w-2 h-2 rounded-full bg-[#0058be] node-glow-pulse shadow-[0_0_8px_rgba(0,88,190,0.5)]"></span>
+          <span class="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 font-semibold uppercase">Vault #B-14</span>
+        </div>
+
+        <!-- Node 3: Bottom Left - Main Library Vector -->
+        <div class="absolute bottom-[20%] left-[13%] hidden md:flex items-center gap-2 p-1.5 pr-3 rounded-full bg-white/70 dark:bg-slate-900/50 backdrop-blur-md border border-white/80 dark:border-slate-700/50 shadow-xs node-drift-c">
+          <span class="w-2 h-2 rounded-full bg-[#0D9488] node-glow-pulse shadow-[0_0_8px_rgba(13,148,136,0.5)]"></span>
+          <span class="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 font-semibold uppercase">Library • Surrendered</span>
+        </div>
+
+        <!-- Node 4: Bottom Right - P2P Verification Grid -->
+        <div class="absolute bottom-[23%] right-[14%] hidden sm:flex items-center gap-2 p-1.5 pr-3 rounded-full bg-white/70 dark:bg-slate-900/50 backdrop-blur-md border border-white/80 dark:border-slate-700/50 shadow-xs node-drift-a">
+          <span class="w-2 h-2 rounded-full bg-sky-500 node-glow-pulse shadow-[0_0_8px_rgba(14,165,233,0.5)]"></span>
+          <span class="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 font-semibold uppercase">P2P Verification</span>
+        </div>
+
+        <!-- Ambient Floating Refractive Micro-Prisms -->
+        <div class="absolute top-[38%] left-[7%] w-10 h-10 rounded-xl bg-gradient-to-tr from-white/40 to-blue-200/20 border border-white/60 backdrop-blur-sm rotate-12 node-drift-b opacity-60"></div>
+        <div class="absolute bottom-[35%] right-[8%] w-8 h-8 rounded-lg bg-gradient-to-br from-white/40 to-teal-200/20 border border-white/60 backdrop-blur-sm -rotate-6 node-drift-c opacity-50"></div>
       </div>
 
       <!-- Top Floating Crest Pill -->
@@ -65,12 +253,12 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0058be] opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-[#0058be]"></span>
           </span>
-          <span class="text-[11px] tracking-[0.25em] uppercase text-slate-600 font-semibold">
-            Camarines Sur Polytechnic Colleges
+          <span class="text-[11px] tracking-[0.2em] uppercase text-slate-600 font-semibold">
+            CSPC Nabua Campus
           </span>
           <span class="text-[#0058be]/60 text-[11px] font-semibold ml-0.5">•</span>
           <span class="text-[11px] tracking-wider uppercase text-[#09436b] font-bold">
-            Verified Node
+            Asset Recovery Network
           </span>
         </div>
       </header>
@@ -80,7 +268,7 @@
         
         <!-- Floating Beacon / Optical Lens Orb -->
         <div class="flex items-center justify-center mb-6 sm:mb-8">
-          <a href="/login" aria-label="Enter HANAP Portal via central sensor" class="group relative w-28 h-28 sm:w-36 sm:h-36 rounded-full backdrop-blur-2xl bg-gradient-to-tr from-white/90 via-white/60 to-blue-100/50 shadow-xl border border-blue-200/60 flex items-center justify-center cursor-pointer transition-all duration-700 hover:scale-105 active:scale-95 focus:outline-none" id="lens-trigger">
+          <a href="/login" aria-label="Enter Project HANAP Portal via central sensor" class="group relative w-28 h-28 sm:w-36 sm:h-36 rounded-full backdrop-blur-2xl bg-gradient-to-tr from-white/90 via-white/60 to-blue-100/50 shadow-xl border border-blue-200/60 flex items-center justify-center cursor-pointer transition-all duration-700 hover:scale-105 active:scale-95 focus:outline-none" id="lens-trigger">
             <div class="absolute inset-0 rounded-full bg-gradient-to-b from-white/90 via-transparent to-[#09436b]/10 opacity-70 pointer-events-none"></div>
             <!-- Reticle Ticks -->
             <div class="absolute top-2 w-1.5 h-1.5 rounded-full bg-[#0058be] shadow-sm"></div>
@@ -108,21 +296,22 @@
           </a>
         </div>
 
-        <!-- Monumental Typography: HANAP -->
-        <div class="relative z-20 flex items-center justify-center w-full px-2 select-none">
-          <h1 class="font-extrabold tracking-[0.22em] sm:tracking-[0.28em] md:tracking-[0.32em] leading-none text-center select-none text-[64px] sm:text-[100px] md:text-[130px] lg:text-[150px] text-transparent bg-clip-text bg-gradient-to-b from-[#0F172A] via-[#09436b] to-[#2B5B84] drop-shadow-sm pl-[0.22em] sm:pl-[0.28em] md:pl-[0.32em]">
-            HANAP
+        <!-- Monumental Typography: PROJECT HANAP -->
+        <div class="relative z-20 flex items-center justify-center w-full px-4 select-none">
+          <h1 class="font-extrabold tracking-[0.12em] sm:tracking-[0.16em] md:tracking-[0.20em] leading-tight sm:leading-none text-center select-none text-[34px] sm:text-[52px] md:text-[72px] lg:text-[88px] xl:text-[96px] text-transparent bg-clip-text bg-gradient-to-b from-[#0F172A] via-[#09436b] to-[#2B5B84] drop-shadow-sm pl-[0.12em] sm:pl-[0.16em] md:pl-[0.20em] flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-6 sm:gap-x-8 md:gap-x-10">
+            <span>PROJECT</span>
+            <span>HANAP</span>
           </h1>
         </div>
 
         <!-- Editorial Subtitle & Poetic Resonance Headline -->
-        <div class="mt-6 sm:mt-8 flex flex-col items-center text-center px-4 max-w-2xl">
-          <div class="text-xs uppercase tracking-[0.32em] text-slate-500 mb-2.5 font-semibold">
+        <div class="mt-5 sm:mt-6 flex flex-col items-center text-center px-4 max-w-3xl">
+          <div class="text-[11px] sm:text-xs uppercase tracking-[0.28em] sm:tracking-[0.32em] text-slate-500 mb-2 font-semibold">
             Hub for Automated Notification &amp; Asset Protection
           </div>
-          <p class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-            Welcome to HANAP.
-            <span class="block sm:inline font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#09436b] via-[#0058be] to-[#2B5B84]">
+          <p class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
+            <span>Welcome to Project HANAP.</span>
+            <span class="block sm:inline sm:ml-1 font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#09436b] via-[#0058be] to-[#2B5B84]">
               Lose the panic, find what’s yours.
             </span>
           </p>
@@ -134,7 +323,7 @@
         <div class="flex items-center gap-3">
           <a class="group relative inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-[#09436b] via-[#2B5B84] to-[#0058be] shadow-lg hover:shadow-xl hover:scale-[1.03] active:scale-[0.98] transition-all duration-300" href="/login" id="portal-cta">
             <span class="absolute inset-0 rounded-full bg-gradient-to-r from-[#0058be] to-[#09436b] blur-md opacity-30 group-hover:opacity-60 transition-opacity duration-300 -z-10"></span>
-            <span class="tracking-wide">Enter HANAP Portal</span>
+            <span class="tracking-wide">Enter Project HANAP</span>
             <span class="material-symbols-outlined text-[20px] transition-transform duration-300 group-hover:translate-x-1.5">arrow_forward</span>
           </a>
           <a class="px-6 py-3.5 sm:py-4 rounded-full text-sm font-semibold text-slate-700 bg-white/80 hover:bg-white border border-slate-200/80 shadow-sm hover:shadow transition-all" href="/catalog">
@@ -144,10 +333,52 @@
         <div class="flex items-center gap-2 text-xs text-slate-500 tracking-wide mt-1">
           <span>CSPC Campus Lost &amp; Found System</span>
           <span>•</span>
-          <span>Academic Year 2024–2025</span>
+          <span>Academic Year 2026–2027</span>
         </div>
       </footer>
     </div>
   </main>
+
+  <!-- Smooth Ambient Parallax Interaction -->
+  <script>
+    (function() {
+      const constellation = document.getElementById('constellationLayer');
+      const radar = document.getElementById('radarContainer');
+      if (!constellation && !radar) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      let targetX = 0, targetY = 0;
+      let currentX = 0, currentY = 0;
+      let rafId = null;
+
+      window.addEventListener('mousemove', function(e) {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        targetX = (e.clientX - cx) / cx;
+        targetY = (e.clientY - cy) / cy;
+        if (!rafId) {
+          rafId = requestAnimationFrame(updateParallax);
+        }
+      }, { passive: true });
+
+      function updateParallax() {
+        currentX += (targetX - currentX) * 0.05;
+        currentY += (targetY - currentY) * 0.05;
+
+        if (constellation) {
+          constellation.style.transform = 'translate3d(' + (currentX * 12).toFixed(2) + 'px, ' + (currentY * 12).toFixed(2) + 'px, 0)';
+        }
+        if (radar) {
+          radar.style.transform = 'translate3d(' + (currentX * 5).toFixed(2) + 'px, ' + (currentY * 5).toFixed(2) + 'px, 0)';
+        }
+
+        if (Math.abs(targetX - currentX) > 0.002 || Math.abs(targetY - currentY) > 0.002) {
+          rafId = requestAnimationFrame(updateParallax);
+        } else {
+          rafId = null;
+        }
+      }
+    })();
+  </script>
 </body>
 </html>
