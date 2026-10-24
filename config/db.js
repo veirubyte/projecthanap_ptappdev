@@ -47,6 +47,12 @@ async function testConnection() {
     const connection = await pool.getConnection();
     console.log(`[DB] Connected successfully to MySQL database "${process.env.DB_NAME}" at ${process.env.DB_HOST}:${databasePort}`);
     connection.release();
+    try {
+      const autoMigrate = require('../migrations/autoMigrate');
+      await autoMigrate();
+    } catch (migErr) {
+      console.warn('[DB WARNING] Auto-migration check encountered an error:', migErr.message);
+    }
   } catch (err) {
     console.warn(`[DB WARNING] Database connection failed (${err.code || err.message}). Please ensure MySQL is running and migrations are executed.`);
   }

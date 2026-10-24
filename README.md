@@ -80,7 +80,7 @@ In accordance with the PTAppDev Midterm Project guidelines, our team followed a 
 | **System Title** | **Project HANAP** (*Holistic Asset Notification & Access Portal*) |
 | **Course** | Platform Technologies & Web Application Development (`PTAppDev`) |
 | **Target Institution** | Camarines Sur Polytechnic Colleges (CSPC) &bull; College of Computer Studies |
-| **Academic Year** | A.Y. 2025–2026 (Midterm Project – Round 1) |
+| **Academic Year** | A.Y. 2026–2027 (Midterm Project – Round 1) |
 | **System Requirements Spec** | See [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) for full SRS, Stakeholders, FRs, NFRs, and Use Cases |
 
 ### System Requirements & Use Cases Summary

@@ -68,7 +68,7 @@
 
           <div class="flex items-center gap-2 self-start sm:self-center">
             <span class="px-3 py-1.5 rounded-xl bg-slate-100 text-xs font-semibold text-slate-700 border border-slate-200">
-              AY 2024-2025
+              AY 2026-2027
             </span>
           </div>
         </div>
@@ -216,7 +216,7 @@
                     <span><%= Math.round((p2p.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%</span>
                   </div>
                   <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-400" style="width: <%= Math.round((p2p.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-400" <%- 'style="width: ' + Math.round((p2p.approved / (p2p.approved + centralized.approved || 1)) * 100) + '%;"' %>></div>
                   </div>
                 </div>
 
@@ -226,7 +226,7 @@
                     <span><%= Math.round((centralized.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%</span>
                   </div>
                   <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-[#09436b] to-[#2B5B84]" style="width: <%= Math.round((centralized.approved / (p2p.approved + centralized.approved || 1)) * 100) %>%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#09436b] to-[#2B5B84]" <%- 'style="width: ' + Math.round((centralized.approved / (p2p.approved + centralized.approved || 1)) * 100) + '%;"' %>></div>
                   </div>
                 </div>
               </div>
@@ -242,7 +242,7 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <span class="text-xs font-bold text-slate-800">Top Claimed Categories</span>
-                <span class="text-[11px] text-slate-400">AY 2024-2025</span>
+                <span class="text-[11px] text-slate-400">AY 2026-2027</span>
               </div>
               <p class="text-[11px] text-slate-500 mb-4">Volume of successful claim resolutions grouped by item type.</p>
 
@@ -254,7 +254,7 @@
                       <span class="font-medium text-slate-700 truncate"><%= cat.category %></span>
                     </div>
                     <div class="w-1/2 h-2 rounded-full bg-slate-100 overflow-hidden mx-2">
-                      <div class="h-full rounded-full bg-[#2B5B84]" style="width: <%= Math.min(100, (cat.claim_count / 10) * 100) %>%"></div>
+                      <div class="h-full rounded-full bg-[#2B5B84]" <%- 'style="width: ' + Math.min(100, Math.round((cat.claim_count / 10) * 100)) + '%;"' %>></div>
                     </div>
                     <span class="w-12 text-right font-bold text-slate-900"><%= cat.claim_count %> cases</span>
                   </div>
@@ -279,7 +279,7 @@
   <footer class="w-full border-t border-slate-200/60 bg-white/60 backdrop-blur-md py-4 relative z-10">
     <div class="max-w-[1280px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
       <span>Project HANAP • Campus Security &amp; Office of Student Affairs</span>
-      <span>Ledger Academic Year 2024-2025</span>
+      <span>Ledger Academic Year 2026-2027</span>
     </div>
   </footer>
 

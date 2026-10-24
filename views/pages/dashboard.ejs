@@ -38,17 +38,27 @@
   <% const catalogCategoryCounts = typeof categoryCounts !== 'undefined' ? categoryCounts : {}; %>
   <% const catalogCanReportFound = Boolean(user && !['guest', 'parent', 'parent/guest'].includes(String(user.role || '').toLowerCase())); %>
   
-  <!-- Ambient Mesh Gradient Underlays -->
-  <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-    <div class="absolute -top-[25%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-tr from-sky-200/35 via-blue-100/25 to-teal-100/30 rounded-full blur-3xl opacity-75"></div>
-    <div class="absolute top-[35%] -right-[15%] w-[650px] h-[500px] bg-gradient-to-br from-indigo-100/30 via-teal-100/25 to-slate-200/30 rounded-full blur-3xl opacity-60"></div>
-    <div class="absolute -bottom-[20%] -left-[10%] w-[700px] h-[500px] bg-gradient-to-tr from-cyan-100/25 via-slate-100/40 to-blue-200/25 rounded-full blur-3xl opacity-70"></div>
-  </div>
+  <!-- Ambient Mesh Gradient Underlays (Stitch Reference) -->
+  <% if (isCatalog) { %>
+    <!-- Browse Catalog Chic Glassmorphic Splashes -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+      <div class="absolute -top-40 left-1/4 w-[600px] h-[500px] bg-gradient-to-tr from-blue-300/40 via-indigo-200/35 to-sky-200/40 rounded-full blur-3xl transform -rotate-12 animate-pulse"></div>
+      <div class="absolute top-1/3 -right-20 w-[550px] h-[550px] bg-gradient-to-bl from-teal-200/35 via-cyan-100/40 to-blue-300/30 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-32 left-10 w-[500px] h-[450px] bg-gradient-to-tr from-indigo-200/35 via-sky-200/30 to-teal-100/40 rounded-full blur-3xl"></div>
+    </div>
+  <% } else { %>
+    <!-- Student Dashboard Chic Glassmorphic Splashes -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+      <div class="absolute -top-[25%] left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-tr from-sky-200/50 via-blue-100/40 to-teal-100/45 rounded-full blur-3xl opacity-80"></div>
+      <div class="absolute top-[35%] -right-[15%] w-[650px] h-[500px] bg-gradient-to-br from-indigo-100/45 via-teal-100/40 to-slate-200/45 rounded-full blur-3xl opacity-70"></div>
+      <div class="absolute -bottom-[20%] -left-[10%] w-[700px] h-[500px] bg-gradient-to-tr from-cyan-100/40 via-slate-100/60 to-blue-200/40 rounded-full blur-3xl opacity-80"></div>
+    </div>
+  <% } %>
 
   <%- include('partials/navbar', { active: isCatalog ? 'catalog' : 'dashboard' }) %>
 
   <!-- Main Dashboard Container (Width extended, side gaps deducted) -->
-  <main class="w-full flex-1 py-2 sm:py-4">
+  <main class="w-full flex-1 py-2 sm:py-4 relative z-10">
     <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 xl:px-8 space-y-6">
       
       <!-- Flash Toasts -->

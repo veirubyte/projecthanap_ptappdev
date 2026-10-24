@@ -4,22 +4,24 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize Bootstrap tooltips if any
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
+  // Initialize Bootstrap tooltips if bootstrap library is loaded
+  if (typeof bootstrap !== 'undefined') {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
 
-  // Auto-dismiss alerts after 6 seconds
-  const autoAlerts = document.querySelectorAll('.alert-dismissible');
-  autoAlerts.forEach((alert) => {
-    setTimeout(() => {
-      try {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-      } catch (e) {
-        // Ignored if already dismissed
-      }
-    }, 6000);
-  });
+    // Auto-dismiss alerts after 6 seconds
+    const autoAlerts = document.querySelectorAll('.alert-dismissible');
+    autoAlerts.forEach((alert) => {
+      setTimeout(() => {
+        try {
+          const bsAlert = new bootstrap.Alert(alert);
+          bsAlert.close();
+        } catch (e) {
+          // Ignored if already dismissed
+        }
+      }, 6000);
+    });
+  }
 
   // Client-side quick filter for catalog table
   const searchInput = document.querySelector('input[placeholder*="Search item"]');
