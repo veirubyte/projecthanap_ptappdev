@@ -12,23 +12,19 @@
 ## Table of Contents
 
 1. [Project Description](#1-project-description)
-2. [Assigned System](#2-assigned-system)
-3. [Team Members & Responsibilities](#3-team-members--responsibilities)
-4. [Features & Innovations](#4-features--innovations)
-5. [Technologies Used](#5-technologies-used)
-6. [System Architecture & Lifecycle Workflow](#6-system-architecture--lifecycle-workflow)
-7. [Database Architecture & Data Model](#7-database-architecture--data-model)
-8. [Project Structure](#8-project-structure)
-9. [Installation, Configuration, Database Setup & How to Run](#9-installation-configuration-database-setup--how-to-run)
-10. [Configuration & Environment Variables](#10-configuration--environment-variables)
-11. [Pre-Configured User Accounts](#11-pre-configured-user-accounts)
-12. [Comprehensive Route Directory](#12-comprehensive-route-directory)
-13. [System Requirements & Use Cases Summary](#13-system-requirements--use-cases-summary)
-14. [Security, Input Validation & Access Control](#14-security-input-validation--access-control)
-15. [GitHub Collaboration & Development Workflow](#15-github-collaboration--development-workflow)
-16. [Known Limitations](#16-known-limitations)
-17. [AI Assistance Disclosure](#17-ai-assistance-disclosure)
-18. [License](#18-license)
+2. [Team Members](#2-team-members)
+3. [Assigned System](#3-assigned-system)
+4. [Features](#4-features)
+5. [Technologies](#5-technologies)
+6. [Installation](#6-installation)
+7. [Configuration](#7-configuration)
+8. [Database Setup](#8-database-setup)
+9. [How to Run](#9-how-to-run)
+10. [User Accounts](#10-user-accounts)
+11. [Project Structure](#11-project-structure)
+12. [Known Limitations](#12-known-limitations)
+13. [AI Assistance Disclosure](#13-ai-assistance-disclosure)
+14. [License](#14-license)
 
 ---
 
@@ -55,20 +51,7 @@ Project HANAP replaces fragmented manual tracking with an auditable, role-restri
 
 ---
 
-## 2. Assigned System
-
-| Metadata Field | Specification |
-| :--- | :--- |
-| **Assigned Campus System** | **Campus Lost and Found & Item Tracking System (Round 1)** |
-| **System Title** | **Project HANAP** (*Holistic Asset Notification & Access Portal*) |
-| **Course** | Platform Technologies & Web Application Development (`PTAppDev`) |
-| **Target Institution** | Camarines Sur Polytechnic Colleges (CSPC) &bull; College of Computer Studies |
-| **Academic Year** | A.Y. 2025–2026 (Midterm Project – Round 1) |
-| **System Requirements Spec** | See [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) for full SRS, Stakeholders, FRs, NFRs, and Use Cases |
-
----
-
-## 3. Team Members & Responsibilities
+## 2. Team Members
 
 Project HANAP was collaboratively designed, engineered, tested, and documented by the following development team:
 
@@ -79,9 +62,38 @@ Project HANAP was collaboratively designed, engineered, tested, and documented b
 | **John Paul Rendon** | **Lead Backend Developer**<br>**Assistant Deliverables Manager** | Backend route handlers, business logic controllers, server-side input validation, security/access-control middleware, database persistence operations, and technical deliverables review. |
 | **Mherly Simbulan** | **Lead Frontend Developer**<br>**Assistant Secretary** | EJS view templates, responsive Tailwind CSS layouts, interactive forms, client-side scripts, dark/light theme support, and project documentation/requirements recording. |
 
+### GitHub Collaboration & Development Workflow
+
+In accordance with the PTAppDev Midterm Project guidelines, our team followed a disciplined GitHub workflow:
+- **Feature Branching:** Development was conducted on dedicated feature branches (e.g., `feature/match-engine`, `feature/HANAP-AI-Assistant`, `feature/custody-handover`, `feature/auth-mfa`) rather than committing directly to `main`.
+- **Pull Requests & Peer Code Reviews:** Major features were submitted via Pull Requests using `.github/pull_request_template.md` and reviewed by teammates for functionality, validation, security, and code clarity prior to merging.
+- **Conventional Commits:** Commit history adheres to Conventional Commit prefixes (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
+- **Issue & Project Board Tracking:** Tasks were organized using GitHub Issues (`.github/ISSUE_TEMPLATE/task_issue.md`) and tracked across our GitHub Project Board (`BACKLOG` $\rightarrow$ `TODO` $\rightarrow$ `IN PROGRESS` $\rightarrow$ `REVIEW` $\rightarrow$ `DONE`).
+
 ---
 
-## 4. Features & Innovations
+## 3. Assigned System
+
+| Metadata Field | Specification |
+| :--- | :--- |
+| **Assigned Campus System** | **Campus Lost and Found & Item Tracking System (Round 1)** |
+| **System Title** | **Project HANAP** (*Holistic Asset Notification & Access Portal*) |
+| **Course** | Platform Technologies & Web Application Development (`PTAppDev`) |
+| **Target Institution** | Camarines Sur Polytechnic Colleges (CSPC) &bull; College of Computer Studies |
+| **Academic Year** | A.Y. 2025–2026 (Midterm Project – Round 1) |
+| **System Requirements Spec** | See [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) for full SRS, Stakeholders, FRs, NFRs, and Use Cases |
+
+### System Requirements & Use Cases Summary
+
+The full System Requirements Specification is maintained in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). Below is an executive summary:
+
+- **Stakeholders:** CSPC Student Body, Campus Security & Public Safety Office, Office of Student Affairs (OSA), University Library & Laboratory Custodians, and MIS/IT Infrastructure Team.
+- **Core Functional Requirements (`FR-01` – `FR-10`):** Institutional & guest registration, session-based login/logout with optional Email MFA, strict Role-Based Access Control (`requireAuth`, `requireNonAdminAuth`, `requireAdmin`), server-side form validation, lost/found report creation with photo uploads, physical custody intake logging, Campus Match Engine claim verification, multi-filter catalog search, and normalized MySQL persistence.
+- **Core Non-Functional Requirements (`NFR-01` – `NFR-05`):** `bcrypt` password hashing (10 salt rounds), `.env` secret isolation, low-latency parameterized MySQL queries, ACID transactional durability across restarts, and mobile-first responsive UI.
+
+---
+
+## 4. Features
 
 ### 1. Smart Campus Match Engine & Verification Stepper
 - **Algorithmic Confidence Scoring:** Evaluates claimant ownership proofs against secret challenge answers using Unicode NFKC normalization, token-based Jaccard overlap, and space-optimized Levenshtein edit distance (`services/answerMatch.js`).
@@ -115,31 +127,9 @@ Project HANAP was collaboratively designed, engineered, tested, and documented b
 - **Daylight & Night Mode Themes:** Complete theme toggle between **Light Horizon** and **Serene Horizon Night Mode**, persisted across sessions via `localStorage` and `html.dark`.
 - **Adaptive Floating Dock Navigation:** Responsive capsule dock with dynamic active states, unread notification counter badges, and responsive navigation drawers for mobile and tablet screens.
 
----
+### System Architecture & Lifecycle Workflow
 
-## 5. Technologies Used
-
-| Layer | Component | Specification / Version | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Runtime** | Node.js | `>= 18.0.0` (LTS v20 / v24 tested) | Asynchronous JavaScript server runtime environment |
-| **Web Framework** | Express.js | `^5.3.0` | MVC routing, middleware pipeline, and HTTP request handlers |
-| **View Engine** | EJS | `^7.0.2` | Server-rendered templates with dual lookup paths (`views/pages/` and `views/`) |
-| **Database** | MySQL | `MySQL 8.0+` | Relational storage engine with foreign keys, transactions, and UTF8MB4 |
-| **Database Driver** | `mysql2` | `^3.24.6` | Connection pooling (`mysql2/promise`) with prepared parameterized queries |
-| **Authentication** | `bcrypt` & `express-session` | `bcrypt ^6.0.0` / `session ^1.19.0` | Salted password hashing (10 salt rounds) & secure HTTP-only sessions |
-| **Security Suite** | `helmet` | `^8.3.0` | HTTP headers with CSP tailored for Tailwind CDN, Google Fonts, and self-hosted assets |
-| **AI SDK** | `@google/genai` | `^2.31.0` | Official Google GenAI SDK powering the HANAP AI Assistant (`gemini-3.8-flash`) |
-| **File Uploads** | `multer` | `^2.5.0` | Disk storage for item images with MIME-type filters and sanitized filenames |
-| **Mailing / MFA** | `nodemailer` | `^10.2.1` | SMTP email transport with local development console fallback |
-| **Styling & Icons** | Tailwind CSS CDN & Material Symbols | Plus Jakarta Sans, Forms, Container Queries | Glassmorphic design tokens, responsive typography, and iconography |
-| **Development** | `nodemon` & `dotenv` | `nodemon ^3.1.14` / `dotenv ^18.0.9` | Hot reloading and environment variable isolation |
-| **Version Control** | Git & GitHub | Git `2.x+` / GitHub Flow | Feature branching, pull requests, peer code reviews, and issue tracking |
-
----
-
-## 6. System Architecture & Lifecycle Workflow
-
-### Item Lifecycle State Machine
+#### Item Lifecycle State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -156,7 +146,7 @@ stateDiagram-v2
     Returned --> [*]: Case Permanently Resolved
 ```
 
-### End-to-End User Verification Workflow
+#### End-to-End User Verification Workflow
 
 ```mermaid
 flowchart TD
@@ -181,9 +171,128 @@ flowchart TD
     R --> S
 ```
 
+### Security, Input Validation & Access Control
+
+1. **Role-Based Access Control (`middleware/auth.js`):** Every protected route verifies `req.session.user`. Unauthorized guests are redirected to `/login`, while non-admin users attempting to access `/admin/*` routes are immediately blocked, prevented from bypassing restrictions via direct URL entry, and presented with a 403 Access Denied response.
+2. **Comprehensive Server-Side Input Validation:** All user inputs (registration credentials, institutional email domains, password strength segments, item report fields, claim proofs, and chat messages) are validated on the server before database execution, returning descriptive error feedback on invalid or duplicate submissions.
+3. **SQL Injection Prevention:** All database operations use parameterized prepared statements via `mysql2/promise`.
+4. **CSRF Protection (`config/security.js`):** Per-session cryptographic CSRF tokens are verified on state-changing requests (`POST`, `PUT`, `DELETE`) via form fields (`_csrf`) or AJAX headers (`x-csrf-token`).
+5. **HTTP Security Headers & Rate Limiting:** Configured via `helmet` alongside sliding-window rate limiters on `/login` (20 req / 15 min), `/register` (10 req / 60 min), and `/api/assistant/chat` (12 req / 5 min).
+6. **In-Chat Privacy & Audit Trail:** Phone numbers shared in peer claim chats are automatically masked (`09**-***-**09`), and all administrative actions are recorded in `audit_logs` with administrator ID, IP address, and timestamp.
+
 ---
 
-## 7. Database Architecture & Data Model
+## 5. Technologies
+
+| Layer | Component | Specification / Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Runtime** | Node.js | `>= 18.0.0` (LTS v20 / v24 tested) | Asynchronous JavaScript server runtime environment |
+| **Web Framework** | Express.js | `^5.3.0` | MVC routing, middleware pipeline, and HTTP request handlers |
+| **View Engine** | EJS | `^7.0.2` | Server-rendered templates with dual lookup paths (`views/pages/` and `views/`) |
+| **Database** | MySQL | `MySQL 8.0+` | Relational storage engine with foreign keys, transactions, and UTF8MB4 |
+| **Database Driver** | `mysql2` | `^3.24.6` | Connection pooling (`mysql2/promise`) with prepared parameterized queries |
+| **Authentication** | `bcrypt` & `express-session` | `bcrypt ^6.0.0` / `session ^1.19.0` | Salted password hashing (10 salt rounds) & secure HTTP-only sessions |
+| **Security Suite** | `helmet` | `^8.3.0` | HTTP headers with CSP tailored for Tailwind CDN, Google Fonts, and self-hosted assets |
+| **AI SDK** | `@google/genai` | `^2.31.0` | Official Google GenAI SDK powering the HANAP AI Assistant (`gemini-3.8-flash`) |
+| **File Uploads** | `multer` | `^2.5.0` | Disk storage for item images with MIME-type filters and sanitized filenames |
+| **Mailing / MFA** | `nodemailer` | `^10.2.1` | SMTP email transport with local development console fallback |
+| **Styling & Icons** | Tailwind CSS CDN & Material Symbols | Plus Jakarta Sans, Forms, Container Queries | Glassmorphic design tokens, responsive typography, and iconography |
+| **Development** | `nodemon` & `dotenv` | `nodemon ^3.1.14` / `dotenv ^18.0.9` | Hot reloading and environment variable isolation |
+| **Version Control** | Git & GitHub | Git `2.x+` / GitHub Flow | Feature branching, pull requests, peer code reviews, and issue tracking |
+
+---
+
+## 6. Installation
+
+### Prerequisites
+- **Node.js:** Version `18.x`, `20.x`, or `24.x` LTS ([Download Node.js](https://nodejs.org/))
+- **MySQL:** Version `8.0+` (via XAMPP, MySQL Workbench, Laragon, or native service)
+- **Git:** Version `2.x+` ([Download Git](https://git-scm.com/))
+
+### Installation Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/veirubyte/projecthanap_ptappdev.git
+   cd projecthanap_ptappdev
+   ```
+
+2. Install the required Node.js package dependencies:
+   ```bash
+   npm install
+   ```
+
+---
+
+## 7. Configuration
+
+Create your local `.env` configuration file by copying `.env.example`:
+
+```powershell
+# Windows (PowerShell):
+Copy-Item .env.example .env
+```
+```bash
+# macOS / Linux / Git Bash:
+cp .env.example .env
+```
+
+Update `.env` with your local database credentials and optional API keys:
+```env
+PORT=3000
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASS=
+DB_PASSWORD=
+DB_NAME=project_hanap
+SESSION_SECRET=replace_with_a_strong_session_secret_key
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.8-flash
+NODE_ENV=development
+```
+
+### Environment Variables Reference
+
+| Variable Name | Required | Default Value | Description |
+| :--- | :---: | :--- | :--- |
+| `PORT` | No | `3000` | TCP port on which the Express HTTP server listens |
+| `DB_HOST` | Yes | `127.0.0.1` | MySQL database server hostname or IP |
+| `DB_PORT` | No | `3306` | MySQL server port |
+| `DB_USER` | Yes | `root` | Database authentication username |
+| `DB_PASS` / `DB_PASSWORD` | No | `""` (empty) | Database authentication password |
+| `DB_NAME` | Yes | `project_hanap` | Target database schema name |
+| `SESSION_SECRET` | Yes | `project_hanap_secret...` | Cryptographic secret used to sign `express-session` cookies |
+| `GEMINI_API_KEY` | Optional | `""` | Server-side Google Gemini API key for the HANAP AI Assistant |
+| `GEMINI_MODEL` | Optional | `gemini-3.8-flash` | Gemini model identifier used by `services/geminiAssistant.js` |
+| `NODE_ENV` | No | `development` | Execution mode (`development` or `production`) |
+| `SMTP_HOST` | Optional | `undefined` | Outgoing SMTP host (if omitted in dev, MFA codes log to console) |
+| `SMTP_PORT` | Optional | `587` | Outgoing SMTP port (`587` STARTTLS / `465` SSL) |
+| `SMTP_USER` | Optional | `undefined` | SMTP authentication username |
+| `SMTP_PASSWORD` | Optional | `undefined` | SMTP authentication password |
+| `SMTP_FROM` | Optional | `no-reply@cspc.edu.ph` | Sender email address for MFA notices |
+| `SMTP_FROM_NAME` | Optional | `Project HANAP` | Sender display name for outgoing emails |
+
+> [!TIP]
+> **Local Development MFA Fallback:** When `NODE_ENV=development` and SMTP variables are omitted, `services/email.js` automatically prints 6-digit MFA verification codes directly to the server terminal (e.g., `[HANAP Email Fallback] MFA verification code for user@my.cspc.edu.ph: 123456`).
+
+---
+
+## 8. Database Setup
+
+1. Start your **MySQL** service (e.g., click **Start** next to MySQL in the XAMPP Control Panel).
+2. Create the `project_hanap` database and import `project_hanap (4).sql` using phpMyAdmin or the MySQL CLI:
+
+```bash
+# Using MySQL CLI:
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS project_hanap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p project_hanap < "project_hanap (4).sql"
+```
+
+> [!NOTE]
+> `project_hanap (4).sql` automatically builds all 10 tables (`account_roles`, `departments`, `users`, `user_mfa`, `guardian_student_links`, `item_reports`, `item_report_images`, `claims`, `claim_messages`, `audit_logs`), foreign key constraints, and pre-populated sample items, claims, and test users. If upgrading an older database dump, run `migrations/add_custody_receipt_columns.sql`.
+
+### Database Architecture & Data Model
 
 The database (`project_hanap (4).sql`) is built on MySQL using InnoDB with UTF8MB4 character encoding, cascading foreign key constraints, connection pooling, and transactional integrity across **10 normalized tables**.
 
@@ -298,7 +407,38 @@ erDiagram
 
 ---
 
-## 8. Project Structure
+## 9. How to Run
+
+- **Development Mode (with auto-reload via Nodemon):**
+  ```bash
+  npm run dev
+  ```
+
+- **Standard / Production Start:**
+  ```bash
+  npm start
+  ```
+
+Once the console displays `🚀 Project HANAP Server active on http://localhost:3000` and `[DB] Connected successfully to MySQL database "project_hanap"`, open your browser to:
+**`http://localhost:3000`**
+
+---
+
+## 10. User Accounts
+
+The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-hashed user accounts for testing role-based access control and end-to-end workflows:
+
+| Role | Full Name | Email Address | Password | Login Tab | Pre-Loaded Sample Data & Testing Scope |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **Administrator** (`admin`) | Admin User | `admin@cspc.edu.ph` | `password123` | Institution | Full access to `/admin/dashboard`, Custody Handover (`/admin/handover`), 60-Day Archive (`/admin/reports`), User Management (`/admin/users`), Analytics, and Audit Logs. |
+| **Staff / Faculty** (`staff`) | Maria Santos | `maria@my.cspc.edu.ph` | `password123` | Institution | Reporter of Lost Item #2 (`Black SanDisk 32GB Flash Drive`) and active claimant on Item #1 (`Blue CSPC Lanyard`). |
+| **Student / Institutional** | Juan Dela Cruz | `juan@my.cspc.edu.ph` | `password123` | Institution | Finder/Reporter of Found Item #1 (`Blue CSPC CCS Department ID Lanyard`, challenge answer: `College of Computer Studies`) and Item #4 (`Silver Water Bottle`, challenge answer: `Black`). |
+| **Student** (`student`) | Marta | `marta@my.cspc.edu.ph` | `password123` | Institution | Student account (`ID: 2410979`) with photo report and active claim testing capability. |
+| **Parent / Guest** (`guest`) | Parent Guest | `parent@gmail.com` | `password123` | Guest / Parent | External guest portal access, parent-to-student guardian linkage requests, and Security Desk claim routing. |
+
+---
+
+## 11. Project Structure
 
 ```ascii
 projectHanap/
@@ -386,122 +526,9 @@ projectHanap/
 └── README.md                          # Project documentation
 ```
 
----
+### Comprehensive Route Directory
 
-## 9. Installation, Configuration, Database Setup & How to Run
-
-### Prerequisites
-- **Node.js:** Version `18.x`, `20.x`, or `24.x` LTS ([Download Node.js](https://nodejs.org/))
-- **MySQL:** Version `8.0+` (via XAMPP, MySQL Workbench, Laragon, or native service)
-- **Git:** Version `2.x+` ([Download Git](https://git-scm.com/))
-
-### Step 1: Installation (Clone & Install Packages)
-```bash
-git clone https://github.com/veirubyte/projecthanap_ptappdev.git
-cd projecthanap_ptappdev
-npm install
-```
-
-### Step 2: Configuration (`.env` Setup)
-Create your local `.env` configuration file by copying `.env.example`:
-
-```powershell
-# Windows (PowerShell):
-Copy-Item .env.example .env
-```
-```bash
-# macOS / Linux / Git Bash:
-cp .env.example .env
-```
-
-Update `.env` with your local database credentials and optional API keys:
-```env
-PORT=3000
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASS=
-DB_PASSWORD=
-DB_NAME=project_hanap
-SESSION_SECRET=replace_with_a_strong_session_secret_key
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.8-flash
-NODE_ENV=development
-```
-
-### Step 3: Database Setup
-1. Start your **MySQL** service (e.g., click **Start** next to MySQL in the XAMPP Control Panel).
-2. Create the `project_hanap` database and import `project_hanap (4).sql` using phpMyAdmin or the MySQL CLI:
-
-```bash
-# Using MySQL CLI:
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS project_hanap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p project_hanap < "project_hanap (4).sql"
-```
-
-> [!NOTE]
-> `project_hanap (4).sql` automatically builds all 10 tables (`account_roles`, `departments`, `users`, `user_mfa`, `guardian_student_links`, `item_reports`, `item_report_images`, `claims`, `claim_messages`, `audit_logs`), foreign key constraints, and pre-populated sample items, claims, and test users. If upgrading an older database dump, run `migrations/add_custody_receipt_columns.sql`.
-
-### Step 4: How to Run the Application
-
-- **Development Mode (with auto-reload via Nodemon):**
-  ```bash
-  npm run dev
-  ```
-
-- **Standard / Production Start:**
-  ```bash
-  npm start
-  ```
-
-Once the console displays `🚀 Project HANAP Server active on http://localhost:3000` and `[DB] Connected successfully to MySQL database "project_hanap"`, open your browser to:
-**`http://localhost:3000`**
-
----
-
-## 10. Configuration & Environment Variables
-
-| Variable Name | Required | Default Value | Description |
-| :--- | :---: | :--- | :--- |
-| `PORT` | No | `3000` | TCP port on which the Express HTTP server listens |
-| `DB_HOST` | Yes | `127.0.0.1` | MySQL database server hostname or IP |
-| `DB_PORT` | No | `3306` | MySQL server port |
-| `DB_USER` | Yes | `root` | Database authentication username |
-| `DB_PASS` / `DB_PASSWORD` | No | `""` (empty) | Database authentication password |
-| `DB_NAME` | Yes | `project_hanap` | Target database schema name |
-| `SESSION_SECRET` | Yes | `project_hanap_secret...` | Cryptographic secret used to sign `express-session` cookies |
-| `GEMINI_API_KEY` | Optional | `""` | Server-side Google Gemini API key for the HANAP AI Assistant |
-| `GEMINI_MODEL` | Optional | `gemini-3.8-flash` | Gemini model identifier used by `services/geminiAssistant.js` |
-| `NODE_ENV` | No | `development` | Execution mode (`development` or `production`) |
-| `SMTP_HOST` | Optional | `undefined` | Outgoing SMTP host (if omitted in dev, MFA codes log to console) |
-| `SMTP_PORT` | Optional | `587` | Outgoing SMTP port (`587` STARTTLS / `465` SSL) |
-| `SMTP_USER` | Optional | `undefined` | SMTP authentication username |
-| `SMTP_PASSWORD` | Optional | `undefined` | SMTP authentication password |
-| `SMTP_FROM` | Optional | `no-reply@cspc.edu.ph` | Sender email address for MFA notices |
-| `SMTP_FROM_NAME` | Optional | `Project HANAP` | Sender display name for outgoing emails |
-
-> [!TIP]
-> **Local Development MFA Fallback:** When `NODE_ENV=development` and SMTP variables are omitted, `services/email.js` automatically prints 6-digit MFA verification codes directly to the server terminal (e.g., `[HANAP Email Fallback] MFA verification code for user@my.cspc.edu.ph: 123456`).
-
----
-
-## 11. Pre-Configured User Accounts
-
-The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-hashed user accounts for testing role-based access control and end-to-end workflows:
-
-| Role | Full Name | Email Address | Password | Login Tab | Pre-Loaded Sample Data & Testing Scope |
-| :--- | :--- | :--- | :--- | :---: | :--- |
-| **Administrator** (`admin`) | Admin User | `admin@cspc.edu.ph` | `password123` | Institution | Full access to `/admin/dashboard`, Custody Handover (`/admin/handover`), 60-Day Archive (`/admin/reports`), User Management (`/admin/users`), Analytics, and Audit Logs. |
-| **Staff / Faculty** (`staff`) | Maria Santos | `maria@my.cspc.edu.ph` | `password123` | Institution | Reporter of Lost Item #2 (`Black SanDisk 32GB Flash Drive`) and active claimant on Item #1 (`Blue CSPC Lanyard`). |
-| **Student / Institutional** | Juan Dela Cruz | `juan@my.cspc.edu.ph` | `password123` | Institution | Finder/Reporter of Found Item #1 (`Blue CSPC CCS Department ID Lanyard`, challenge answer: `College of Computer Studies`) and Item #4 (`Silver Water Bottle`, challenge answer: `Black`). |
-| **Student** (`student`) | Marta | `marta@my.cspc.edu.ph` | `password123` | Institution | Student account (`ID: 2410979`) with photo report and active claim testing capability. |
-| **Parent / Guest** (`guest`) | Parent Guest | `parent@gmail.com` | `password123` | Guest / Parent | External guest portal access, parent-to-student guardian linkage requests, and Security Desk claim routing. |
-
----
-
-## 12. Comprehensive Route Directory
-
-### 1. Public & Core Authentication Routes (`routes/homeRoutes.js`, `routes/authRoutes.js`)
+#### 1. Public & Core Authentication Routes (`routes/homeRoutes.js`, `routes/authRoutes.js`)
 | Method | Route | Controller Handler | Access Scope | Description |
 | :---: | :--- | :--- | :---: | :--- |
 | `GET` | `/` | `homeController.showLandingPage` | Public | Public landing homepage with feature spotlights and CTA |
@@ -511,7 +538,7 @@ The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-ha
 | `POST` | `/register` | `authController.register` | Public (Rate-Limited) | Validates domain rules (`@my.cspc.edu.ph` / `@cspc.edu.ph`) & creates user |
 | `GET` | `/logout` | `authController.logout` | Authenticated | Destroys active session, clears cookie, and redirects to `/login` |
 
-### 2. Catalog, Item Reporting & Match Engine (`routes/itemRoutes.js`)
+#### 2. Catalog, Item Reporting & Match Engine (`routes/itemRoutes.js`)
 | Method | Route | Controller Handler | Access Scope | Description |
 | :---: | :--- | :--- | :---: | :--- |
 | `GET` | `/catalog` | `itemController.showDashboard` | Public | Searchable campus catalog with keyword, type, category & date filters |
@@ -523,7 +550,7 @@ The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-ha
 | `POST` | `/items/:id/claim` | `itemController.createClaim` | Authenticated | Enforces $\ge 80\%$ match threshold and creates ownership claim |
 | `GET` | `/claims/guest-claim` | `itemController.showGuestClaimGuide` | Public | Security Desk claim protocol guide for parents and visitors |
 
-### 3. Claims Coordination, P2P Chat & My Reports (`routes/itemRoutes.js`)
+#### 3. Claims Coordination, P2P Chat & My Reports (`routes/itemRoutes.js`)
 | Method | Route | Controller Handler | Access Scope | Description |
 | :---: | :--- | :--- | :---: | :--- |
 | `GET` | `/claims` | `itemController.listClaims` | Authenticated | Claims hub displaying submitted and received ownership claims |
@@ -537,7 +564,7 @@ The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-ha
 | `POST` | `/items/:id/status` | `itemController.updateItemStatus` | Owner / Admin | Updates report status (`active`, `claimed`, `returned`, `archived`) |
 | `POST` | `/items/:id/delete` | `itemController.deleteItemReport` | Owner / Admin | Permanently deletes an item report |
 
-### 4. Account Settings & AI Assistant (`routes/itemRoutes.js`, `routes/assistantRoutes.js`)
+#### 4. Account Settings & AI Assistant (`routes/itemRoutes.js`, `routes/assistantRoutes.js`)
 | Method | Route | Controller Handler | Access Scope | Description |
 | :---: | :--- | :--- | :---: | :--- |
 | `GET` | `/settings` | `itemController.showSettings` | Authenticated | Account settings studio (Profile, Security, MFA, Guardian Links) |
@@ -551,7 +578,7 @@ The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-ha
 | `POST` | `/settings/delete-account` | `itemController.deleteAccount` | Non-Admin | Deletes user account after confirmation |
 | `POST` | `/api/assistant/chat` | `assistantController.chat` | Authenticated | Sends user prompt to the Gemini-powered HANAP AI Assistant |
 
-### 5. Administrative Platform Governance (`routes/itemRoutes.js`)
+#### 5. Administrative Platform Governance (`routes/itemRoutes.js`)
 | Method | Route | Controller Handler | Access Scope | Description |
 | :---: | :--- | :--- | :---: | :--- |
 | `GET` | `/admin/dashboard` | `itemController.showAdminDashboard` | Administrator | Central admin command center, pending custody intake & metrics |
@@ -574,38 +601,7 @@ The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-ha
 
 ---
 
-## 13. System Requirements & Use Cases Summary
-
-The full System Requirements Specification is maintained in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). Below is an executive summary:
-
-- **Stakeholders:** CSPC Student Body, Campus Security & Public Safety Office, Office of Student Affairs (OSA), University Library & Laboratory Custodians, and MIS/IT Infrastructure Team.
-- **Core Functional Requirements (`FR-01` – `FR-10`):** Institutional & guest registration, session-based login/logout with optional Email MFA, strict Role-Based Access Control (`requireAuth`, `requireNonAdminAuth`, `requireAdmin`), server-side form validation, lost/found report creation with photo uploads, physical custody intake logging, Campus Match Engine claim verification, multi-filter catalog search, and normalized MySQL persistence.
-- **Core Non-Functional Requirements (`NFR-01` – `NFR-05`):** `bcrypt` password hashing (10 salt rounds), `.env` secret isolation, low-latency parameterized MySQL queries, ACID transactional durability across restarts, and mobile-first responsive UI.
-
----
-
-## 14. Security, Input Validation & Access Control
-
-1. **Role-Based Access Control (`middleware/auth.js`):** Every protected route verifies `req.session.user`. Unauthorized guests are redirected to `/login`, while non-admin users attempting to access `/admin/*` routes are immediately blocked, prevented from bypassing restrictions via direct URL entry, and presented with a 403 Access Denied response.
-2. **Comprehensive Server-Side Input Validation:** All user inputs (registration credentials, institutional email domains, password strength segments, item report fields, claim proofs, and chat messages) are validated on the server before database execution, returning descriptive error feedback on invalid or duplicate submissions.
-3. **SQL Injection Prevention:** All database operations use parameterized prepared statements via `mysql2/promise`.
-4. **CSRF Protection (`config/security.js`):** Per-session cryptographic CSRF tokens are verified on state-changing requests (`POST`, `PUT`, `DELETE`) via form fields (`_csrf`) or AJAX headers (`x-csrf-token`).
-5. **HTTP Security Headers & Rate Limiting:** Configured via `helmet` alongside sliding-window rate limiters on `/login` (20 req / 15 min), `/register` (10 req / 60 min), and `/api/assistant/chat` (12 req / 5 min).
-6. **In-Chat Privacy & Audit Trail:** Phone numbers shared in peer claim chats are automatically masked (`09**-***-**09`), and all administrative actions are recorded in `audit_logs` with administrator ID, IP address, and timestamp.
-
----
-
-## 15. GitHub Collaboration & Development Workflow
-
-In accordance with the PTAppDev Midterm Project guidelines, our team followed a disciplined GitHub workflow:
-- **Feature Branching:** Development was conducted on dedicated feature branches (e.g., `feature/match-engine`, `feature/HANAP-AI-Assistant`, `feature/custody-handover`, `feature/auth-mfa`) rather than committing directly to `main`.
-- **Pull Requests & Peer Code Reviews:** Major features were submitted via Pull Requests using `.github/pull_request_template.md` and reviewed by teammates for functionality, validation, security, and code clarity prior to merging.
-- **Conventional Commits:** Commit history adheres to Conventional Commit prefixes (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
-- **Issue & Project Board Tracking:** Tasks were organized using GitHub Issues (`.github/ISSUE_TEMPLATE/task_issue.md`) and tracked across our GitHub Project Board (`BACKLOG` $\rightarrow$ `TODO` $\rightarrow$ `IN PROGRESS` $\rightarrow$ `REVIEW` $\rightarrow$ `DONE`).
-
----
-
-## 16. Known Limitations
+## 12. Known Limitations
 
 1. **In-Memory Session & Rate-Limiter State:** `express-session` and the sliding-window rate limiter (`config/security.js`) currently store state in Node.js process memory. Restarting the server clears active login sessions and rate-limit counters; deploying across multiple clustered Node instances would require a shared store such as Redis or `express-mysql-session`.
 2. **HTTP Request/Response Chat Refresh:** The peer-to-peer claim chat (`views/pages/chat.ejs`) operates over standard HTTP form submissions rather than persistent WebSockets (`Socket.IO`). Users must refresh the page to view newly arrived messages from the other party.
@@ -616,7 +612,7 @@ In accordance with the PTAppDev Midterm Project guidelines, our team followed a 
 
 ---
 
-## 17. AI Assistance Disclosure
+## 13. AI Assistance Disclosure
 
 In compliance with Section 17 and Section 20 of the **PTAppDev Midterm Project (Campus System – Round 1)** guidelines, the team discloses the following uses of Artificial Intelligence tools:
 
@@ -630,6 +626,6 @@ In compliance with Section 17 and Section 20 of the **PTAppDev Midterm Project (
 
 ---
 
-## 18. License
+## 14. License
 
 This project is licensed under the terms of the **MIT License**. For complete terms, permissions, and conditions, refer to the [LICENSE](LICENSE) file located in the root repository directory.
