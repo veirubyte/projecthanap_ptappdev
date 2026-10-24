@@ -237,13 +237,12 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Update `.env` with your local database credentials and optional API keys:
+Update `.env` with your local database credentials and optional API keys. The app requires `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME`; `DB_PASSWORD` may be empty only if your MySQL account has no password. `DB_PORT` is optional and defaults to `3306`:
 ```env
 PORT=3000
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=root
-DB_PASS=
 DB_PASSWORD=
 DB_NAME=project_hanap
 SESSION_SECRET=replace_with_a_strong_session_secret_key
@@ -257,11 +256,11 @@ NODE_ENV=development
 | Variable Name | Required | Default Value | Description |
 | :--- | :---: | :--- | :--- |
 | `PORT` | No | `3000` | TCP port on which the Express HTTP server listens |
-| `DB_HOST` | Yes | `127.0.0.1` | MySQL database server hostname or IP |
-| `DB_PORT` | No | `3306` | MySQL server port |
-| `DB_USER` | Yes | `root` | Database authentication username |
-| `DB_PASS` / `DB_PASSWORD` | No | `""` (empty) | Database authentication password |
-| `DB_NAME` | Yes | `project_hanap` | Target database schema name |
+| `DB_HOST` | Yes | None | MySQL database server hostname or IP |
+| `DB_PORT` | No | `3306` | MySQL server port (integer from 1 to 65535) |
+| `DB_USER` | Yes | None | Database authentication username |
+| `DB_PASSWORD` | Yes | None | Database authentication password (may be empty if the MySQL account has no password) |
+| `DB_NAME` | Yes | None | Target database schema name |
 | `SESSION_SECRET` | Yes | `project_hanap_secret...` | Cryptographic secret used to sign `express-session` cookies |
 | `GEMINI_API_KEY` | Optional | `""` | Server-side Google Gemini API key for the HANAP AI Assistant |
 | `GEMINI_MODEL` | Optional | `gemini-3.8-flash` | Gemini model identifier used by `services/geminiAssistant.js` |
