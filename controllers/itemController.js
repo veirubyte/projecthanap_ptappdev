@@ -110,13 +110,14 @@ const showDashboard = async (req, res) => {
         const categoryCounts = Object.fromEntries(CATEGORIES.map((category) => [category, 0]));
 
         if (isCatalog) {
-            const [finderResult, handoverResult, categoryCountRows] = await Promise.all([
+            const [finderResult, handoverResult, categoryCountResult] = await Promise.all([
                 itemReportModel.showDashboardQuery2(undefined, []),
                 claimModel.showDashboard(undefined, []),
                 itemReportModel.showDashboardQuery3(undefined, [])
             ]);
-            recognizedFinders = finderResult[0];
-            successfulHandovers = handoverResult[0];
+            recognizedFinders = finderResult[0] || [];
+            successfulHandovers = handoverResult[0] || [];
+            const categoryCountRows = (categoryCountResult && categoryCountResult[0]) || [];
             categoryCountRows.forEach((row) => {
                 if (Object.prototype.hasOwnProperty.call(categoryCounts, row.category)) {
                     categoryCounts[row.category] = Number(row.item_count);

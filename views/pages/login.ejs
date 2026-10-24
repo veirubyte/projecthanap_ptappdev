@@ -363,7 +363,7 @@
 
 
   <script>
-    let activeCategory = document.getElementById('categoryInput').value;
+    let activeCategory = document.getElementById('categoryInput')?.value || 'institution';
 
     function switchLoginCategory(cat) {
       activeCategory = cat;

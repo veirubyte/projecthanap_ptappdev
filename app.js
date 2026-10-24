@@ -125,10 +125,10 @@ app.use((req, res) => {
         errorTitle: 'Page Not Found',
         errorMessage: 'The requested campus page or resource could not be found.',
         attemptedPath: req.originalUrl,
-        user: req.session.user || null,
-        returnUrl: req.session.user && ['admin', 'administrator'].includes(String(req.session.user.role || '').toLowerCase())
-            ? '/admin/dashboard'
-            : '/dashboard'
+        user: req.session?.user || null,
+        returnUrl: req.session?.user
+            ? (['admin', 'administrator'].includes(String(req.session.user.role || '').toLowerCase()) ? '/admin/dashboard' : '/dashboard')
+            : '/'
     });
 });
 
@@ -142,7 +142,10 @@ app.use((err, req, res, next) => {
         errorTitle: 'Request Could Not Be Completed',
         errorMessage: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected server error occurred.',
         attemptedPath: req.originalUrl,
-        user: req.session.user || null
+        user: req.session?.user || null,
+        returnUrl: req.session?.user
+            ? (['admin', 'administrator'].includes(String(req.session.user.role || '').toLowerCase()) ? '/admin/dashboard' : '/dashboard')
+            : '/'
     });
 });
 

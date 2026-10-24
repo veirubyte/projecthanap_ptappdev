@@ -330,6 +330,7 @@ const login = async (req, res) => {
 
         const sessionUser = {
             id: userRecord.id,
+            user_id: userRecord.id,
             email: userRecord.email,
             full_name: userRecord.full_name,
             role: userRecord.role
