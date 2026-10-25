@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const { isAdmin } = require('../config/roles');
 
 const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -59,6 +60,15 @@ const upload = multer({
 });
 
 function uploadReportPhotos(req, res, next) {
+    const uploadErrorRedirect = (message) => {
+        const encodedMessage = encodeURIComponent(message);
+        const editMatch = req.path.match(/^\/items\/(\d+)\/edit$/);
+        if (editMatch) return res.redirect(`/items/${editMatch[1]}/edit?error=${encodedMessage}`);
+        if (req.path === '/admin/items/log') return res.redirect(`/admin/dashboard?tab=posted&error=${encodedMessage}`);
+        const reportType = req.query.type === 'found' ? 'found' : 'lost';
+        return res.redirect(`/items/new?type=${reportType}&error=${encodedMessage}`);
+    };
+
     upload.array('photos', 6)(req, res, async (uploadError) => {
         if (uploadError) {
             console.error('Failed to upload report photo:', {
@@ -69,7 +79,6 @@ function uploadReportPhotos(req, res, next) {
             await Promise.all((req.files || []).map((file) => fs.promises.unlink(file.path).catch((err) => {
                 if (err.code !== 'ENOENT') console.error('Failed to remove partial report upload:', err);
             })));
-            const reportType = req.query.type === 'found' ? 'found' : 'lost';
             const message = uploadError.code === 'LIMIT_FILE_SIZE'
                 ? 'Each photo must be 5 MB or smaller.'
                 : ['LIMIT_FILE_COUNT', 'LIMIT_UNEXPECTED_FILE'].includes(uploadError.code)
@@ -77,7 +86,7 @@ function uploadReportPhotos(req, res, next) {
                     : uploadError.code === 'UNSUPPORTED_IMAGE_TYPE'
                         ? 'Unsupported file type. Choose JPEG, PNG, or WebP images.'
                         : 'Photo upload failed. Please try again.';
-            return res.redirect(`/items/new?type=${reportType}&error=${encodeURIComponent(message)}`);
+            return uploadErrorRedirect(message);
         }
 
         const uploadedFiles = req.files || [];
@@ -89,9 +98,8 @@ function uploadReportPhotos(req, res, next) {
             await Promise.all(uploadedFiles.map((file) => fs.promises.unlink(file.path).catch((unlinkError) => {
                 if (unlinkError.code !== 'ENOENT') console.error('Failed to remove unverified report upload:', unlinkError);
             })));
-            const reportType = req.query.type === 'found' ? 'found' : 'lost';
             const message = 'Photo upload could not be verified. Please try again.';
-            return res.redirect(`/items/new?type=${reportType}&error=${encodeURIComponent(message)}`);
+            return uploadErrorRedirect(message);
         }
 
         if (detectedTypes.some((type) => !type)) {
@@ -102,9 +110,8 @@ function uploadReportPhotos(req, res, next) {
             await Promise.all(uploadedFiles.map((file) => fs.promises.unlink(file.path).catch((err) => {
                 if (err.code !== 'ENOENT') console.error('Failed to remove invalid report upload:', err);
             })));
-            const reportType = req.query.type === 'found' ? 'found' : 'lost';
             const message = 'One or more files are not valid JPEG, PNG, or WebP images. Choose the original image files and try again.';
-            return res.redirect(`/items/new?type=${reportType}&error=${encodeURIComponent(message)}`);
+            return uploadErrorRedirect(message);
         }
 
         try {
@@ -127,9 +134,8 @@ function uploadReportPhotos(req, res, next) {
             await Promise.all(uploadedFiles.map((file) => fs.promises.unlink(file.path).catch((unlinkError) => {
                 if (unlinkError.code !== 'ENOENT') console.error('Failed to remove unnormalized report upload:', unlinkError);
             })));
-            const reportType = req.query.type === 'found' ? 'found' : 'lost';
             const message = 'Photo upload failed while preparing the images. Please try again.';
-            return res.redirect(`/items/new?type=${reportType}&error=${encodeURIComponent(message)}`);
+            return uploadErrorRedirect(message);
         }
 
         return next();
@@ -137,10 +143,15 @@ function uploadReportPhotos(req, res, next) {
 }
 
 function reportUploadBeforeCsrf(req, res, next) {
-    if (req.method !== 'POST' || req.path !== '/items/report') return next();
+    if (req.method !== 'POST') return next();
+    const isUserReport = req.path === '/items/report';
+    const isItemEdit = /^\/items\/\d+\/edit$/.test(req.path);
+    const isAdminIntake = req.path === '/admin/items/log';
+    if (!isUserReport && !isItemEdit && !isAdminIntake) return next();
     if (!req.session.user) {
         return res.redirect(`/login?msg=${encodeURIComponent('Please sign in to access this feature.')}`);
     }
+    if (isAdminIntake && !isAdmin(req.session.user)) return next();
     return uploadReportPhotos(req, res, next);
 }
 

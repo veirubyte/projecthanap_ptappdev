@@ -43,7 +43,7 @@
     <div class="absolute -bottom-36 left-1/3 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-cyan-200/40 via-sky-100/30 to-transparent blur-3xl"></div>
   </div>
 
-  <%- include('partials/navbar', { active: 'catalog' }) %>
+  <%- include('partials/navbar', { active: isAdmin ? 'admin-reports' : 'catalog' }) %>
 
   <main class="w-full pt-24 sm:pt-28 pb-16 flex-1 flex items-center justify-center px-4 sm:px-6 relative z-10">
     <!-- Elevated Floating Frosted Glass Modal Card -->
@@ -77,7 +77,7 @@
       </div>
 
       <!-- Form Inputs Container -->
-      <form class="flex flex-col gap-4.5" id="editReportForm" action="/items/<%= item.id %>/edit" method="POST">
+      <form class="flex flex-col gap-4.5" id="editReportForm" action="/items/<%= item.id %>/edit" method="POST" enctype="multipart/form-data">
         <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
         <% } %>
@@ -98,7 +98,13 @@
           </div>
         </div>
 
-        <!-- 2. Category & Status -->
+        <!-- 2. Description -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[13px] font-semibold text-on-surface" for="item-description">Description &amp; Distinguishing Details</label>
+          <textarea class="w-full min-h-24 p-3.5 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-md text-on-surface text-[14px] shadow-sm focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all placeholder:text-slate-400" id="item-description" name="description" required><%= item.description || '' %></textarea>
+        </div>
+
+        <!-- 3. Category & Status -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Category -->
           <div class="flex flex-col gap-1.5">
@@ -147,7 +153,7 @@
           </div>
         </div>
 
-        <!-- 3. Campus Location -->
+        <!-- 4. Campus Location -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[13px] font-semibold text-on-surface" for="campus-location">Campus Location</label>
           <div class="relative flex items-center group">
@@ -163,9 +169,24 @@
           </div>
         </div>
 
-        <!-- 4. Verification Question -->
+        <!-- 5. Existing and Additional Photos -->
+        <div class="flex flex-col gap-2">
+          <label class="text-[13px] font-semibold text-on-surface" for="report-photos">Photos</label>
+          <% if (typeof itemImages !== 'undefined' && itemImages.length > 0) { %>
+            <div class="flex flex-wrap gap-2">
+              <% itemImages.forEach(image => { %>
+                <img class="w-16 h-16 rounded-lg object-cover border border-slate-200" src="<%= image.image_path %>" alt="Current item photo"/>
+              <% }) %>
+            </div>
+          <% } %>
+          <input class="w-full text-xs text-on-surface-variant" id="report-photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple/>
+          <p class="text-[11px] text-on-surface-variant">Add up to <%= Math.max(0, 6 - (typeof itemImages !== 'undefined' ? itemImages.length : 0)) %> more photos (JPEG, PNG, or WebP; 5 MB max each). Existing photos are kept.</p>
+        </div>
+
+        <!-- 6. Verification Question -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[13px] font-semibold text-on-surface" for="challenge-question">Verification Question</label>
+          <p class="text-[11px] text-on-surface-variant">Optional. Enter the question and private answer together, or leave both blank.</p>
           <div class="relative flex items-center group">
             <span class="material-symbols-outlined text-[19px] text-on-surface-variant/60 absolute left-3.5 pointer-events-none">help_outline</span>
             <input 
@@ -179,7 +200,7 @@
           </div>
         </div>
 
-        <!-- 5. Verification Secret Answer -->
+        <!-- 7. Verification Secret Answer -->
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
             <label class="text-[13px] font-semibold text-on-surface" for="challenge-answer">Private Secret Answer</label>
@@ -249,4 +270,3 @@
   </script>
 </body>
 </html>
-

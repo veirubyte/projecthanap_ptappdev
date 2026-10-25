@@ -1,5 +1,4 @@
 const { requireAuth, denyAdmin, requireNonAdminAuth, requireAdmin } = require('../middleware/auth');
-const { upload } = require('../middleware/reportUpload');
 const controller = require('../controllers/itemController');
 
 const router = require('express').Router();
@@ -27,7 +26,7 @@ router.get('/claims/guest-claim', controller.showGuestClaimGuide);
    ITEM DETAILS & CLAIM SUBMISSION
    ========================================================================== */
 
-router.get('/items/:id', denyAdmin, controller.showItemDetails);
+router.get('/items/:id', controller.showItemDetails);
 
 // Live Match Preview Endpoint for Real-time Answer Progression Circle
 router.post('/items/:id/match-preview', requireNonAdminAuth, controller.previewOwnershipMatch);
@@ -65,10 +64,10 @@ router.post('/items/:id/status', requireNonAdminAuth, controller.updateItemStatu
 router.post('/items/:id/delete', requireNonAdminAuth, controller.deleteItemReport);
 
 // Edit Report Form Page
-router.get('/items/:id/edit', requireNonAdminAuth, controller.showEditItemForm);
+router.get('/items/:id/edit', requireAuth, controller.showEditItemForm);
 
 // Process Report Edit
-router.post('/items/:id/edit', requireNonAdminAuth, controller.updateItemReport);
+router.post('/items/:id/edit', requireAuth, controller.updateItemReport);
 
 /* ==========================================================================
    ACCOUNT SETTINGS & CONFIGURATIONS
@@ -144,6 +143,6 @@ router.get('/admin/analytics', requireAdmin, controller.showAdminAnalytics);
 router.get('/admin/audit-logs', requireAdmin, controller.listAuditLogs);
 
 // Admin Office Turn-in Log Form Submission
-router.post('/admin/items/log', requireAdmin, upload.single('photo'), controller.createAdminItemReport);
+router.post('/admin/items/log', requireAdmin, controller.createAdminItemReport);
 
 module.exports = router;
