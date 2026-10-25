@@ -120,7 +120,8 @@ The full System Requirements Specification is maintained in [`docs/REQUIREMENTS.
 
 ### 5. Embedded HANAP AI Assistant
 - **Contextual Support Widget:** Floating AI assistant launcher (`views/partials/assistantWidget.ejs`) available to authenticated users across the portal.
-- **Google Gemini Integration:** Powered by `@google/genai` (`gemini-3.8-flash`) with strict system instructions (`services/geminiAssistant.js`), rate limiting, and privacy guardrails that prevent disclosure of private database records.
+- **Google Gemini Integration:** Powered by `@google/genai` (`gemini-3.6-flash`) with strict system instructions (`services/geminiAssistant.js`), rate limiting, and privacy guardrails that prevent disclosure of private database records.
+- **Built-in HANAP Help Fallback:** If Gemini is unconfigured, unreachable, times out, or returns an error, the same HANAP AI responds with a rule-based help guide for common questions about accounts, reports, claims, messages, settings, and Security Desk procedures. Gemini requests time out after five seconds before the fallback is returned. The fallback does not use another AI service or access user records.
 
 ### 6. UI/UX Design System
 - **Aurora Glass Aesthetics:** Built with Tailwind CSS, backdrop blurs, frosted glass panels, and smooth micro-interactions.
@@ -193,7 +194,7 @@ flowchart TD
 | **Database Driver** | `mysql2` | `^3.24.6` | Connection pooling (`mysql2/promise`) with prepared parameterized queries |
 | **Authentication** | `bcrypt` & `express-session` | `bcrypt ^6.0.0` / `session ^1.19.0` | Salted password hashing (10 salt rounds) & secure HTTP-only sessions |
 | **Security Suite** | `helmet` | `^8.3.0` | HTTP headers with CSP tailored for Tailwind CDN, Google Fonts, and self-hosted assets |
-| **AI SDK** | `@google/genai` | `^2.31.0` | Official Google GenAI SDK powering the HANAP AI Assistant (`gemini-3.8-flash`) |
+| **AI SDK** | `@google/genai` | `^2.31.0` | Official Google GenAI SDK powering the HANAP AI Assistant (`gemini-3.6-flash`) |
 | **File Uploads** | `multer` | `^2.5.0` | Disk storage for item images with MIME-type filters and sanitized filenames |
 | **Mailing / MFA** | `nodemailer` | `^10.2.1` | SMTP email transport with local development console fallback |
 | **Styling & Icons** | Tailwind CSS CDN & Material Symbols | Plus Jakarta Sans, Forms, Container Queries | Glassmorphic design tokens, responsive typography, and iconography |
@@ -247,7 +248,7 @@ DB_PASSWORD=
 DB_NAME=project_hanap
 SESSION_SECRET=replace_with_a_strong_session_secret_key
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.6-flash
 NODE_ENV=development
 ```
 
@@ -263,7 +264,7 @@ NODE_ENV=development
 | `DB_NAME` | Yes | None | Target database schema name |
 | `SESSION_SECRET` | Yes | `project_hanap_secret...` | Cryptographic secret used to sign `express-session` cookies |
 | `GEMINI_API_KEY` | Optional | `""` | Server-side Google Gemini API key for the HANAP AI Assistant |
-| `GEMINI_MODEL` | Optional | `gemini-3.8-flash` | Gemini model identifier used by `services/geminiAssistant.js` |
+| `GEMINI_MODEL` | Optional | `gemini-3.6-flash` | Gemini model identifier used by `services/geminiAssistant.js` |
 | `NODE_ENV` | No | `development` | Execution mode (`development` or `production`) |
 | `SMTP_HOST` | Optional | `undefined` | Outgoing SMTP host (if omitted in dev, MFA codes log to console) |
 | `SMTP_PORT` | Optional | `587` | Outgoing SMTP port (`587` STARTTLS / `465` SSL) |
@@ -488,6 +489,7 @@ projectHanap/
 │   ├── answerMatch.js                 # Campus Match Engine string normalization & confidence scoring
 │   ├── email.js                       # Nodemailer SMTP transporter with dev console fallback
 │   ├── geminiAssistant.js             # Google GenAI SDK wrapper for HANAP AI Assistant
+│   ├── hanapFallback.js               # Rule-based help responses when Gemini is unavailable
 │   ├── lifecycle.js                   # 60-day automated stale report background archiver
 │   └── mfa.js                         # 6-digit TOTP code generation & bcrypt hash verification
 ├── views/
@@ -575,7 +577,7 @@ projectHanap/
 | `POST` | `/settings/guardian-links` | `itemController.createGuardianLink` | Parent / Guest | Requests parent/guardian linkage to a student account |
 | `POST` | `/settings/guardian-links/:id/:decision` | `itemController.decideGuardianLink` | Student | Approves or rejects a pending parent/guardian link request |
 | `POST` | `/settings/delete-account` | `itemController.deleteAccount` | Non-Admin | Deletes user account after confirmation |
-| `POST` | `/api/assistant/chat` | `assistantController.chat` | Authenticated | Sends user prompt to the Gemini-powered HANAP AI Assistant |
+| `POST` | `/api/assistant/chat` | `assistantController.chat` | Authenticated | Sends user prompt to Gemini; uses the built-in HANAP help guide if the API fails |
 
 #### 5. Administrative Platform Governance (`routes/itemRoutes.js`)
 | Method | Route | Controller Handler | Access Scope | Description |
@@ -606,7 +608,7 @@ projectHanap/
 2. **HTTP Request/Response Chat Refresh:** The peer-to-peer claim chat (`views/pages/chat.ejs`) operates over standard HTTP form submissions rather than persistent WebSockets (`Socket.IO`). Users must refresh the page to view newly arrived messages from the other party.
 3. **Local Filesystem Image Uploads:** Uploaded item photos are stored on the local server disk under `public/uploads/` via Multer. In an ephemeral cloud container deployment, a persistent volume or object storage service (e.g., AWS S3 / Cloudflare R2) would be needed.
 4. **In-Process Lifecycle Scheduler:** The 60-day stale item archiver (`services/lifecycle.js`) executes on a 24-hour `setInterval` timer tied to the running Express process rather than an external OS cron job.
-5. **AI Assistant Privacy Sandboxing & Connectivity:** To guarantee data privacy and prevent prompt-injection leaks, the HANAP AI Assistant (`services/geminiAssistant.js`) does not query live database tables and cannot inspect private user claims or secret challenge answers. It also requires an active internet connection and a valid `GEMINI_API_KEY` in `.env`.
+5. **AI Assistant Privacy Sandboxing & Connectivity:** To protect privacy, the HANAP AI Assistant does not query live database tables and cannot inspect private user claims or secret challenge answers. Gemini requires an active internet connection and a valid `GEMINI_API_KEY` in `.env`; if the Gemini API fails, the built-in rule-based HANAP help guide answers common website questions without using another AI service.
 6. **External SMTP Dependency for Live Emails:** Real email delivery for 6-digit MFA codes requires valid SMTP credentials (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`) in `.env`; when unconfigured in local development, OTP codes are logged to the server terminal instead.
 
 ---
@@ -621,7 +623,7 @@ In compliance with Section 17 and Section 20 of the **PTAppDev Midterm Project (
    - **Team Accountability & Verification:** All AI-assisted code snippets and suggestions were thoroughly reviewed, modified, integrated, and tested by the team members. Every member understands and can defend the system architecture, routing, database schema, validation rules, and business logic.
 
 2. **Runtime Embedded AI Feature:**
-   - Project HANAP integrates the official `@google/genai` SDK (`services/geminiAssistant.js`, `controllers/assistantController.js`) to power the in-app **HANAP AI Assistant** widget (`gemini-3.8-flash`), which answers general user questions on how to navigate and use the lost-and-found portal.
+   - Project HANAP integrates the official `@google/genai` SDK (`services/geminiAssistant.js`, `controllers/assistantController.js`) to power the in-app **HANAP AI Assistant** widget (`gemini-3.6-flash`), which answers general user questions on how to navigate and use the lost-and-found portal.
 
 ---
 

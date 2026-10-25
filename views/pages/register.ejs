@@ -157,6 +157,13 @@
                     <span class="material-symbols-outlined text-sm">arrow_forward</span>
                   </button>
                 </div>
+              <% } else if (typeof action !== 'undefined' && action === 'switch_to_institution') { %>
+                <div class="pt-1.5 pl-7">
+                  <button type="button" data-reg-category="institution" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
+                    <span>Switch to Student / Staff Registration</span>
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
               <% } %>
             </div>
           <% } %>
@@ -485,6 +492,15 @@
             </button>
           </div>
         `;
+      } else if (actionType === 'switch_to_institution') {
+        actionHtml = `
+          <div class="pt-1.5 pl-7">
+            <button type="button" data-reg-category="institution" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
+              <span>Switch to Student / Staff Registration</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          </div>
+        `;
       }
 
       alertContainer.innerHTML = `
@@ -566,6 +582,22 @@
             'Institutional email required',
             'Institution registration requires an official @my.cspc.edu.ph or @cspc.edu.ph email address.\nIf you are a parent or guest, please switch to the Guest registration tab.',
             'switch_to_guest'
+          );
+          emailInput.focus();
+          return false;
+        }
+      }
+
+      if (activeRegCategory === 'guest') {
+        const domain = email.split('@')[1] || '';
+        const cspcDomains = ['my.cspc.edu.ph', 'cspc.edu.ph'];
+        if (cspcDomains.includes(domain)) {
+          event.preventDefault();
+          emailInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
+          showRegAlert(
+            'Institutional email detected',
+            'CSPC institutional email addresses cannot be used for Guest registration.\nPlease switch to Student / Staff registration to continue.',
+            'switch_to_institution'
           );
           emailInput.focus();
           return false;

@@ -482,6 +482,19 @@ const register = async (req, res) => {
         });
     }
 
+    if (category === 'guest' && isInstitutionalEmail(cleanEmail)) {
+        return renderRegister(res, {
+            category: 'guest',
+            values,
+            invalidFields: ['email'],
+            errorTitle: 'Institutional email detected',
+            errorMessage: 'CSPC institutional email addresses cannot be used for Guest registration.\nPlease switch to Student / Staff registration to continue.',
+            errorType: 'institutional_email_guest_registration',
+            action: 'switch_to_institution',
+            status: 400
+        });
+    }
+
     if (category === 'guest' && studentEmail && !isInstitutionalEmail(studentEmail)) {
         return renderRegister(res, {
             category,

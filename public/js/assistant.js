@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addMessage(userText, 'user');
     input.value = '';
     send.disabled = true;
-    const pendingMessage = addMessage('Thinking... Gemini may take up to two minutes to reply.', 'assistant');
+    const pendingMessage = addMessage('Looking for an answer about HANAP...', 'assistant');
 
     try {
       const requestMessages = [
