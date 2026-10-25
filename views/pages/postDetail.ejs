@@ -7,7 +7,8 @@
   const matchThresholdForView = typeof answerMatchThreshold !== 'undefined' ? answerMatchThreshold : 80;
   const meetsMatchThresholdForView = matchScoreForView !== null &&
     Math.max(Number(matchScoreForView), Number(matchThresholdForView)) === Number(matchScoreForView);
-  const isOwnerOrAdminForView = Boolean(user && (user.id === item.user_id || user.role === 'admin' || (typeof isAdmin !== 'undefined' && isAdmin)));
+  const isAdminViewer = Boolean(user && (user.role === 'admin' || user.role === 'administrator' || (typeof isAdmin !== 'undefined' && isAdmin)));
+  const isOwnerOrAdminForView = Boolean(user && user.id === item.user_id && !isAdminViewer);
   const canEditReportForView = isOwnerOrAdminForView;
   const isResolvedForView = item.status === 'claimed' || item.status === 'returned';
   const challengePromptText = item.secret_challenge || 'Please provide identifiable proof of ownership (e.g. unique scratches, serial number, lockscreen wallpaper, or internal contents).';
@@ -84,9 +85,9 @@
 
       <!-- Top Bar: Back to Catalog + Case # Pill + Options -->
       <div class="flex items-center justify-between gap-3 py-1">
-        <a href="/catalog" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-xs font-semibold text-[#09436B] border border-slate-200/80 shadow-2xs transition-all hover:shadow-xs group">
+        <a href="<%= isAdminViewer ? '/admin/reports' : '/catalog' %>" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-xs font-semibold text-[#09436B] border border-slate-200/80 shadow-2xs transition-all hover:shadow-xs group">
           <span class="material-symbols-outlined text-[17px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
-          <span>Back to Catalog</span>
+          <span><%= isAdminViewer ? 'Back to All Reports' : 'Back to Catalog' %></span>
         </a>
 
         <div class="flex items-center gap-2">
@@ -101,6 +102,13 @@
             <span id="copyCaseLabel">Case #<%= item.report_type === 'found' ? 'F' : 'L' %>-<%= item.id %></span>
             <span class="material-symbols-outlined text-[15px] text-slate-500" id="copyCaseIcon">content_copy</span>
           </button>
+
+          <% if (isAdminViewer) { %>
+            <a href="/items/<%= item.id %>/edit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#09436B] hover:bg-white/80 transition-colors">
+              <span class="material-symbols-outlined text-[16px]">edit</span>
+              <span>Edit</span>
+            </a>
+          <% } %>
 
           <% if (isOwnerOrAdminForView) { %>
             <% if (canEditReportForView) { %>
@@ -312,6 +320,7 @@
             </div>
           </div>
 
+          <% if (!isAdminViewer) { %>
           <!-- POD 2: Verify Ownership Card (Step 1 of 2 Stepper + Input + Submit) -->
           <div class="rounded-3xl p-5 sm:p-6 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06),0_1px_2px_rgba(0,0,0,0.02)] flex flex-col gap-4">
             
@@ -478,6 +487,7 @@
             <% } %>
 
           </div>
+          <% } %>
 
           <!-- Similar Items Carousel / Suggestions -->
           <% if (typeof similar !== 'undefined' && similar && similar.length) { %>

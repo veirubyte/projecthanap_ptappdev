@@ -657,15 +657,20 @@ const showEditItemForm = async (req, res) => {
     const user = req.session.user;
     try {
         const [rows] = await itemReportModel.showEditItemForm([itemId], []);
-        if (rows.length === 0) return res.redirect('/dashboard?error=Report not found.');
+        if (rows.length === 0) return res.redirect(isAdmin(user) ? '/admin/reports?error=Report not found.' : '/dashboard?error=Report not found.');
         const item = rows[0];
 
         if (!isAdmin(user) && item.user_id !== user.id) {
             return res.redirect(`/items/${itemId}?error=Unauthorized to edit this report.`);
         }
 
+        const [storedImages] = await itemReportModel.showItemReportImages([itemId], []);
+        const itemImages = storedImages.length
+            ? storedImages
+            : (item.primary_image_path ? [{ image_path: item.primary_image_path, is_primary: 1, sort_order: 0 }] : []);
         res.render('editReport', {
             item,
+            itemImages,
             user,
             categories: CATEGORIES,
             csrfToken: res.locals.csrfToken || '',
@@ -674,37 +679,72 @@ const showEditItemForm = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching report for edit:', err);
-        res.redirect('/dashboard?error=Error loading edit page.');
+        res.redirect(isAdmin(user)
+            ? '/admin/reports?error=Error loading edit page.'
+            : '/dashboard?error=Error loading edit page.');
     }
 };
 
 const updateItemReport = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
     const user = req.session.user;
+    const uploadedFiles = req.files || [];
     const itemName = typeof req.body.item_name === 'string' ? req.body.item_name.trim() : '';
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
     const status = typeof req.body.status === 'string' ? req.body.status.trim() : 'active';
     const location = typeof req.body.location_found_lost === 'string' ? req.body.location_found_lost.trim() : '';
-    const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() : null;
-    const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() : null;
+    const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
+    const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
+    const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
+    const imagePaths = uploadedFiles.map((file) => `/uploads/${file.filename}`);
 
-    if (!itemName || !location) {
-        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('Please provide both item title and campus location.')}`);
+    if (!itemName || !location || !description) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('Please provide an item title, campus location, and description.')}`);
+    }
+    const invalidVerificationInput = ['secret_challenge', 'secret_answer'].some((field) => (
+        req.body[field] !== undefined && typeof req.body[field] !== 'string'
+    ));
+    if (invalidVerificationInput) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('The ownership question and answer must be plain text.')}`);
+    }
+    if (Boolean(secretChallenge) !== Boolean(secretAnswer)) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
+    }
+    if ((secretChallenge && secretChallenge.length > 500) || (secretAnswer && secretAnswer.length > 500)) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
     }
 
     try {
         const [rows] = await itemReportModel.updateItemReport([itemId], []);
-        if (rows.length === 0) return res.redirect('/dashboard?error=Report not found.');
+        if (rows.length === 0) {
+            await removeUploadedFiles(uploadedFiles);
+            return res.redirect(isAdmin(user) ? '/admin/reports?error=Report not found.' : '/dashboard?error=Report not found.');
+        }
         const item = rows[0];
 
         if (!isAdmin(user) && item.user_id !== user.id) {
+            await removeUploadedFiles(uploadedFiles);
             return res.redirect(`/items/${itemId}?error=Unauthorized to edit this report.`);
+        }
+
+        const [existingImages] = await itemReportModel.showItemReportImages([itemId], []);
+        const existingImageCount = existingImages.length || (item.primary_image_path ? 1 : 0);
+        if (existingImageCount + uploadedFiles.length > 6) {
+            await removeUploadedFiles(uploadedFiles);
+            return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('A report can have up to 6 photos total. Remove no photos and choose fewer new photos.')}`);
         }
 
         const validStatuses = ['active', 'claimed', 'returned', 'archived', 'pending_review'];
         const finalStatus = validStatuses.includes(status) ? status : item.status;
 
-        await itemReportModel.updateItemReportQuery2([itemName, category, finalStatus, location, secretChallenge, secretAnswer, itemId], []);
+        await itemReportModel.updateItemReportQuery2(
+            [itemName, category, description, finalStatus, location, secretChallenge, secretAnswer, itemId],
+            imagePaths
+        );
 
         if (isAdmin(user)) {
             await logAudit(user.id, `Admin edited report #${itemId} ("${itemName}")`, req.ip);
@@ -713,6 +753,7 @@ const updateItemReport = async (req, res) => {
         return res.redirect(`/items/${itemId}?msg=${encodeURIComponent('Report updated successfully.')}`);
     } catch (err) {
         console.error('Error updating report:', err);
+        await removeUploadedFiles(uploadedFiles);
         return res.redirect(`/items/${itemId}/edit?error=Failed to update report.`);
     }
 };
@@ -1062,6 +1103,9 @@ const showAdminDashboard = async (req, res) => {
         // Categories breakdown
         const [catStats] = await itemReportModel.showAdminDashboardQuery4(undefined, []);
 
+        // Latest posted items for centralized admin review
+        const [postedItems] = await itemReportModel.showAdminDashboardQuery5(undefined, []);
+
         res.render('adminDashboard', {
             user,
             stats: {
@@ -1073,7 +1117,9 @@ const showAdminDashboard = async (req, res) => {
                 disputes: disputeRows.length,
                 overdue: overdueRows[0].cnt || 0
             },
+            categories: CATEGORIES,
             vaultedItems: vaultedRows,
+            postedItems,
             guestClaims: guestClaimRows,
             disputes: disputeRows,
             recentAudits,
@@ -1470,25 +1516,44 @@ const listAuditLogs = async (req, res) => {
 
 const createAdminItemReport = async (req, res) => {
     const user = req.session.user;
-    const itemName = (typeof req.body.item_name === 'string' && req.body.item_name.trim()) 
-        ? req.body.item_name.trim() 
-        : (typeof req.body.description === 'string' ? req.body.description.trim() : '');
+    const uploadedFiles = req.files || [];
+    const itemName = typeof req.body.item_name === 'string' ? req.body.item_name.trim() : '';
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
-    const location = (typeof req.body.location_found_lost === 'string' && req.body.location_found_lost.trim())
-        ? req.body.location_found_lost.trim()
-        : (typeof req.body.location === 'string' && req.body.location.trim() ? req.body.location.trim() : 'Lost & Found Office');
-    const description = (typeof req.body.description === 'string' && req.body.description.trim())
-        ? req.body.description.trim()
-        : itemName;
-    const imagePaths = req.file ? [`/uploads/${req.file.filename}`] : [];
+    const location = typeof req.body.location_found_lost === 'string' ? req.body.location_found_lost.trim() : '';
+    const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
+    const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
+    const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
+    const imagePaths = uploadedFiles.map((file) => `/uploads/${file.filename}`);
 
-    if (!itemName) {
-        await removeUploadedFiles(req.file);
-        return res.redirect('/admin/dashboard?error=Please specify item description.');
+    if (!itemName || !location || !description) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect('/admin/dashboard?tab=posted&error=Provide an item name, location, and description.');
+    }
+    if (!CATEGORIES.includes(category)) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect('/admin/dashboard?tab=posted&error=Choose a valid item category.');
+    }
+    const invalidVerificationInput = ['secret_challenge', 'secret_answer'].some((field) => (
+        req.body[field] !== undefined && typeof req.body[field] !== 'string'
+    ));
+    if (invalidVerificationInput) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('The ownership question and answer must be plain text.')}`);
+    }
+    if (Boolean(secretChallenge) !== Boolean(secretAnswer)) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
+    }
+    if ((secretChallenge && secretChallenge.length > 500) || (secretAnswer && secretAnswer.length > 500)) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
     }
 
     try {
-        const [result] = await itemReportModel.description([user.id, itemName, category, description, location, user.id], imagePaths);
+        const [result] = await itemReportModel.description(
+            [user.id, itemName, category, description, location, secretChallenge, secretAnswer, user.id],
+            imagePaths
+        );
 
         await logAudit(
             user.id,
@@ -1496,11 +1561,11 @@ const createAdminItemReport = async (req, res) => {
             req.ip
         );
 
-        return res.redirect('/admin/dashboard?msg=Office item logged and broadcasted to campus.');
+        return res.redirect('/admin/dashboard?tab=posted&msg=Office item logged and broadcasted to campus.');
     } catch (err) {
         console.error('Error logging office item:', err);
-        await removeUploadedFiles(req.file);
-        return res.redirect('/admin/dashboard?error=Failed to log office item.');
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect('/admin/dashboard?tab=posted&error=Failed to log office item.');
     }
 };
 
