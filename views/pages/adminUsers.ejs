@@ -177,7 +177,7 @@
                         <% if (u.role === 'parent') { %>
                           <span class="text-[10px] font-semibold text-emerald-700">Student-approved</span>
                         <% } else { %>
-                          <form action="/admin/users/<%= u.id %>/role" method="POST" class="inline-flex items-center gap-1.5" onsubmit="return confirm('Change role for <%= u.full_name %>?');">
+                          <form action="/admin/users/<%= u.id %>/role" method="POST" class="inline-flex items-center gap-1.5" onsubmit="return confirm('Are you sure you want to change this user\'s role?');">
                             <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                               <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
                             <% } %>

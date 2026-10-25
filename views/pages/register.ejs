@@ -36,16 +36,16 @@
 </head>
 <body class="register-page bg-[#F4F7FB] text-[#0F172A] font-sans antialiased min-h-screen relative overflow-x-hidden flex items-center justify-center p-4 md:p-8">
   
-  <!-- Ambient Aurora Canvas Background -->
-  <div aria-hidden="true" class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-    <div class="absolute -top-[18%] -left-[10%] w-[580px] h-[580px] rounded-full bg-[#2B5B84]/[0.12] blur-[120px]"></div>
-    <div class="absolute top-[25%] -right-[12%] w-[640px] h-[640px] rounded-full bg-[#3B82F6]/[0.10] blur-[140px]"></div>
-    <div class="absolute -bottom-[15%] left-[20%] w-[520px] h-[520px] rounded-full bg-[#0D9488]/[0.08] blur-[130px]"></div>
+  <!-- Ambient Aurora Canvas Background with Glowing Diffused Blobs -->
+  <div aria-hidden="true" class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-[18%] -left-[10%] w-[580px] h-[580px] rounded-full bg-[#2B5B84]/20 blur-[120px]"></div>
+    <div class="absolute top-[25%] -right-[12%] w-[640px] h-[640px] rounded-full bg-[#3B82F6]/20 blur-[140px]"></div>
+    <div class="absolute -bottom-[15%] left-[20%] w-[520px] h-[520px] rounded-full bg-[#09436B]/15 blur-[130px]"></div>
     <div class="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-white/40"></div>
   </div>
 
   <!-- Floating Frosted Glass Registration Portal -->
-  <main class="w-full max-w-[1020px] bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_24px_50px_-12px_rgba(15,23,42,0.08),0_10px_20px_-8px_rgba(43,91,132,0.05),0_0_0_1px_rgba(226,232,240,0.8)] border border-white/90 overflow-hidden flex flex-col md:flex-row relative">
+  <main class="w-full max-w-[1020px] bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_24px_50px_-12px_rgba(15,23,42,0.08),0_10px_20px_-8px_rgba(43,91,132,0.05),0_0_0_1px_rgba(226,232,240,0.8)] border border-white/90 overflow-hidden flex flex-col md:flex-row relative z-10">
     
     <!-- LEFT SHOWCASE: Frosted glass panel with floating feature pills -->
     <aside class="w-full md:w-[38%] bg-gradient-to-br from-[#EBF3FB]/90 via-[#E4EFF9]/80 to-[#D8E8F8]/70 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/70 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden select-none">
@@ -154,6 +154,13 @@
                 <div class="pt-1.5 pl-7">
                   <button type="button" data-reg-category="guest" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
                     <span>Switch to Guest Registration</span>
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+              <% } else if (typeof action !== 'undefined' && action === 'switch_to_institution') { %>
+                <div class="pt-1.5 pl-7">
+                  <button type="button" data-reg-category="institution" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
+                    <span>Switch to Student / Staff Registration</span>
                     <span class="material-symbols-outlined text-sm">arrow_forward</span>
                   </button>
                 </div>
@@ -485,6 +492,15 @@
             </button>
           </div>
         `;
+      } else if (actionType === 'switch_to_institution') {
+        actionHtml = `
+          <div class="pt-1.5 pl-7">
+            <button type="button" data-reg-category="institution" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
+              <span>Switch to Student / Staff Registration</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          </div>
+        `;
       }
 
       alertContainer.innerHTML = `
@@ -566,6 +582,22 @@
             'Institutional email required',
             'Institution registration requires an official @my.cspc.edu.ph or @cspc.edu.ph email address.\nIf you are a parent or guest, please switch to the Guest registration tab.',
             'switch_to_guest'
+          );
+          emailInput.focus();
+          return false;
+        }
+      }
+
+      if (activeRegCategory === 'guest') {
+        const domain = email.split('@')[1] || '';
+        const cspcDomains = ['my.cspc.edu.ph', 'cspc.edu.ph'];
+        if (cspcDomains.includes(domain)) {
+          event.preventDefault();
+          emailInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
+          showRegAlert(
+            'Institutional email detected',
+            'CSPC institutional email addresses cannot be used for Guest registration.\nPlease switch to Student / Staff registration to continue.',
+            'switch_to_institution'
           );
           emailInput.focus();
           return false;

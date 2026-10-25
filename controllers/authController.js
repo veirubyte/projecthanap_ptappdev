@@ -330,6 +330,7 @@ const login = async (req, res) => {
 
         const sessionUser = {
             id: userRecord.id,
+            user_id: userRecord.id,
             email: userRecord.email,
             full_name: userRecord.full_name,
             role: userRecord.role
@@ -477,6 +478,19 @@ const register = async (req, res) => {
             invalidFields: ['email'],
             errorTitle: 'Invalid email format',
             errorMessage: 'Please enter a valid email address.',
+            status: 400
+        });
+    }
+
+    if (category === 'guest' && isInstitutionalEmail(cleanEmail)) {
+        return renderRegister(res, {
+            category: 'guest',
+            values,
+            invalidFields: ['email'],
+            errorTitle: 'Institutional email detected',
+            errorMessage: 'CSPC institutional email addresses cannot be used for Guest registration.\nPlease switch to Student / Staff registration to continue.',
+            errorType: 'institutional_email_guest_registration',
+            action: 'switch_to_institution',
             status: 400
         });
     }

@@ -82,17 +82,17 @@
 </head>
 <body class="bg-[#F4F7FB] font-sans text-on-surface min-h-screen relative overflow-hidden selection:bg-rose-100 selection:text-rose-600">
 
-  <main class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative isolate">
+  <main class="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative">
     <!-- Ambient Canvas Aurora Blur Blobs -->
-    <div aria-hidden="true" class="absolute inset-0 -z-10 flex items-center justify-center overflow-hidden pointer-events-none">
-      <div class="absolute -top-24 -left-20 w-[420px] h-[420px] rounded-full bg-rose-200/40 mix-blend-multiply blur-3xl opacity-70 animate-pulse" style="animation-duration: 8s;"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[460px] rounded-full bg-rose-100/60 blur-[100px] opacity-80"></div>
-      <div class="absolute -bottom-24 -right-16 w-[440px] h-[440px] rounded-full bg-blue-200/35 mix-blend-multiply blur-3xl opacity-75"></div>
-      <div class="absolute bottom-10 left-1/4 w-[360px] h-[360px] rounded-full bg-slate-200/45 blur-2xl opacity-60"></div>
+    <div aria-hidden="true" class="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+      <div class="absolute -top-24 -left-20 w-[420px] h-[420px] rounded-full bg-rose-200/40 dark:bg-rose-900/30 mix-blend-multiply dark:mix-blend-screen blur-3xl opacity-70 animate-pulse" style="animation-duration: 8s;"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[460px] rounded-full bg-rose-100/60 dark:bg-rose-950/40 blur-[100px] opacity-80"></div>
+      <div class="absolute -bottom-24 -right-16 w-[440px] h-[440px] rounded-full bg-blue-200/35 dark:bg-blue-900/30 mix-blend-multiply dark:mix-blend-screen blur-3xl opacity-75"></div>
+      <div class="absolute bottom-10 left-1/4 w-[360px] h-[360px] rounded-full bg-slate-200/45 dark:bg-slate-800/40 blur-2xl opacity-60"></div>
     </div>
 
     <!-- Translucent Frosted Glass Shield Card -->
-    <div class="w-full max-w-[540px] bg-white/85 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_24px_50px_-12px_rgba(30,58,138,0.12),0_8px_24px_-4px_rgba(225,29,72,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] p-8 sm:p-11 flex flex-col items-center text-center relative transition-all">
+    <div class="w-full max-w-[540px] bg-white/85 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-[0_24px_50px_-12px_rgba(30,58,138,0.12),0_8px_24px_-4px_rgba(225,29,72,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] p-8 sm:p-11 flex flex-col items-center text-center relative z-10 transition-all">
       
       <!-- Glowing response-status badge -->
       <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-50/90 border border-rose-200/70 text-rose-600 shadow-[0_2px_8px_rgba(244,63,94,0.12)] text-xs font-semibold tracking-wide mb-6">
