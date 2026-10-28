@@ -4,43 +4,59 @@
 -- Course: PTAppDev (Platform Technologies & Web Application Development)
 -- Target Platform: Supabase (PostgreSQL 15+)
 --
--- Instructions:
--- 1. Open your Supabase Dashboard: https://supabase.com/dashboard
--- 2. Select your Project -> Go to "SQL Editor" -> Click "New query"
--- 3. Paste this entire script and click "Run" (Ctrl+Enter)
+-- Security Hardened:
+-- - Row Level Security (RLS) enabled on all public tables
+-- - Explicit search_path set on all functions (CWE-426 mitigation)
+-- - All Foreign Keys fully indexed for high-performance JOINs
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 0. MySQL Compatibility Functions for Supabase PostgreSQL
+-- 0. MySQL Compatibility Functions for Supabase PostgreSQL (Hardened search_path)
 -- ----------------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION utc_timestamp()
-RETURNS timestamptz AS $$
+CREATE OR REPLACE FUNCTION public.utc_timestamp()
+RETURNS timestamptz
+LANGUAGE plpgsql
+STABLE
+SET search_path = ''
+AS $$
 BEGIN
   RETURN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$;
 
-CREATE OR REPLACE FUNCTION date_sub(ts timestamptz, intvl interval)
-RETURNS timestamptz AS $$
+CREATE OR REPLACE FUNCTION public.date_sub(ts timestamptz, intvl interval)
+RETURNS timestamptz
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = ''
+AS $$
 BEGIN
   RETURN ts - intvl;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$;
 
-CREATE OR REPLACE FUNCTION date_add(ts timestamptz, intvl interval)
-RETURNS timestamptz AS $$
+CREATE OR REPLACE FUNCTION public.date_add(ts timestamptz, intvl interval)
+RETURNS timestamptz
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = ''
+AS $$
 BEGIN
   RETURN ts + intvl;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$;
 
-CREATE OR REPLACE FUNCTION timestampdiff(unit text, t1 timestamptz, t2 timestamptz)
-RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION public.timestampdiff(unit text, t1 timestamptz, t2 timestamptz)
+RETURNS integer
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = ''
+AS $$
 BEGIN
   RETURN EXTRACT(EPOCH FROM (t2 - t1))::integer;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$;
 
 -- ----------------------------------------------------------------------------
 -- 1. Table: account_roles
@@ -96,8 +112,8 @@ CREATE TABLE IF NOT EXISTS public.users (
   mfa_enabled SMALLINT NOT NULL DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON public.users(role_id);
+CREATE INDEX IF NOT EXISTS idx_users_department_id ON public.users(department_id);
 
 -- ----------------------------------------------------------------------------
 -- 4. Table: user_mfa
@@ -150,6 +166,7 @@ CREATE INDEX IF NOT EXISTS idx_item_reports_user ON public.item_reports(user_id)
 CREATE INDEX IF NOT EXISTS idx_item_reports_status ON public.item_reports(status);
 CREATE INDEX IF NOT EXISTS idx_item_reports_type ON public.item_reports(report_type);
 CREATE INDEX IF NOT EXISTS idx_item_reports_date ON public.item_reports(date_reported DESC);
+CREATE INDEX IF NOT EXISTS idx_item_reports_custody_received_by ON public.item_reports(custody_received_by);
 
 -- ----------------------------------------------------------------------------
 -- 7. Table: item_report_images
@@ -192,6 +209,7 @@ CREATE TABLE IF NOT EXISTS public.claim_messages (
 );
 
 CREATE INDEX IF NOT EXISTS idx_claim_messages_claim ON public.claim_messages(claim_id);
+CREATE INDEX IF NOT EXISTS idx_claim_messages_sender_id ON public.claim_messages(sender_id);
 
 -- ----------------------------------------------------------------------------
 -- 10. Table: guardian_student_links
@@ -223,7 +241,36 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_admin ON public.audit_logs(admin_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON public.audit_logs(timestamp DESC);
 
 -- ----------------------------------------------------------------------------
--- 12. Seed Default Administrative User
+-- 12. Row Level Security (RLS) Enablement & Access Policies
+-- Protects tables against anonymous external PostgREST exposure while granting
+-- full access to the backend Express server connection.
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.account_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_mfa ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.item_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.item_report_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.claim_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE
+  tbl text;
+BEGIN
+  FOR tbl IN
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS "Allow backend full access" ON public.%I', tbl);
+    EXECUTE format('CREATE POLICY "Allow backend full access" ON public.%I FOR ALL TO postgres, service_role USING (true) WITH CHECK (true)', tbl);
+  END LOOP;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- 13. Seed Default Administrative User
 -- Default credentials:
 -- Email: admin@cspc.edu.ph
 -- Password: password123
