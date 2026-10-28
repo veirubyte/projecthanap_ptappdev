@@ -3,8 +3,16 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
-const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
-fs.mkdirSync(uploadDir, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+const uploadDir = isVercel
+    ? path.join('/tmp', 'uploads')
+    : path.join(__dirname, '..', 'public', 'uploads');
+
+try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+} catch (e) {
+    // Graceful fallback for read-only environments
+}
 const MAX_REPORT_PHOTOS = 6;
 const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/pjpeg']);
 const allowedExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);

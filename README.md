@@ -20,11 +20,12 @@
 7. [Configuration](#7-configuration)
 8. [Database Setup](#8-database-setup)
 9. [How to Run](#9-how-to-run)
-10. [User Accounts](#10-user-accounts)
-11. [Project Structure](#11-project-structure)
-12. [Known Limitations](#12-known-limitations)
-13. [AI Assistance Disclosure](#13-ai-assistance-disclosure)
-14. [License](#14-license)
+10. [Cloud Deployment (Vercel & Supabase)](#10-cloud-deployment-vercel--supabase)
+11. [User Accounts](#11-user-accounts)
+12. [Project Structure](#12-project-structure)
+13. [Known Limitations](#13-known-limitations)
+14. [AI Assistance Disclosure](#14-ai-assistance-disclosure)
+15. [License](#15-license)
 
 ---
 
@@ -424,7 +425,68 @@ Once the console displays `🚀 Project HANAP Server active on http://localhost:
 
 ---
 
-## 10. User Accounts
+## 10. Cloud Deployment (Vercel & Supabase)
+
+Project HANAP is architected for cloud-native zero-downtime deployment:
+- **Web Application / Frontend Host:** [Vercel](https://vercel.com/) (Serverless Express 5 runtime)
+- **Database Host:** [Supabase](https://supabase.com/) (Managed PostgreSQL 15+ with SSL connection pooling)
+
+### Part 1: Supabase Database Setup
+
+1. **Create a Supabase Project:**
+   - Log in to your [Supabase Dashboard](https://supabase.com/dashboard).
+   - Click **New Project**, choose an organization, and give your project a name (e.g. `projecthanap-prod`).
+   - Choose a secure database password and select your target region (e.g., `Singapore - ap-southeast-1` for the Philippines).
+
+2. **Execute Database Schema Migration:**
+   - Open your project in the Supabase Dashboard and navigate to the **SQL Editor** on the left menu.
+   - Click **New query** (or open [`supabase_schema.sql`](supabase_schema.sql) in your editor).
+   - Copy the entire content of [`supabase_schema.sql`](supabase_schema.sql), paste it into the SQL Editor, and click **Run** (`Ctrl`+`Enter`).
+   - The script creates all 10 core tables (`account_roles`, `departments`, `users`, `user_mfa`, `password_resets`, `item_reports`, `item_report_images`, `claims`, `claim_messages`, `guardian_student_links`, `audit_logs`), compatibility functions (`timestampdiff`, `utc_timestamp`, `date_add`, `date_sub`), indexes, and default administrator seed credentials.
+
+3. **Retrieve Database Connection Strings:**
+   - Go to **Project Settings** (gear icon) &rarr; **Database**.
+   - Under **Connection string**, select **URI**:
+     - **Transaction Pooler (Port 6543 - Recommended for Serverless):**
+       ```
+       postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+       ```
+     - **Direct Connection (Port 5432):**
+       ```
+       postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
+       ```
+
+---
+
+### Part 2: Vercel Web Application Deployment
+
+1. **Repository Configuration:**
+   - The repository includes [`vercel.json`](vercel.json) and [`api/index.js`](api/index.js) configured out-of-the-box to bundle EJS templates (`views/**`), static assets (`public/**`), and Express controllers into a Vercel Serverless Function.
+
+2. **Deploy via Vercel Dashboard:**
+   - Sign in to [Vercel](https://vercel.com/) and click **Add New** &rarr; **Project**.
+   - Import your GitHub repository: `https://github.com/veirubyte/projecthanap_ptappdev`.
+   - In **Build and Output Settings**, leave defaults (`Other` / root directory).
+
+3. **Configure Production Environment Variables:**
+   Under **Environment Variables**, add the following:
+
+   | Variable Name | Production Value / Description | Example |
+   | :--- | :--- | :--- |
+   | `DATABASE_URL` | Supabase PostgreSQL Connection URI | `postgresql://postgres.[REF]:[PASS]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres` |
+   | `SESSION_SECRET` | 32+ character random string for signing cookies | `b9f2913e71d4b68e92c4518204689b0d1e573e82...` |
+   | `NODE_ENV` | Environment identifier | `production` |
+   | `DB_SSL` | Enable SSL for Supabase connection | `true` |
+   | `GEMINI_API_KEY` | Google Gemini API Key | `AIzaSy...` (from [Google AI Studio](https://aistudio.google.com/)) |
+   | `GEMINI_MODEL` | Gemini Model Identifier | `gemini-3.6-flash` |
+
+4. **Deploy & Verify:**
+   - Click **Deploy**. Vercel will build and assign a production URL (e.g. `https://projecthanap-campus-system.vercel.app`).
+   - Test sign in with default administrator credentials (`admin@cspc.edu.ph` / `password123`) or register a student account (`@my.cspc.edu.ph`).
+
+---
+
+## 11. User Accounts
 
 The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-hashed user accounts for testing role-based access control and end-to-end workflows:
 
@@ -438,7 +500,7 @@ The seed database (`project_hanap (4).sql`) includes pre-configured, `bcrypt`-ha
 
 ---
 
-## 11. Project Structure
+## 12. Project Structure
 
 ```ascii
 projectHanap/
@@ -602,7 +664,7 @@ projectHanap/
 
 ---
 
-## 12. Known Limitations
+## 13. Known Limitations
 
 1. **In-Memory Session & Rate-Limiter State:** `express-session` and the sliding-window rate limiter (`config/security.js`) currently store state in Node.js process memory. Restarting the server clears active login sessions and rate-limit counters; deploying across multiple clustered Node instances would require a shared store such as Redis or `express-mysql-session`.
 2. **HTTP Request/Response Chat Refresh:** The peer-to-peer claim chat (`views/pages/chat.ejs`) operates over standard HTTP form submissions rather than persistent WebSockets (`Socket.IO`). Users must refresh the page to view newly arrived messages from the other party.
@@ -613,7 +675,7 @@ projectHanap/
 
 ---
 
-## 13. AI Assistance Disclosure
+## 14. AI Assistance Disclosure
 
 In compliance with Section 17 and Section 20 of the **PTAppDev Midterm Project (Campus System – Round 1)** guidelines, the team discloses the following uses of Artificial Intelligence tools:
 
@@ -627,6 +689,6 @@ In compliance with Section 17 and Section 20 of the **PTAppDev Midterm Project (
 
 ---
 
-## 14. License
+## 15. License
 
 This project is licensed under the terms of the **MIT License**. For complete terms, permissions, and conditions, refer to the [LICENSE](LICENSE) file located in the root repository directory.

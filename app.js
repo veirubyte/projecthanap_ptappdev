@@ -54,12 +54,18 @@ app.use(helmet({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(process.cwd(), 'public')));
+if (process.env.VERCEL) {
+    app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
+}
 
 // View engine (supports both views/pages/*.ejs and views/*.ejs lookups)
 app.set('view engine', 'ejs');
 app.set('views', [
     path.join(__dirname, 'views', 'pages'),
-    path.join(__dirname, 'views')
+    path.join(__dirname, 'views'),
+    path.join(process.cwd(), 'views', 'pages'),
+    path.join(process.cwd(), 'views')
 ]);
 
 // Session

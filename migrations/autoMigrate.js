@@ -5,6 +5,43 @@
 const pool = require('../config/db');
 
 async function autoMigrate() {
+  if (pool.isPostgres) {
+    // Supabase PostgreSQL schema is defined in supabase_schema.sql.
+    // Ensure core tables exist safely without MySQL-specific syntax.
+    try {
+      const connection = await pool.getConnection();
+      try {
+        await connection.query(`
+          CREATE TABLE IF NOT EXISTS public.item_report_images (
+            id SERIAL PRIMARY KEY,
+            report_id INT NOT NULL REFERENCES public.item_reports(id) ON DELETE CASCADE,
+            image_path VARCHAR(255) NOT NULL,
+            is_primary SMALLINT NOT NULL DEFAULT 0,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await connection.query(`
+          CREATE TABLE IF NOT EXISTS public.password_resets (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+            code_hash VARCHAR(255) NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            attempts SMALLINT NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        console.log('[MIGRATION] Supabase PostgreSQL tables verified successfully.');
+      } finally {
+        connection.release();
+      }
+    } catch (pgErr) {
+      console.warn('[MIGRATION NOTICE] Supabase schema check note:', pgErr.message);
+    }
+    return;
+  }
+
+  // MySQL migration runner
   try {
     const connection = await pool.getConnection();
     try {

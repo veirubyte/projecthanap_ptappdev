@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "name": "projecthanap-campus-system",
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "views/**",
+          "public/**",
+          "config/**",
+          "controllers/**",
+          "middleware/**",
+          "models/**",
+          "services/**",
+          "migrations/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/public/(.*)",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ]
+}
