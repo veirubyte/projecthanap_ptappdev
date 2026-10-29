@@ -136,6 +136,8 @@ function uploadReportPhotos(req, res, next) {
                     file.path = normalizedPath;
                     file.filename = path.basename(normalizedPath);
                 }
+                const buffer = await fs.promises.readFile(file.path);
+                file.base64Data = `data:${detectedTypes[index]};base64,${buffer.toString('base64')}`;
             }
         } catch (err) {
             console.error('Failed to normalize uploaded image filename:', err);

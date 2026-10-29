@@ -25,11 +25,16 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('PORT must be an integer between 1 and 65535.');
 }
 
+const fs = require('fs');
 const { rateLimiter, csrfTokenInjector, csrfProtection } = require('./config/security');
 const viewLocals = require('./middleware/viewLocals');
 const { reportUploadBeforeCsrf } = require('./middleware/reportUpload');
+const DatabaseSessionStore = require('./config/sessionStore');
+const sessionStore = new DatabaseSessionStore();
+const pool = require('./config/db');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security headers with CSP tailored for Tailwind CDN and Google Fonts
 app.use(helmet({
@@ -55,6 +60,38 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Dynamic image route with serverless Supabase database fallback
+app.get('/uploads/:filename', async (req, res, next) => {
+    const filename = path.basename(req.params.filename);
+    const localPath = path.join(__dirname, 'public', 'uploads', filename);
+    const tmpPath = path.join('/tmp', 'uploads', filename);
+
+    if (fs.existsSync(localPath)) return res.sendFile(localPath);
+    if (process.env.VERCEL && fs.existsSync(tmpPath)) return res.sendFile(tmpPath);
+
+    try {
+        const [rows] = await pool.execute(
+            'SELECT file_data FROM item_report_images WHERE image_path LIKE ? AND file_data IS NOT NULL LIMIT 1',
+            [`%${filename}%`]
+        );
+        if (rows && rows.length > 0 && rows[0].file_data) {
+            const rawData = rows[0].file_data;
+            const match = rawData.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+                const mime = match[1];
+                const buffer = Buffer.from(match[2], 'base64');
+                res.setHeader('Content-Type', mime);
+                res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                return res.send(buffer);
+            }
+        }
+    } catch (e) {
+        // Fallback to next
+    }
+    return res.status(404).send('Image not found');
+});
+
 if (process.env.VERCEL) {
     app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
 }
@@ -68,15 +105,18 @@ app.set('views', [
     path.join(process.cwd(), 'views')
 ]);
 
-// Session
+// Persistent session management
 app.use(session({
+    store: sessionStore,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         httpOnly: true,
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000
     }
 }));
 

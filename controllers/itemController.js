@@ -239,7 +239,10 @@ const createItemReport = async (req, res) => {
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
     }
 
-    const imagePaths = uploadedFiles.map((file) => `/uploads/${file.filename}`);
+    const imagePaths = uploadedFiles.map((file) => ({
+        path: `/uploads/${file.filename}`,
+        fileData: file.base64Data || null
+    }));
 
     try {
         await itemReportModel.createItemReport([req.session.user.id, reportType, itemName, category, description, location, secretChallenge, secretAnswer, custodyMode], imagePaths);
@@ -726,7 +729,10 @@ const updateItemReport = async (req, res) => {
     const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
     const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
     const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
-    const imagePaths = uploadedFiles.map((file) => `/uploads/${file.filename}`);
+    const imagePaths = uploadedFiles.map((file) => ({
+        path: `/uploads/${file.filename}`,
+        fileData: file.base64Data || null
+    }));
 
     if (!itemName || !location || !description) {
         await removeUploadedFiles(uploadedFiles);
@@ -1573,7 +1579,10 @@ const createAdminItemReport = async (req, res) => {
     const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
     const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
     const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
-    const imagePaths = uploadedFiles.map((file) => `/uploads/${file.filename}`);
+    const imagePaths = uploadedFiles.map((file) => ({
+        path: `/uploads/${file.filename}`,
+        fileData: file.base64Data || null
+    }));
 
     if (!itemName || !location || !description) {
         await removeUploadedFiles(uploadedFiles);

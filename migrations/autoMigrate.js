@@ -31,6 +31,19 @@ async function autoMigrate() {
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        await connection.query(`
+          CREATE TABLE IF NOT EXISTS public.user_sessions (
+            sid VARCHAR(128) PRIMARY KEY,
+            sess JSONB NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL
+          )
+        `);
+        await connection.query(`
+          CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at)
+        `);
+        await connection.query(`
+          ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT
+        `);
         console.log('[MIGRATION] Supabase PostgreSQL tables verified successfully.');
       } finally {
         connection.release();
@@ -119,6 +132,29 @@ async function autoMigrate() {
             ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=${charset} COLLATE=${collation}
       `);
+
+      // 5. Ensure user_sessions table exists for persistent session storage
+      console.log('[MIGRATION] Ensuring user_sessions table exists...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          sid VARCHAR(128) NOT NULL PRIMARY KEY,
+          sess JSON NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          INDEX idx_user_sessions_expires (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=${charset} COLLATE=${collation}
+      `);
+
+      // 6. Ensure file_data column exists in item_report_images
+      const [imgCols] = await connection.query('DESCRIBE item_report_images');
+      const imgColNames = imgCols.map(c => c.Field);
+      if (!imgColNames.includes('file_data')) {
+        console.log('[MIGRATION] Adding file_data to item_report_images...');
+        try {
+          await connection.query('ALTER TABLE `item_report_images` ADD COLUMN `file_data` LONGTEXT NULL DEFAULT NULL AFTER `image_path`');
+        } catch (colErr) {
+          // Column already added concurrently
+        }
+      }
 
       console.log('[MIGRATION] All database tables and columns synchronized successfully.');
     } finally {

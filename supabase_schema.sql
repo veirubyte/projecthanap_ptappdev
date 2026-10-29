@@ -175,12 +175,24 @@ CREATE TABLE IF NOT EXISTS public.item_report_images (
   id SERIAL PRIMARY KEY,
   report_id INT NOT NULL REFERENCES public.item_reports(id) ON DELETE CASCADE,
   image_path VARCHAR(255) NOT NULL,
+  file_data TEXT,
   is_primary SMALLINT NOT NULL DEFAULT 0,
   sort_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_item_report_images_report_order ON public.item_report_images(report_id, sort_order);
+
+-- ----------------------------------------------------------------------------
+-- 7b. Table: user_sessions (Persistent Express Sessions)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.user_sessions (
+  sid VARCHAR(128) PRIMARY KEY,
+  sess JSONB NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at);
 
 -- ----------------------------------------------------------------------------
 -- 8. Table: claims
@@ -256,6 +268,7 @@ ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.claim_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
 
 DO $$
 DECLARE

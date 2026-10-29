@@ -111,8 +111,11 @@ async function createItemReport(params, imagePaths = []) {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`, params);
 
         for (let index = 0; index < imagePaths.length; index += 1) {
-            await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
-                     VALUES (?, ?, ?, ?)`, [result.insertId, imagePaths[index], index === 0 ? 1 : 0, index]);
+            const img = imagePaths[index];
+            const imgPath = typeof img === 'object' && img ? img.path : img;
+            const fileData = typeof img === 'object' && img ? img.fileData : null;
+            await connection.execute(`INSERT INTO item_report_images (report_id, image_path, file_data, is_primary, sort_order)
+                     VALUES (?, ?, ?, ?, ?)`, [result.insertId, imgPath, fileData, index === 0 ? 1 : 0, index]);
         }
 
         await connection.commit();
@@ -222,9 +225,11 @@ async function updateItemReportQuery2(params, imagePaths = []) {
                 [params[7]]
             );
             let sortOrder = Number(existingImages[0].image_count);
-            for (const imagePath of imagePaths) {
-                await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
-                     VALUES (?, ?, ?, ?)`, [params[7], imagePath, sortOrder === 0 ? 1 : 0, sortOrder]);
+            for (const img of imagePaths) {
+                const imgPath = typeof img === 'object' && img ? img.path : img;
+                const fileData = typeof img === 'object' && img ? img.fileData : null;
+                await connection.execute(`INSERT INTO item_report_images (report_id, image_path, file_data, is_primary, sort_order)
+                     VALUES (?, ?, ?, ?, ?)`, [params[7], imgPath, fileData, sortOrder === 0 ? 1 : 0, sortOrder]);
                 sortOrder += 1;
             }
         }

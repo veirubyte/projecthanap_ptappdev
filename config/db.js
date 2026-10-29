@@ -65,6 +65,11 @@ if (isPostgres) {
         /ON\s+DUPLICATE\s+KEY\s+UPDATE\s+id\s*=\s*LAST_INSERT_ID\s*\(\s*id\s*\)/gi,
         'ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id'
       );
+    } else if (/user_sessions/i.test(translated) && /ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
+      translated = translated.replace(
+        /ON\s+DUPLICATE\s+KEY\s+UPDATE[\s\S]*$/gi,
+        'ON CONFLICT (sid) DO UPDATE SET sess = EXCLUDED.sess, expires_at = EXCLUDED.expires_at'
+      );
     } else if (/ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
       translated = translated.replace(
         /ON\s+DUPLICATE\s+KEY\s+UPDATE[\s\S]*$/gi,
