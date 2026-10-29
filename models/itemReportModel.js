@@ -206,10 +206,37 @@ async function updateItemReport(params, values = [], connection = db) {
     return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
-async function updateItemReportQuery2(params, values = [], connection = db) {
-    return connection.execute(`UPDATE item_reports 
-             SET item_name = ?, category = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?
+async function updateItemReportQuery2(params, imagePaths = []) {
+    const connection = await db.getConnection();
+    let transactionOpen = false;
+    try {
+        await connection.beginTransaction();
+        transactionOpen = true;
+        await connection.execute(`UPDATE item_reports
+             SET item_name = ?, category = ?, description = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?
              WHERE id = ?`, params);
+
+        if (imagePaths.length > 0) {
+            const [existingImages] = await connection.execute(
+                'SELECT COUNT(*) AS image_count FROM item_report_images WHERE report_id = ?',
+                [params[7]]
+            );
+            let sortOrder = Number(existingImages[0].image_count);
+            for (const imagePath of imagePaths) {
+                await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
+                     VALUES (?, ?, ?, ?)`, [params[7], imagePath, sortOrder === 0 ? 1 : 0, sortOrder]);
+                sortOrder += 1;
+            }
+        }
+
+        await connection.commit();
+        transactionOpen = false;
+    } catch (err) {
+        if (transactionOpen) await connection.rollback();
+        throw err;
+    } finally {
+        connection.release();
+    }
 }
 
 async function showSettings(params, values = [], connection = db) {
@@ -284,6 +311,16 @@ async function listAdminReports(params, values = [], connection = db) {
         `);
 }
 
+async function showAdminDashboardQuery5(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT r.*, ${primaryImageSelect}, u.full_name AS reporter_name
+            FROM item_reports r
+            JOIN users u ON u.id = r.user_id
+            ORDER BY r.date_reported DESC
+            LIMIT 8
+        `);
+}
+
 async function approveReportArchive(params, values = [], connection = db) {
     return connection.execute("UPDATE item_reports SET status = 'archived' WHERE id = ?", params);
 }
@@ -309,8 +346,8 @@ async function description(params, imagePaths = []) {
     try {
         await connection.beginTransaction();
         transactionOpen = true;
-        const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, custody_mode, custody_received_at, custody_received_by, status)
-                 VALUES (?, 'found', ?, ?, ?, ?, 'security_desk', CURRENT_TIMESTAMP, ?, 'active')`, params);
+        const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, secret_challenge, secret_answer, custody_mode, custody_received_at, custody_received_by, status)
+                 VALUES (?, 'found', ?, ?, ?, ?, ?, ?, 'security_desk', CURRENT_TIMESTAMP, ?, 'active')`, params);
         for (let index = 0; index < imagePaths.length; index += 1) {
             await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
                      VALUES (?, ?, ?, ?)`, [result.insertId, imagePaths[index], index === 0 ? 1 : 0, index]);
@@ -365,6 +402,7 @@ module.exports = {
     showAdminDashboardQuery4,
     confirmHandover,
     listAdminReports,
+    showAdminDashboardQuery5,
     approveReportArchive,
     batchApproveReportArchive,
     showAdminAnalytics,

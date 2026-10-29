@@ -1,5 +1,4 @@
 const { requireAuth, denyAdmin, requireNonAdminAuth, requireAdmin } = require('../middleware/auth');
-const { upload } = require('../middleware/reportUpload');
 const controller = require('../controllers/itemController');
 
 const router = require('express').Router();
@@ -144,6 +143,6 @@ router.get('/admin/analytics', requireAdmin, controller.showAdminAnalytics);
 router.get('/admin/audit-logs', requireAdmin, controller.listAuditLogs);
 
 // Admin Office Turn-in Log Form Submission
-router.post('/admin/items/log', requireAdmin, upload.single('photo'), controller.createAdminItemReport);
+router.post('/admin/items/log', requireAdmin, controller.createAdminItemReport);
 
 module.exports = router;
