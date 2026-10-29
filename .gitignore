@@ -21,3 +21,8 @@ Thumbs.db
 .idea/
 .vercel
 .env*
+
+# User uploads (preserve sample report image and directory)
+public/uploads/*
+!public/uploads/1792327986336-e31db6c8e112.jpeg
+!public/uploads/.gitkeep
