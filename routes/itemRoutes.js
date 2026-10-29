@@ -9,7 +9,7 @@ const router = require('express').Router();
    ========================================================================== */
 
 router.get('/dashboard', denyAdmin, controller.showDashboard);
-router.get('/catalog', denyAdmin, controller.showDashboard);
+router.get('/catalog', controller.showDashboard);
 
 /* ==========================================================================
    REPORT ITEM (LOST OR FOUND)
@@ -27,7 +27,7 @@ router.get('/claims/guest-claim', controller.showGuestClaimGuide);
    ITEM DETAILS & CLAIM SUBMISSION
    ========================================================================== */
 
-router.get('/items/:id', denyAdmin, controller.showItemDetails);
+router.get('/items/:id', controller.showItemDetails);
 
 // Live Match Preview Endpoint for Real-time Answer Progression Circle
 router.post('/items/:id/match-preview', requireNonAdminAuth, controller.previewOwnershipMatch);
@@ -59,16 +59,16 @@ router.post('/claims/:id/cancel', requireNonAdminAuth, controller.cancelClaim);
 router.get('/my-reports', requireNonAdminAuth, controller.listMyReports);
 
 // Update item status (e.g., mark claimed or archived)
-router.post('/items/:id/status', requireNonAdminAuth, controller.updateItemStatus);
+router.post('/items/:id/status', requireAuth, controller.updateItemStatus);
 
 // Delete item report
-router.post('/items/:id/delete', requireNonAdminAuth, controller.deleteItemReport);
+router.post('/items/:id/delete', requireAuth, controller.deleteItemReport);
 
 // Edit Report Form Page
-router.get('/items/:id/edit', requireNonAdminAuth, controller.showEditItemForm);
+router.get('/items/:id/edit', requireAuth, controller.showEditItemForm);
 
 // Process Report Edit
-router.post('/items/:id/edit', requireNonAdminAuth, controller.updateItemReport);
+router.post('/items/:id/edit', requireAuth, controller.updateItemReport);
 
 /* ==========================================================================
    ACCOUNT SETTINGS & CONFIGURATIONS

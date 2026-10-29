@@ -262,7 +262,7 @@ const showGuestClaimGuide = (req, res) => {
 
 const showItemDetails = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
-    if (!itemId) return res.redirect('/dashboard');
+    if (!Number.isSafeInteger(itemId) || itemId < 1) return res.redirect('/dashboard');
 
     const user = req.session.user || null;
 
@@ -331,6 +331,9 @@ const showItemDetails = async (req, res) => {
  */
 const previewOwnershipMatch = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.status(400).json({ error: 'Invalid item ID.' });
+    }
     const userAnswer = typeof req.body.answer === 'string' ? req.body.answer.trim() : '';
 
     try {
@@ -360,6 +363,9 @@ const previewOwnershipMatch = async (req, res) => {
 
 const createClaim = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect('/dashboard?error=Invalid item ID.');
+    }
     const proofDetails = typeof req.body.proof_details === 'string' ? req.body.proof_details.trim() : '';
 
     if (!proofDetails) {
@@ -414,6 +420,9 @@ const createClaim = async (req, res) => {
 
 const cancelClaim = async (req, res) => {
     const claimId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/claims');
+    }
     const itemId = parseInt(req.body.item_id, 10);
     const redirectBase = itemId ? `/items/${itemId}` : '/claims';
     try {
@@ -451,6 +460,9 @@ const listClaims = async (req, res) => {
 
 const showClaimChat = async (req, res) => {
     const claimId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/claims?error=Invalid claim ID.');
+    }
     const user = req.session.user;
 
     try {
@@ -493,6 +505,9 @@ const showClaimChat = async (req, res) => {
 
 const sendClaimMessage = async (req, res) => {
     const claimId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/claims');
+    }
     const text = typeof req.body.message === 'string' ? req.body.message.trim() : '';
 
     if (!text) {
@@ -521,6 +536,9 @@ const sendClaimMessage = async (req, res) => {
 
 const updateClaimStatus = async (req, res) => {
     const claimId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/claims');
+    }
     const action = req.body.action; // 'approved' or 'rejected'
 
     if (!['approved', 'rejected', 'escalated', 'returned'].includes(action)) {
@@ -594,6 +612,9 @@ const listMyReports = async (req, res) => {
 
 const updateItemStatus = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect('/my-reports?error=Invalid item ID.');
+    }
     const newStatus = req.body.status;
 
     if (!['active', 'claimed', 'returned', 'archived', 'pending_review'].includes(newStatus)) {
@@ -625,6 +646,9 @@ const updateItemStatus = async (req, res) => {
 
 const deleteItemReport = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect('/my-reports?error=Invalid item ID.');
+    }
     try {
         const [itemRows] = await itemReportModel.deleteItemReport([itemId], []);
         if (itemRows.length === 0) return res.redirect('/my-reports');
@@ -654,6 +678,9 @@ const deleteItemReport = async (req, res) => {
 
 const showEditItemForm = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect('/dashboard?error=Invalid report ID.');
+    }
     const user = req.session.user;
     try {
         const [rows] = await itemReportModel.showEditItemForm([itemId], []);
@@ -680,6 +707,9 @@ const showEditItemForm = async (req, res) => {
 
 const updateItemReport = async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect('/dashboard?error=Invalid report ID.');
+    }
     const user = req.session.user;
     const itemName = typeof req.body.item_name === 'string' ? req.body.item_name.trim() : '';
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
@@ -1166,7 +1196,11 @@ const createAdminUser = async (req, res) => {
 
 const resetUserQuota = async (req, res) => {
     const targetUserId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(targetUserId) || targetUserId < 1) {
+        return res.redirect('/admin/users?error=Invalid user ID.');
+    }
     try {
+        await claimModel.resetUserQuota([targetUserId], []);
         await logAudit(req.session.user.id, `Admin reset claim quota limit for user #${targetUserId}`, req.ip);
         return res.redirect('/admin/users?msg=User claim quota limit reset successfully.');
     } catch (err) {
@@ -1226,6 +1260,9 @@ const listHandoverClaims = async (req, res) => {
 const showHandoverClaim = async (req, res) => {
     const user = req.session.user;
     const claimId = parseInt(req.params.claimId, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/admin/handover?error=Invalid claim ID.');
+    }
     try {
         const [claimRows] = await claimModel.showHandoverClaim([claimId], []);
 
@@ -1250,6 +1287,9 @@ const showHandoverClaim = async (req, res) => {
 const confirmHandover = async (req, res) => {
     const user = req.session.user;
     const claimId = parseInt(req.params.claimId, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/admin/handover?error=Invalid claim ID.');
+    }
     try {
         const [claimRows] = await claimModel.confirmHandover([claimId], []);
         if (claimRows.length === 0) return res.redirect('/admin/handover');
@@ -1272,6 +1312,9 @@ const confirmHandover = async (req, res) => {
 const rejectHandover = async (req, res) => {
     const user = req.session.user;
     const claimId = parseInt(req.params.claimId, 10);
+    if (!Number.isSafeInteger(claimId) || claimId < 1) {
+        return res.redirect('/admin/handover?error=Invalid claim ID.');
+    }
     try {
         await claimModel.rejectHandover([claimId], []);
         await claimModel.rejectHandoverQuery2([claimId, user.id, `[SECURITY LOG] Officer ${user.full_name} rejected physical custody release.`], []);
@@ -1351,6 +1394,9 @@ const listAdminReports = async (req, res) => {
 const approveReportArchive = async (req, res) => {
     const user = req.session.user;
     const itemId = parseInt(req.params.id, 10);
+    if (!Number.isSafeInteger(itemId) || itemId < 1) {
+        return res.redirect('/admin/reports?error=Invalid item ID.');
+    }
     try {
         await itemReportModel.approveReportArchive([itemId], []);
         await logAudit(user.id, `Admin approved 60-day disposition for item #${itemId}`, req.ip);
@@ -1400,13 +1446,17 @@ const showAdminAnalytics = async (req, res) => {
         // Category breakdown of resolved claims
         const [categoryBreakdown] = await claimModel.showAdminAnalyticsQuery3(undefined, []);
 
+        const p2pFirst = (p2pStats && p2pStats[0]) || {};
+        const deskFirst = (deskStats && deskStats[0]) || {};
+        const reportFirst = (reportStats && reportStats[0]) || { total_reports: 0, total_claimed: 0, total_active: 0, total_archived: 0 };
+
         // Average resolution days (mocked baseline if new DB)
-        const p2pTotal = p2pStats[0].total_claims || 0;
-        const p2pApproved = p2pStats[0].approved_claims || 0;
+        const p2pTotal = p2pFirst.total_claims || 0;
+        const p2pApproved = p2pFirst.approved_claims || 0;
         const p2pSuccessRate = p2pTotal > 0 ? Math.round((p2pApproved / p2pTotal) * 100) : 88;
 
-        const deskTotal = deskStats[0].total_claims || 0;
-        const deskApproved = deskStats[0].approved_claims || 0;
+        const deskTotal = deskFirst.total_claims || 0;
+        const deskApproved = deskFirst.approved_claims || 0;
         const deskSuccessRate = deskTotal > 0 ? Math.round((deskApproved / deskTotal) * 100) : 94;
 
         // Pending handovers count for sidebar badge
@@ -1419,8 +1469,8 @@ const showAdminAnalytics = async (req, res) => {
             p2p: {
                 total: p2pTotal,
                 approved: p2pApproved || 12,
-                pending: p2pStats[0].pending_claims || 0,
-                rejected: p2pStats[0].rejected_claims || 0,
+                pending: p2pFirst.pending_claims || 0,
+                rejected: p2pFirst.rejected_claims || 0,
                 successRate: p2pSuccessRate,
                 avgHours: '4.2 hrs',
                 description: 'Direct student-to-student verification via secret challenge questions & campus peer chats'
@@ -1428,13 +1478,13 @@ const showAdminAnalytics = async (req, res) => {
             centralized: {
                 total: deskTotal,
                 approved: deskApproved || 8,
-                pending: deskStats[0].pending_claims || 0,
-                rejected: deskStats[0].rejected_claims || 0,
+                pending: deskFirst.pending_claims || 0,
+                rejected: deskFirst.rejected_claims || 0,
                 successRate: deskSuccessRate,
                 avgHours: '1.5 hrs',
                 description: 'Physical security office drop-off with in-person verification & government/student ID checking'
             },
-            reports: reportStats[0],
+            reports: reportFirst,
             categories: categoryBreakdown.length > 0 ? categoryBreakdown : [
                 { category: 'Electronics', claim_count: 8 },
                 { category: 'Personal Belongings', claim_count: 5 },

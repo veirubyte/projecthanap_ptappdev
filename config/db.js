@@ -55,6 +55,9 @@ if (isPostgres) {
     translated = translated.replace(/DATE_SUB\s*\(\s*CURRENT_TIMESTAMP\s*,\s*INTERVAL\s*(\d+)\s*DAY\s*\)/gi, "CURRENT_TIMESTAMP - INTERVAL '$1 day'");
     translated = translated.replace(/DATE_SUB\s*\(\s*NOW\(\)\s*,\s*INTERVAL\s*(\d+)\s*DAY\s*\)/gi, "NOW() - INTERVAL '$1 day'");
     translated = translated.replace(/NOW\(\)\s*-\s*INTERVAL\s*(\d+)\s*DAY/gi, "NOW() - INTERVAL '$1 days'");
+    translated = translated.replace(/DATE_ADD\s*\(\s*(UTC_TIMESTAMP\(\)|NOW\(\))\s*,\s*INTERVAL\s*(\d+)\s*MINUTE\s*\)/gi, "($1 + INTERVAL '$2 minutes')");
+    translated = translated.replace(/TIMESTAMPDIFF\s*\(\s*SECOND\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, "EXTRACT(EPOCH FROM ($2 - $1))::integer");
+    translated = translated.replace(/UTC_TIMESTAMP\(\)/gi, "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')");
 
     // 4. ON DUPLICATE KEY UPDATE handling
     if (/ON\s+DUPLICATE\s+KEY\s+UPDATE\s+id\s*=\s*LAST_INSERT_ID\s*\(\s*id\s*\)/i.test(translated)) {

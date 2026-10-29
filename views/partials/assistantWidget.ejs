@@ -1,4 +1,4 @@
-<div class="hanap-assistant" id="hanapAssistant" data-csrf-token="<%= csrfToken %>">
+<div class="hanap-assistant" id="hanapAssistant" data-csrf-token="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
   <section class="hanap-assistant__panel" id="hanapAssistantPanel" aria-label="HANAP AI Assistant" hidden>
     <header class="hanap-assistant__header">
       <span class="hanap-assistant__brand-icon material-symbols-outlined" aria-hidden="true">auto_awesome</span>

@@ -28,6 +28,13 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Lucide Icons Global Standard */
+svg.lucide, i[data-lucide] {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* ==============================================================================
  * NIGHT MODE (html.dark) GLOBAL THEME OVERRIDES
  * Enables the Night Mode toggle in navbar & settings to work across all pages

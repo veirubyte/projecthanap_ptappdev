@@ -604,8 +604,8 @@
                             <%= item.status %>
                           </span>
                         </div>
-                        <span class="text-xs text-slate-500 mt-0.5">
-                          📍 <%= item.location_found_lost %> • Reported <%= new Date(item.date_reported).toLocaleDateString() %>
+                        <span class="text-xs text-slate-500 mt-0.5 inline-flex items-center gap-1">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> <%= item.location_found_lost %> • Reported <%= new Date(item.date_reported).toLocaleDateString() %>
                         </span>
                       </div>
                     </div>

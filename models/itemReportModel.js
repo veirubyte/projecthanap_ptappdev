@@ -156,11 +156,11 @@ async function createClaim(params, values = [], connection = db) {
 }
 
 async function updateClaimStatus(params, values = [], connection = db) {
-    return connection.execute('UPDATE item_reports SET status = "claimed" WHERE id = ?', params);
+    return connection.execute("UPDATE item_reports SET status = 'claimed' WHERE id = ?", params);
 }
 
 async function updateClaimStatusQuery2(params, values = [], connection = db) {
-    return connection.execute('UPDATE item_reports SET status = "returned" WHERE id = ?', params);
+    return connection.execute("UPDATE item_reports SET status = 'returned' WHERE id = ?", params);
 }
 
 async function listMyReports(params, values = [], connection = db) {
@@ -271,7 +271,7 @@ async function showAdminDashboardQuery4(params, values = [], connection = db) {
 }
 
 async function confirmHandover(params, values = [], connection = db) {
-    return connection.execute('UPDATE item_reports SET status = "claimed" WHERE id = ?', params);
+    return connection.execute("UPDATE item_reports SET status = 'claimed' WHERE id = ?", params);
 }
 
 async function listAdminReports(params, values = [], connection = db) {
@@ -285,7 +285,7 @@ async function listAdminReports(params, values = [], connection = db) {
 }
 
 async function approveReportArchive(params, values = [], connection = db) {
-    return connection.execute('UPDATE item_reports SET status = "archived" WHERE id = ?', params);
+    return connection.execute("UPDATE item_reports SET status = 'archived' WHERE id = ?", params);
 }
 
 async function batchApproveReportArchive(params, values = [], connection = db) {
@@ -369,5 +369,6 @@ module.exports = {
     batchApproveReportArchive,
     showAdminAnalytics,
     description,
+    createAdminItemReport: description,
     flagStaleItems
 };

@@ -13,3 +13,113 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png"/>
 <link rel="stylesheet" href="/css/style.css"/>
 <link rel="stylesheet" href="/css/assistant.css"/>
+
+<!-- Lucide Icons Vector System (Local Offline Bundle with zero CSP restrictions) -->
+<script src="/js/lucide.min.js"></script>
+<script>
+  (function() {
+    const iconMap = {
+      'dashboard': 'layout-dashboard',
+      'inventory_2': 'package',
+      'group': 'users',
+      'archive': 'archive',
+      'monitoring': 'activity',
+      'policy': 'shield',
+      'dark_mode': 'moon',
+      'light_mode': 'sun',
+      'notifications': 'bell',
+      'search': 'search',
+      'manage_search': 'search-check',
+      'add_circle': 'plus-circle',
+      'handshake': 'handshake',
+      'list_alt': 'clipboard-list',
+      'settings': 'settings',
+      'logout': 'log-out',
+      'expand_more': 'chevron-down',
+      'chevron_right': 'chevron-right',
+      'chevron_left': 'chevron-left',
+      'auto_awesome': 'sparkles',
+      'close': 'x',
+      'arrow_upward': 'arrow-up',
+      'arrow_back': 'arrow-left',
+      'arrow_forward': 'arrow-right',
+      'check': 'check',
+      'check_circle': 'check-circle-2',
+      'error': 'alert-circle',
+      'verified_user': 'shield-check',
+      'badge': 'id-card',
+      'lock': 'lock',
+      'lock_reset': 'key-round',
+      'visibility': 'eye',
+      'visibility_off': 'eye-off',
+      'edit': 'edit-3',
+      'delete': 'trash-2',
+      'person': 'user',
+      'manage_accounts': 'user-cog',
+      'history': 'history',
+      'family_restroom': 'users',
+      'description': 'file-text',
+      'pending_actions': 'clock',
+      'verified': 'badge-check',
+      'admin_panel_settings': 'shield-alert',
+      'download': 'download',
+      'done_all': 'check-check',
+      'login': 'log-in',
+      'shield': 'shield',
+      'person_pin': 'map-pin',
+      'help': 'help-circle',
+      'info': 'info',
+      'open_in_full': 'maximize-2',
+      'photo_camera': 'camera',
+      'key': 'key',
+      'category': 'folder',
+      'school': 'graduation-cap',
+      'pin_drop': 'map-pin',
+      'schedule': 'clock',
+      'mail': 'mail',
+      'mark_email_read': 'mail-check',
+      'supervised_user_circle': 'users',
+      'desk': 'building-2',
+      'task_alt': 'check-circle',
+      'arrow_outward': 'external-link',
+      'person_add': 'user-plus',
+      'cancel': 'x-circle',
+      'thumb_up': 'thumbs-up',
+      'send': 'send',
+      'chat': 'message-square',
+      'forum': 'messages-square',
+      'security': 'shield-check',
+      'warning': 'alert-triangle'
+    };
+
+    function initLucide() {
+      // Seamlessly bridge material symbols to Lucide vector icons
+      document.querySelectorAll('.material-symbols-outlined').forEach(function(el) {
+        const text = (el.textContent || '').trim().toLowerCase();
+        const lucideName = iconMap[text] || text.replace(/_/g, '-');
+        const iconEl = document.createElement('i');
+        iconEl.setAttribute('data-lucide', lucideName);
+        iconEl.className = (el.className || '').replace('material-symbols-outlined', 'lucide-icon') + ' inline-block align-middle';
+        if (el.id) iconEl.id = el.id;
+        el.replaceWith(iconEl);
+      });
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      } else {
+        setTimeout(function() {
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        }, 150);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initLucide);
+    } else {
+      initLucide();
+    }
+    window.renderLucide = initLucide;
+  })();
+</script>

@@ -35,7 +35,7 @@ async function showItemDetails(params, values = [], connection = db) {
 }
 
 async function createClaim(params, values = [], connection = db) {
-    return connection.execute('SELECT id FROM claims WHERE item_id = ? AND claimant_id = ? AND status = "pending"', params);
+    return connection.execute("SELECT id FROM claims WHERE item_id = ? AND claimant_id = ? AND status = 'pending'", params);
 }
 
 async function createClaimQuery2(params, values = [], connection = db) {
@@ -221,7 +221,7 @@ async function confirmHandover(params, values = [], connection = db) {
 }
 
 async function confirmHandoverQuery2(params, values = [], connection = db) {
-    return connection.execute('UPDATE claims SET status = "approved" WHERE id = ?', params);
+    return connection.execute("UPDATE claims SET status = 'approved' WHERE id = ?", params);
 }
 
 async function confirmHandoverQuery3(params, values = [], connection = db) {
@@ -229,7 +229,11 @@ async function confirmHandoverQuery3(params, values = [], connection = db) {
 }
 
 async function rejectHandover(params, values = [], connection = db) {
-    return connection.execute('UPDATE claims SET status = "rejected" WHERE id = ?', params);
+    return connection.execute("UPDATE claims SET status = 'rejected' WHERE id = ?", params);
+}
+
+async function resetUserQuota(params, values = [], connection = db) {
+    return connection.execute("UPDATE claims SET status = 'rejected' WHERE claimant_id = ? AND status IN ('pending', 'escalated')", params);
 }
 
 async function rejectHandoverQuery2(params, values = [], connection = db) {
@@ -339,5 +343,6 @@ module.exports = {
     showAdminAnalyticsQuery2,
     showAdminAnalyticsQuery3,
     showAdminAnalyticsQuery4,
-    getUnreadNotificationCount
+    getUnreadNotificationCount,
+    resetUserQuota
 };

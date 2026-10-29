@@ -63,11 +63,11 @@
         <% } else { %>
           <div class="inline-flex p-1.5 bg-white/80 backdrop-blur-xl border border-white/90 rounded-full mb-3 shadow-[0_8px_20px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.8)]" id="reportModeToggle" role="tablist">
             <button type="button" id="tabLostBtn" onclick="switchReportType('lost')" class="px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 <%= (typeof initialType === 'undefined' || initialType !== 'found') ? 'bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-[0_4px_14px_rgba(225,29,72,0.35)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50' %>">
-              <span>🔍</span>
+              <i data-lucide="search" class="w-3.5 h-3.5"></i>
               <span>I Lost Something</span>
             </button>
             <button type="button" id="tabFoundBtn" onclick="switchReportType('found')" class="px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 <%= (typeof initialType !== 'undefined' && initialType === 'found') ? 'bg-gradient-to-r from-[#2B5B84] to-[#1E40AF] text-white shadow-[0_4px_14px_rgba(43,91,132,0.35)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50' %>">
-              <span>🙌</span>
+              <i data-lucide="package-search" class="w-3.5 h-3.5"></i>
               <span>I Found Something</span>
             </button>
           </div>
@@ -169,8 +169,9 @@
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-800 uppercase tracking-wider">Photos</label>
-            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20 text-[11px] font-semibold">
-              ⚡ Safe Storage • Privacy Protected
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20 text-[11px] font-semibold">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Safe Storage • Privacy Protected</span>
             </span>
           </div>
           <div class="flex flex-col sm:flex-row items-center gap-3">
@@ -201,7 +202,7 @@
             id="verificationChallenge" 
             name="secret_challenge" 
             placeholder="e.g. What specific pin, keychain, or sticker is attached to it?" 
-            maxlength="500"
+            maxlength="500" 
             type="text"
           />
           <input
@@ -221,19 +222,23 @@
               <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-sky-300 bg-white text-[#09436B] shadow-xs hover:shadow-sm font-semibold text-xs">
                 <input checked class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer" name="custody_mode" type="radio" value="peer_meetup"/>
                 <div>
-                  <span class="block font-bold">🤝 Peer Meetup</span>
+                  <span class="block font-bold flex items-center gap-1.5">
+                    <i data-lucide="handshake" class="w-3.5 h-3.5 text-blue-600"></i> Peer Meetup
+                  </span>
                   <span class="text-[11px] font-normal text-slate-500">Coordinate secure campus handover once verified</span>
                 </div>
               </label>
               <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-slate-200 bg-white/70 hover:bg-white text-slate-700 shadow-xs hover:shadow-sm font-semibold text-xs">
                 <input class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer" name="custody_mode" type="radio" value="security_desk"/>
                 <div>
-                  <span class="block font-bold">🛡️ Security Desk</span>
+                  <span class="block font-bold flex items-center gap-1.5">
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-slate-700"></i> Security Desk
+                  </span>
                   <span class="text-[11px] font-normal text-slate-500">Turned over to Main Gate Guardhouse / L&amp;F Office</span>
                 </div>
               </label>
             </div>
-          </div>
+          </div>      </div>
         </div>
 
         <!-- Footer Actions -->

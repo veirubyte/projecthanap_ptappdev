@@ -8,11 +8,11 @@ function getTransporter() {
     const host = process.env.SMTP_HOST;
     const port = Number(process.env.SMTP_PORT || 587);
     const user = process.env.SMTP_USER;
-    const password = process.env.SMTP_PASSWORD;
+    const password = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
 
     if (!host || !Number.isInteger(port) || port < 1 || port > 65535 || !user || !password) {
         if (process.env.NODE_ENV === 'production') {
-            const error = new Error('SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD must be configured to send email.');
+            const error = new Error('SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD (or SMTP_PASS) must be configured to send email.');
             error.code = 'SMTP_CONFIGURATION_MISSING';
             throw error;
         }

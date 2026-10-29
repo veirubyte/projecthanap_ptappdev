@@ -202,7 +202,7 @@
                   <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50/80 text-secondary border border-blue-200/60 shrink-0 w-fit">
                     <%= c.claimant_name %> (Guest)
                   </span>
-                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= c.location_found_lost %></span>
+                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> <%= c.location_found_lost %></span>
                 </div>
               </div>
               <a class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-primary to-secondary hover:from-primary-container hover:to-secondary-container text-white text-xs font-semibold rounded-lg shadow-sm shadow-primary/25 hover:shadow transition-all" href="/admin/handover/<%= c.id %>">
@@ -235,7 +235,7 @@
                   <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50/90 text-error border border-rose-200/70 shrink-0 w-fit">
                     Claim Dispute (#<%= d.id %>)
                   </span>
-                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= d.location_found_lost %></span>
+                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> <%= d.location_found_lost %></span>
                 </div>
               </div>
               <a class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/90 hover:bg-white text-on-surface text-xs font-semibold rounded-lg border border-white/80 shadow-xs hover:shadow transition-all" href="/claims/<%= d.id %>">
@@ -268,7 +268,7 @@
                   <span class="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full <%= v.custody_received_at ? 'bg-emerald-50/80 text-emerald-800 border border-emerald-200/60' : 'bg-amber-50 text-amber-800 border border-amber-200' %> shrink-0 w-fit">
                     <%= v.custody_received_at ? 'In Custody' : 'Awaiting Receipt' %>
                   </span>
-                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1">📍 <%= v.location_found_lost %></span>
+                  <span class="text-xs text-on-surface-variant shrink-0 flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> <%= v.location_found_lost %></span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
