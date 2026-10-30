@@ -354,8 +354,11 @@ async function description(params, imagePaths = []) {
         const [result, fields] = await connection.execute(`INSERT INTO item_reports (user_id, report_type, item_name, category, description, location_found_lost, secret_challenge, secret_answer, custody_mode, custody_received_at, custody_received_by, status)
                  VALUES (?, 'found', ?, ?, ?, ?, ?, ?, 'security_desk', CURRENT_TIMESTAMP, ?, 'active')`, params);
         for (let index = 0; index < imagePaths.length; index += 1) {
-            await connection.execute(`INSERT INTO item_report_images (report_id, image_path, is_primary, sort_order)
-                     VALUES (?, ?, ?, ?)`, [result.insertId, imagePaths[index], index === 0 ? 1 : 0, index]);
+            const img = imagePaths[index];
+            const imgPath = typeof img === 'object' && img ? img.path : img;
+            const fileData = typeof img === 'object' && img ? img.fileData : null;
+            await connection.execute(`INSERT INTO item_report_images (report_id, image_path, file_data, is_primary, sort_order)
+                     VALUES (?, ?, ?, ?, ?)`, [result.insertId, imgPath, fileData, index === 0 ? 1 : 0, index]);
         }
         await connection.commit();
         transactionOpen = false;

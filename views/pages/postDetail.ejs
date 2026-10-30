@@ -119,7 +119,7 @@
               </a>
             <% } %>
             <!-- Delete Button -->
-            <form action="/items/<%= item.id %>/delete" method="POST" id="deleteReportForm" class="inline">
+            <form action="/items/<%= item.id %>/delete" method="POST" id="deleteReportForm" class="inline" onsubmit="return confirm('Are you sure you want to permanently delete this report? This action cannot be undone.');">
               <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
               <% } %>
@@ -595,7 +595,7 @@
       const deleteReportForm = document.getElementById('deleteReportForm');
       if (deleteReportForm) {
         deleteReportForm.addEventListener('submit', (e) => {
-          if (!window.confirm('Delete this report?')) {
+          if (!window.confirm('Are you sure you want to permanently delete this report? This action cannot be undone.')) {
             e.preventDefault();
           }
         });

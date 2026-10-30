@@ -550,6 +550,14 @@
         errors.push('• Please enter your email address.');
         invalidFields.push(emailInput);
       }
+      if (activeRegCategory === 'institution') {
+        const instRoleSelect = document.getElementById('institutionalRole');
+        const roleVal = instRoleSelect ? instRoleSelect.value : '';
+        if (!roleVal || (roleVal !== 'student' && roleVal !== 'staff')) {
+          errors.push('• Please select your campus role (Student or Staff).');
+          if (instRoleSelect) invalidFields.push(instRoleSelect);
+        }
+      }
       if (!password) {
         errors.push('• Please create a strong password.');
         invalidFields.push(passInput);
