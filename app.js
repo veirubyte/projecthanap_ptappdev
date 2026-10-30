@@ -15,6 +15,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const helmet = require('helmet');
+const compression = require('compression');
 
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -36,6 +37,16 @@ const pool = require('./config/db');
 const app = express();
 app.set('trust proxy', 1);
 
+// HTTP response compression (reduces payload transfers by up to 75%)
+app.use(compression({
+    level: 6,
+    threshold: 1024,
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+
 // Security headers with CSP tailored for Tailwind CDN and Google Fonts
 app.use(helmet({
     strictTransportSecurity: process.env.NODE_ENV === 'production',
@@ -55,11 +66,17 @@ app.use(helmet({
     }
 }));
 
-// Body parsers and static files
+// Body parsers and high-performance cached static files
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(process.cwd(), 'public')));
+
+const staticOptions = {
+    maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+    etag: true,
+    lastModified: true
+};
+app.use(express.static(path.join(__dirname, 'public'), staticOptions));
+app.use(express.static(path.join(process.cwd(), 'public'), staticOptions));
 
 // Dynamic image route with serverless Supabase database fallback
 app.get('/uploads/:filename', async (req, res, next) => {

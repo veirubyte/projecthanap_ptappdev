@@ -88,16 +88,8 @@ const showDashboard = async (req, res) => {
         : (isCatalog ? 'active' : 'active');
 
     try {
-        // Stats
-        const [statsRows] = await itemReportModel.showDashboard(undefined, []);
-        const stats = {
-            active_lost: statsRows[0].active_lost || 0,
-            active_found: statsRows[0].active_found || 0,
-            total_claimed: statsRows[0].total_claimed || 0,
-            total_reports: statsRows[0].total_reports || 0
-        };
-
-        const [items] = await itemReportModel.findCatalogReports({
+        const statsPromise = itemReportModel.showDashboard(undefined, []);
+        const itemsPromise = itemReportModel.findCatalogReports({
             statusFilter,
             isCatalog,
             typeFilter,
@@ -105,16 +97,45 @@ const showDashboard = async (req, res) => {
             periodFilter,
             q
         });
+
+        const catalogPromise = isCatalog
+            ? Promise.all([
+                itemReportModel.showDashboardQuery2(undefined, []),
+                claimModel.showDashboard(undefined, []),
+                itemReportModel.showDashboardQuery3(undefined, [])
+            ])
+            : Promise.resolve(null);
+
+        const userPromise = user
+            ? Promise.all([
+                itemReportModel.showDashboardQuery4([user.id], []),
+                itemReportModel.showDashboardQuery5([user.id], []),
+                claimModel.showDashboardQuery2([user.id, user.id], [])
+            ])
+            : Promise.resolve(null);
+
+        const [statsResult, itemsResult, catalogResult, userResult] = await Promise.all([
+            statsPromise,
+            itemsPromise,
+            catalogPromise,
+            userPromise
+        ]);
+
+        const [statsRows] = statsResult;
+        const stats = {
+            active_lost: statsRows[0].active_lost || 0,
+            active_found: statsRows[0].active_found || 0,
+            total_claimed: statsRows[0].total_claimed || 0,
+            total_reports: statsRows[0].total_reports || 0
+        };
+
+        const [items] = itemsResult;
         let recognizedFinders = [];
         let successfulHandovers = [];
         const categoryCounts = Object.fromEntries(CATEGORIES.map((category) => [category, 0]));
 
-        if (isCatalog) {
-            const [finderResult, handoverResult, categoryCountResult] = await Promise.all([
-                itemReportModel.showDashboardQuery2(undefined, []),
-                claimModel.showDashboard(undefined, []),
-                itemReportModel.showDashboardQuery3(undefined, [])
-            ]);
+        if (catalogResult) {
+            const [finderResult, handoverResult, categoryCountResult] = catalogResult;
             recognizedFinders = finderResult[0] || [];
             successfulHandovers = handoverResult[0] || [];
             const categoryCountRows = (categoryCountResult && categoryCountResult[0]) || [];
@@ -130,16 +151,9 @@ const showDashboard = async (req, res) => {
         let myReports = [];
         let recentClaim = null;
 
-        if (user) {
-            // Find user's active lost reports to check against found reports (or vice versa)
-            const [myActiveReports] = await itemReportModel.showDashboardQuery4([user.id], []);
-
-            // Fetch user's recent reports for progress tracker
-            const [userReportsList] = await itemReportModel.showDashboardQuery5([user.id], []);
+        if (userResult) {
+            const [[myActiveReports], [userReportsList], [latestClaims]] = userResult;
             myReports = userReportsList;
-
-            // Fetch user's latest claim for the live claim widget
-            const [latestClaims] = await claimModel.showDashboardQuery2([user.id, user.id], []);
             if (latestClaims.length > 0) {
                 recentClaim = latestClaims[0];
             }
@@ -277,7 +291,16 @@ const showItemDetails = async (req, res) => {
         }
 
         const item = rows[0];
-        const [storedImages] = await itemReportModel.showItemReportImages([itemId], []);
+        const [storedImagesRes, claimsRes, similarRes] = await Promise.all([
+            itemReportModel.showItemReportImages([itemId], []),
+            user ? claimModel.showItemDetails([itemId, user.id], []) : Promise.resolve([[]]),
+            itemReportModel.showItemDetailsQuery2([item.category, item.id], [])
+        ]);
+
+        const [storedImages] = storedImagesRes;
+        const [claims] = claimsRes;
+        const [similar] = similarRes;
+
         const itemImages = storedImages.length
             ? storedImages
             : (item.primary_image_path ? [{ image_path: item.primary_image_path, is_primary: 1, sort_order: 0 }] : []);
@@ -289,18 +312,12 @@ const showItemDetails = async (req, res) => {
 
         // Check if current user already has a pending claim on this item
         let existingClaim = null;
-        if (user) {
-            const [claims] = await claimModel.showItemDetails([itemId, user.id], []);
-            if (claims.length > 0) {
-                existingClaim = claims[0];
-                if (answerMatchScore === null && existingClaim.proof_details && item.secret_answer) {
-                    answerMatchScore = calculateAnswerMatch(existingClaim.proof_details, item.secret_answer);
-                }
+        if (user && claims.length > 0) {
+            existingClaim = claims[0];
+            if (answerMatchScore === null && existingClaim.proof_details && item.secret_answer) {
+                answerMatchScore = calculateAnswerMatch(existingClaim.proof_details, item.secret_answer);
             }
         }
-
-        // Suggestions/Similar items
-        const [similar] = await itemReportModel.showItemDetailsQuery2([item.category, item.id], []);
 
         res.render('postDetail', {
             item,
@@ -441,11 +458,10 @@ const listClaims = async (req, res) => {
     const user = req.session.user;
 
     try {
-        // Claims filed by current user
-        const [madeClaims] = await claimModel.listClaims([user.id], []);
-
-        // Claims received on items reported by current user
-        const [receivedClaims] = await claimModel.listClaimsQuery2([user.id], []);
+        const [[madeClaims], [receivedClaims]] = await Promise.all([
+            claimModel.listClaims([user.id], []),
+            claimModel.listClaimsQuery2([user.id], [])
+        ]);
 
         res.render('claims', {
             user,
@@ -1116,31 +1132,29 @@ const deleteAccount = async (req, res) => {
 const showAdminDashboard = async (req, res) => {
     const user = req.session.user;
     try {
-        // Aggregate statistics
-        const [userCount] = await userModel.showAdminDashboard(undefined, []);
-        const [reportCount] = await itemReportModel.showAdminDashboard(undefined, []);
-        const [claimCount] = await claimModel.showAdminDashboard(undefined, []);
-
-        // 1. Vaulted Items (Active found items held in custody)
-        const [vaultedRows] = await itemReportModel.showAdminDashboardQuery2(undefined, []);
-
-        // 2. Guest Claims (Claims submitted by guest users)
-        const [guestClaimRows] = await claimModel.showAdminDashboardQuery2(undefined, []);
-
-        // 3. Claims in Dispute or Pending Review
-        const [disputeRows] = await claimModel.showAdminDashboardQuery3(undefined, []);
-
-        // 4. Overdue Archive (Items older than 60 days)
-        const [overdueRows] = await itemReportModel.showAdminDashboardQuery3(undefined, []);
-
-        // Recent Audit Logs
-        const [recentAudits] = await auditLogModel.showAdminDashboard(undefined, []);
-
-        // Categories breakdown
-        const [catStats] = await itemReportModel.showAdminDashboardQuery4(undefined, []);
-
-        // Latest posted items for centralized admin review
-        const [postedItems] = await itemReportModel.showAdminDashboardQuery5(undefined, []);
+        const [
+            [userCount],
+            [reportCount],
+            [claimCount],
+            [vaultedRows],
+            [guestClaimRows],
+            [disputeRows],
+            [overdueRows],
+            [recentAudits],
+            [catStats],
+            [postedItems]
+        ] = await Promise.all([
+            userModel.showAdminDashboard(undefined, []),
+            itemReportModel.showAdminDashboard(undefined, []),
+            claimModel.showAdminDashboard(undefined, []),
+            itemReportModel.showAdminDashboardQuery2(undefined, []),
+            claimModel.showAdminDashboardQuery2(undefined, []),
+            claimModel.showAdminDashboardQuery3(undefined, []),
+            itemReportModel.showAdminDashboardQuery3(undefined, []),
+            auditLogModel.showAdminDashboard(undefined, []),
+            itemReportModel.showAdminDashboardQuery4(undefined, []),
+            itemReportModel.showAdminDashboardQuery5(undefined, [])
+        ]);
 
         res.render('adminDashboard', {
             user,
@@ -1391,20 +1405,22 @@ const showForbiddenPage = (req, res) => {
 const listAdminReports = async (req, res) => {
     const user = req.session.user;
     try {
-        const [reports] = await itemReportModel.listAdminReports(undefined, []);
+        const [
+            [reports],
+            [deskClaims],
+            [auditLogs]
+        ] = await Promise.all([
+            itemReportModel.listAdminReports(undefined, []),
+            claimModel.listAdminReports(undefined, []),
+            auditLogModel.listAdminReports(undefined, [])
+        ]);
 
         // Calculate archive stats
         const totalReports = reports.length;
         const claimedReports = reports.filter(r => r.status === 'claimed').length;
         const recoveryRate = totalReports > 0 ? Math.round((claimedReports / totalReports) * 100) : 0;
         const peerReturns = reports.filter(r => r.status === 'claimed' && r.report_type === 'found').length;
-        
-        // Desk handovers from claims
-        const [deskClaims] = await claimModel.listAdminReports(undefined, []);
         const deskHandovers = deskClaims[0]?.count || 0;
-
-        // Fetch audit logs for the second tab
-        const [auditLogs] = await auditLogModel.listAdminReports(undefined, []);
 
         // Compute days since reported for 60-day archive queue
         const now = new Date();
@@ -1486,33 +1502,19 @@ const batchApproveReportArchive = async (req, res) => {
 const showAdminAnalytics = async (req, res) => {
     const user = req.session.user;
     try {
-        // P2P claims (where claimant is student/staff and item reporter is student/staff or item was not turned into office)
-        const [p2pStats] = await claimModel.showAdminAnalytics(undefined, []);
-
-        // Centralized claims (Guest claimants or office turned-in items handled directly by admin)
-        const [deskStats] = await claimModel.showAdminAnalyticsQuery2(undefined, []);
-
-        // Overall item resolution summary
-        const [reportStats] = await itemReportModel.showAdminAnalytics(undefined, []);
-
-        // Category breakdown of resolved claims
-        const [categoryBreakdown] = await claimModel.showAdminAnalyticsQuery3(undefined, []);
-
-        const p2pFirst = (p2pStats && p2pStats[0]) || {};
-        const deskFirst = (deskStats && deskStats[0]) || {};
-        const reportFirst = (reportStats && reportStats[0]) || { total_reports: 0, total_claimed: 0, total_active: 0, total_archived: 0 };
-
-        // Average resolution days (mocked baseline if new DB)
-        const p2pTotal = p2pFirst.total_claims || 0;
-        const p2pApproved = p2pFirst.approved_claims || 0;
-        const p2pSuccessRate = p2pTotal > 0 ? Math.round((p2pApproved / p2pTotal) * 100) : 88;
-
-        const deskTotal = deskFirst.total_claims || 0;
-        const deskApproved = deskFirst.approved_claims || 0;
-        const deskSuccessRate = deskTotal > 0 ? Math.round((deskApproved / deskTotal) * 100) : 94;
-
-        // Pending handovers count for sidebar badge
-        const [pendingHandovers] = await claimModel.showAdminAnalyticsQuery4(undefined, []);
+        const [
+            [p2pStats],
+            [deskStats],
+            [reportStats],
+            [categoryBreakdown],
+            [pendingHandovers]
+        ] = await Promise.all([
+            claimModel.showAdminAnalytics(undefined, []),
+            claimModel.showAdminAnalyticsQuery2(undefined, []),
+            itemReportModel.showAdminAnalytics(undefined, []),
+            claimModel.showAdminAnalyticsQuery3(undefined, []),
+            claimModel.showAdminAnalyticsQuery4(undefined, [])
+        ]);
 
         res.render('adminAnalytics', {
             user,

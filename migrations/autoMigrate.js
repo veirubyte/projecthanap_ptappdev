@@ -4,10 +4,15 @@
  */
 const pool = require('../config/db');
 
+let isMigrated = false;
+
 async function autoMigrate() {
+  if (isMigrated) return;
+  isMigrated = true;
+
   if (pool.isPostgres) {
     // Supabase PostgreSQL schema is defined in supabase_schema.sql.
-    // Ensure core tables exist safely without MySQL-specific syntax.
+    // Ensure core tables exist safely in a single batch network roundtrip.
     try {
       const connection = await pool.getConnection();
       try {
@@ -19,9 +24,7 @@ async function autoMigrate() {
             is_primary SMALLINT NOT NULL DEFAULT 0,
             sort_order INT NOT NULL DEFAULT 0,
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        await connection.query(`
+          );
           CREATE TABLE IF NOT EXISTS public.password_resets (
             id SERIAL PRIMARY KEY,
             user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -29,20 +32,14 @@ async function autoMigrate() {
             expires_at TIMESTAMPTZ NOT NULL,
             attempts SMALLINT NOT NULL DEFAULT 0,
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        await connection.query(`
+          );
           CREATE TABLE IF NOT EXISTS public.user_sessions (
             sid VARCHAR(128) PRIMARY KEY,
             sess JSONB NOT NULL,
             expires_at TIMESTAMPTZ NOT NULL
-          )
-        `);
-        await connection.query(`
-          CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at)
-        `);
-        await connection.query(`
-          ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT
+          );
+          CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at);
+          ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT;
         `);
         console.log('[MIGRATION] Supabase PostgreSQL tables verified successfully.');
       } finally {
