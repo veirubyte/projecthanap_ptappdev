@@ -209,9 +209,10 @@ const showNewReportForm = (req, res) => {
         error: req.query.error || null
     });
 };
-
 const createItemReport = async (req, res) => {
-    const reportType = req.body && ['lost', 'found'].includes(req.body.report_type) ? req.body.report_type : null;
+    const reportType = (req.body && ['lost', 'found'].includes(req.body.report_type))
+        ? req.body.report_type
+        : (req.query && ['lost', 'found'].includes(req.query.type) ? req.query.type : null);
     const reportFormUrl = `/items/new?type=${reportType || 'lost'}`;
     const uploadedFiles = req.files || [];
 
