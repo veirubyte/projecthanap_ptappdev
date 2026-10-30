@@ -1628,6 +1628,52 @@ const createAdminItemReport = async (req, res) => {
     }
 };
 
+const exportReportsCsv = async (req, res) => {
+    try {
+        const [reports] = await itemReportModel.listAdminReports(undefined, []);
+        let csv = 'ID,Item Name,Category,Type,Location,Status,Date Reported,Reporter Name,Reporter Email\r\n';
+        for (const r of reports) {
+            const id = r.id;
+            const name = `"${(r.item_name || '').replace(/"/g, '""')}"`;
+            const cat = `"${(r.category || '').replace(/"/g, '""')}"`;
+            const type = r.report_type;
+            const loc = `"${(r.location_found_lost || '').replace(/"/g, '""')}"`;
+            const status = r.status;
+            const date = new Date(r.date_reported).toISOString();
+            const repName = `"${(r.reporter_name || '').replace(/"/g, '""')}"`;
+            const repEmail = `"${(r.reporter_email || '').replace(/"/g, '""')}"`;
+            csv += `${id},${name},${cat},${type},${loc},${status},${date},${repName},${repEmail}\r\n`;
+        }
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="hanap_reports_ledger_${new Date().toISOString().slice(0, 10)}.csv"`);
+        return res.send(csv);
+    } catch (err) {
+        console.error('Error exporting reports CSV:', err);
+        return res.status(500).send('Error generating CSV export.');
+    }
+};
+
+const exportAuditLogsCsv = async (req, res) => {
+    try {
+        const [logs] = await auditLogModel.listAuditLogs(undefined, []);
+        let csv = 'Timestamp,Admin Name,Admin Email,Action,IP Address\r\n';
+        for (const log of logs) {
+            const time = new Date(log.timestamp).toISOString();
+            const name = `"${(log.admin_name || '').replace(/"/g, '""')}"`;
+            const email = `"${(log.admin_email || '').replace(/"/g, '""')}"`;
+            const action = `"${(log.action || '').replace(/"/g, '""')}"`;
+            const ip = `"${(log.ip_address || '').replace(/"/g, '""')}"`;
+            csv += `${time},${name},${email},${action},${ip}\r\n`;
+        }
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="hanap_audit_logs_${new Date().toISOString().slice(0, 10)}.csv"`);
+        return res.send(csv);
+    } catch (err) {
+        console.error('Error exporting audit logs CSV:', err);
+        return res.status(500).send('Error generating CSV export.');
+    }
+};
+
 module.exports = {
     showDashboard,
     showNewReportForm,
@@ -1671,5 +1717,7 @@ module.exports = {
     batchApproveReportArchive,
     showAdminAnalytics,
     listAuditLogs,
-    createAdminItemReport
+    createAdminItemReport,
+    exportReportsCsv,
+    exportAuditLogsCsv
 };

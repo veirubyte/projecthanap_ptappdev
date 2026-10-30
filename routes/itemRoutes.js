@@ -39,14 +39,14 @@ router.post('/items/:id/claim', requireNonAdminAuth, controller.createClaim);
 
 router.get('/claims', requireNonAdminAuth, controller.listClaims);
 
-// Single Claim Chat
-router.get('/claims/:id', requireNonAdminAuth, controller.showClaimChat);
+// Single Claim Chat (Peer Claimant, Finder, or Moderating Admin)
+router.get('/claims/:id', requireAuth, controller.showClaimChat);
 
 // Post message in claim chat
-router.post('/claims/:id/messages', requireNonAdminAuth, controller.sendClaimMessage);
+router.post('/claims/:id/messages', requireAuth, controller.sendClaimMessage);
 
-// Update Claim Status (Approve or Reject)
-router.post('/claims/:id/status', requireNonAdminAuth, controller.updateClaimStatus);
+// Update Claim Status (Approve or Reject by Finder or Admin)
+router.post('/claims/:id/status', requireAuth, controller.updateClaimStatus);
 
 // Withdraw / Cancel Pending Claim
 router.post('/claims/:id/cancel', requireNonAdminAuth, controller.cancelClaim);
@@ -139,8 +139,10 @@ router.post('/admin/reports/batch-approve', requireAdmin, controller.batchApprov
 // Admin Statistical Overview: P2P vs Centralized Handover Performance
 router.get('/admin/analytics', requireAdmin, controller.showAdminAnalytics);
 
-// Admin Audit Logs Viewer
+// Admin Audit Logs Viewer & CSV Export
 router.get('/admin/audit-logs', requireAdmin, controller.listAuditLogs);
+router.get('/admin/audit-logs/export', requireAdmin, controller.exportAuditLogsCsv);
+router.get('/admin/reports/export-csv', requireAdmin, controller.exportReportsCsv);
 
 // Admin Office Turn-in Log Form Submission
 router.post('/admin/items/log', requireAdmin, controller.createAdminItemReport);

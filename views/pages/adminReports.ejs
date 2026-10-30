@@ -54,14 +54,16 @@
           <p class="text-xs text-slate-500 mt-0.5">Manage 60-day item disposition and audit trails.</p>
         </div>
         <div class="flex items-center gap-2.5">
-          <button
+          <a
+            href="/admin/reports/export-csv"
+            download="hanap_reports_ledger.csv"
             class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/80 bg-white/70 backdrop-blur-md text-xs font-semibold text-slate-700 hover:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
             id="exportModalBtn"
             data-csv="<%= reports ? reports.map(function(r) { return r.id + ',&quot;' + r.item_name + '&quot;,&quot;' + r.location_found_lost + '&quot;,' + r.status + ',&quot;' + r.reporter_name + '&quot;'; }).join('\n') : '' %>"
           >
             <span class="material-symbols-outlined text-[16px]">download</span>
             <span>Export CSV</span>
-          </button>
+          </a>
           <button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#09436b] to-[#2B5B84] hover:from-[#073656] hover:to-[#224869] text-white text-xs font-semibold shadow-[0_4px_16px_rgba(9,67,107,0.25)] border border-sky-300/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer" id="batchApproveBtn">
             <span class="material-symbols-outlined text-[16px]">done_all</span>
             <span>✓ Approve Archive Batch</span>
