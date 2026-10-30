@@ -49,10 +49,10 @@
         <!-- Guest, Student, and Staff Navigation Links -->
         <a href="/dashboard" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'dashboard') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Dashboard</a>
         <a href="/catalog" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'catalog') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Browse Catalog</a>
-        <a href="/items/new?type=lost" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'report-lost') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">+ Report Lost Item</a>
-        <% if (typeof user === 'undefined' || !user || (user.role !== 'parent/guest' && user.role !== 'guest' && user.role !== 'parent')) { %>
-          <a href="/items/new?type=found" class="whitespace-nowrap inline-flex items-center shrink-0 px-4.5 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'report-found') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">+ Report Found Item</a>
-        <% } %>
+        <a href="/items/new" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && (active === 'report-lost' || active === 'report-found' || active === 'report-item')) ? 'bg-[#09436B] text-white font-bold shadow-xs' : 'text-[#09436B] bg-sky-50/80 hover:bg-sky-100/90 font-bold border border-sky-200/60' %>">
+          <span class="material-symbols-outlined text-[17px]">add_circle</span>
+          <span>Report Item</span>
+        </a>
         <% if (typeof user !== 'undefined' && user) { %>
           <a href="/claims" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'claims') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Claims</a>
           <a href="/my-reports" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'my-reports') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">My Reports</a>
@@ -164,16 +164,10 @@
                   <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">manage_search</span>
                   <span>Browse Catalog</span>
                 </a>
-                <a href="/items/new?type=lost" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
-                  <span class="material-symbols-outlined text-[18px] text-rose-600">add_circle</span>
-                  <span>Report Lost Item</span>
+                <a href="/items/new" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
+                  <span class="material-symbols-outlined text-[18px] text-[#09436B]">add_circle</span>
+                  <span>Report Item (Lost / Found)</span>
                 </a>
-                <% if (user.role !== 'parent/guest' && user.role !== 'guest' && user.role !== 'parent') { %>
-                  <a href="/items/new?type=found" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
-                    <span class="material-symbols-outlined text-[18px] text-teal-600">inventory_2</span>
-                    <span>Report Found Item</span>
-                  </a>
-                <% } %>
                 <a href="/claims" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
                   <span class="material-symbols-outlined text-[18px] text-[#2B5B84]">handshake</span>
                   <span>Claims</span>

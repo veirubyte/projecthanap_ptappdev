@@ -219,19 +219,19 @@
           <div class="flex flex-col gap-2 pt-1">
             <span class="ownership-custody-title text-xs font-bold text-slate-700 uppercase tracking-wider">Custody Preference</span>
             <div class="ownership-custody-options grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-sky-300 bg-white text-[#09436B] shadow-xs hover:shadow-sm font-semibold text-xs">
-                <input checked class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer" name="custody_mode" type="radio" value="peer_meetup"/>
-                <div>
-                  <span class="block font-bold flex items-center gap-1.5">
+              <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-slate-200/90 bg-white/70 hover:bg-white text-slate-700 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/80 has-[:checked]:text-[#09436B] shadow-2xs hover:shadow-xs font-semibold text-xs">
+                <input checked class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer shrink-0" name="custody_mode" type="radio" value="peer_meetup"/>
+                <div class="min-w-0">
+                  <span class="font-bold flex items-center gap-1.5">
                     <i data-lucide="handshake" class="w-3.5 h-3.5 text-blue-600"></i> Peer Meetup
                   </span>
                   <span class="text-[11px] font-normal text-slate-500">Coordinate secure campus handover once verified</span>
                 </div>
               </label>
-              <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-slate-200 bg-white/70 hover:bg-white text-slate-700 shadow-xs hover:shadow-sm font-semibold text-xs">
-                <input class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer" name="custody_mode" type="radio" value="security_desk"/>
-                <div>
-                  <span class="block font-bold flex items-center gap-1.5">
+              <label class="ownership-custody-option flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-slate-200/90 bg-white/70 hover:bg-white text-slate-700 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/80 has-[:checked]:text-[#09436B] shadow-2xs hover:shadow-xs font-semibold text-xs">
+                <input class="w-4 h-4 text-[#2B5B84] focus:ring-[#3B82F6]/30 accent-[#2B5B84] cursor-pointer shrink-0" name="custody_mode" type="radio" value="security_desk"/>
+                <div class="min-w-0">
+                  <span class="font-bold flex items-center gap-1.5">
                     <i data-lucide="shield" class="w-3.5 h-3.5 text-slate-700"></i> Security Desk
                   </span>
                   <span class="text-[11px] font-normal text-slate-500">Turned over to Main Gate Guardhouse / L&amp;F Office</span>

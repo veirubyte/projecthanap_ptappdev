@@ -3,6 +3,7 @@
  * Target: https://projecthanap-campus-system.vercel.app
  * Backed by: Supabase PostgreSQL (public schema)
  */
+const http = require('http');
 const https = require('https');
 const { URL } = require('url');
 
@@ -62,7 +63,8 @@ class QAClient {
                 reqHeaders['Content-Length'] = Buffer.byteLength(postData);
             }
 
-            const req = https.request({
+            const transport = url.protocol === 'https:' ? https : http;
+            const req = transport.request({
                 hostname: url.hostname,
                 port: url.port || (url.protocol === 'https:' ? 443 : 80),
                 path: url.pathname + url.search,
