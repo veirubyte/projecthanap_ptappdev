@@ -32,13 +32,17 @@ if (isPostgres) {
                         connectionString.includes('pooler.supabase.com') ||
                         connectionString.includes('sslmode=require');
 
-  const pgPool = new Pool({
-    connectionString,
-    ssl: isPostgresSsl ? { rejectUnauthorized: false } : undefined,
-    max: Number(process.env.DB_CONNECTION_LIMIT || 10),
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000
-  });
+  let pgPool = global.hanapPgPool;
+  if (!pgPool) {
+    pgPool = new Pool({
+      connectionString,
+      ssl: isPostgresSsl ? { rejectUnauthorized: false } : undefined,
+      max: Number(process.env.DB_CONNECTION_LIMIT || 10),
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    });
+    global.hanapPgPool = pgPool;
+  }
 
   function translateQueryForPostgres(sql, params = []) {
     if (!sql || typeof sql !== 'string') return { sql, params };
