@@ -11,7 +11,7 @@ function getTransporter() {
     const password = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
 
     if (!host || !Number.isInteger(port) || port < 1 || port > 65535 || !user || !password) {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && process.env.STRICT_SMTP === 'true') {
             const error = new Error('SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASSWORD (or SMTP_PASS) must be configured to send email.');
             error.code = 'SMTP_CONFIGURATION_MISSING';
             throw error;
