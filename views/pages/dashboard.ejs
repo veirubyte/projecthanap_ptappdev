@@ -33,6 +33,7 @@
   <%- include('partials/themeSetup') %>
 </head>
 <body class="<%= isCatalog ? 'catalog-page' : '' %> min-h-full bg-[#F4F7FB] font-sans text-slate-800 antialiased flex flex-col justify-between relative overflow-x-hidden selection:bg-sky-100 selection:text-sky-900">
+  <% const smartMatchList = (typeof smartMatches !== 'undefined' && Array.isArray(smartMatches)) ? smartMatches : []; const statsObj = (typeof stats !== 'undefined' && stats) ? stats : { active_lost: 0, active_found: 0, total_claimed: 0, total_reports: 0 }; const activeRecentClaim = (typeof recentClaim !== 'undefined' && recentClaim) ? recentClaim : null; const activeFilters = (typeof filters !== 'undefined' && filters) ? filters : { q: '', type: '', category: '', period: '', status: '' }; %>
   <% const catalogFinders = typeof recognizedFinders !== 'undefined' ? recognizedFinders : []; %>
   <% const catalogHandovers = typeof successfulHandovers !== 'undefined' ? successfulHandovers : []; %>
   <% const catalogCategoryCounts = typeof categoryCounts !== 'undefined' ? categoryCounts : {}; %>
@@ -83,15 +84,15 @@
               <span class="text-[10px] text-slate-400"><%= items.length %> items</span>
             </div>
             <nav aria-label="Catalog categories" class="flex xl:flex-col gap-1.5 overflow-x-auto xl:overflow-visible pb-1 xl:pb-0">
-              <a href="/catalog?type=<%= encodeURIComponent(filters.type) %>&period=<%= encodeURIComponent(filters.period) %>&q=<%= encodeURIComponent(filters.q) %>"
-                 class="shrink-0 inline-flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-bold transition <%= filters.category ? 'text-slate-600 hover:bg-slate-100' : 'bg-[#09436B] text-white shadow-xs' %>">
+              <a href="/catalog?type=<%= encodeURIComponent(activeFilters.type) %>&period=<%= encodeURIComponent(activeFilters.period) %>&q=<%= encodeURIComponent(activeFilters.q) %>"
+                 class="shrink-0 inline-flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-bold transition <%= activeFilters.category ? 'text-slate-600 hover:bg-slate-100' : 'bg-[#09436B] text-white shadow-xs' %>">
                 <span class="material-symbols-outlined text-[15px]">apps</span>
                 <span>All categories</span>
                 <span class="ml-auto text-[9px] opacity-75"><%= items.length %></span>
               </a>
               <% categories.forEach(cat => { %>
-                <a href="/catalog?category=<%= encodeURIComponent(cat) %>&type=<%= encodeURIComponent(filters.type) %>&period=<%= encodeURIComponent(filters.period) %>&q=<%= encodeURIComponent(filters.q) %>"
-                   class="shrink-0 inline-flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-semibold transition <%= filters.category === cat ? 'bg-[#09436B] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' %>">
+                <a href="/catalog?category=<%= encodeURIComponent(cat) %>&type=<%= encodeURIComponent(activeFilters.type) %>&period=<%= encodeURIComponent(activeFilters.period) %>&q=<%= encodeURIComponent(activeFilters.q) %>"
+                   class="shrink-0 inline-flex w-full items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-semibold transition <%= activeFilters.category === cat ? 'bg-[#09436B] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' %>">
                   <span class="material-symbols-outlined text-[15px]"><%= cat === 'Electronics' ? 'devices' : (cat === 'Keys & Lanyards' ? 'key' : (cat === 'IDs & Cards' ? 'badge' : (cat === 'Bags & Wallets' ? 'work' : (cat === 'Books & Documents' ? 'menu_book' : (cat === 'Clothing & Accessories' ? 'checkroom' : 'category'))))) %></span>
                   <span><%= cat %></span>
                   <span class="catalog-category-count ml-auto text-[9px] px-1.5 py-0.5 rounded-full"><%= catalogCategoryCounts[cat] || 0 %></span>
@@ -113,22 +114,22 @@
               </div>
 
               <form id="catalogFilterForm" method="GET" action="/catalog" class="space-y-2">
-                <% if (filters.category) { %>
-                  <input type="hidden" name="category" value="<%= filters.category %>"/>
+                <% if (activeFilters.category) { %>
+                  <input type="hidden" name="category" value="<%= activeFilters.category %>"/>
                 <% } %>
                 <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch gap-2">
                   <label class="relative flex-1 min-w-[180px]">
                     <span class="sr-only" for="catalogSearch">Search campus items or locations</span>
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">search</span>
-                    <input id="catalogSearch" type="search" name="q" value="<%= filters.q %>" placeholder="Search campus item or location..."
+                    <input id="catalogSearch" type="search" name="q" value="<%= activeFilters.q %>" placeholder="Search campus item or location..."
                            class="w-full h-10 pl-10 pr-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/15"/>
                   </label>
                   <label class="relative sm:w-36">
                     <span class="sr-only">Item type</span>
                     <select name="type" onchange="this.form.submit()" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none cursor-pointer">
                       <option value="">All Types</option>
-                      <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost Items</option>
-                      <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found Items</option>
+                      <option value="lost" <%= activeFilters.type === 'lost' ? 'selected' : '' %>>Lost Items</option>
+                      <option value="found" <%= activeFilters.type === 'found' ? 'selected' : '' %>>Found Items</option>
                     </select>
                     <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">expand_more</span>
                   </label>
@@ -136,9 +137,9 @@
                     <span class="sr-only">Time range</span>
                     <select name="period" onchange="this.form.submit()" class="w-full h-10 px-3 pr-8 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-[#3B82F6] appearance-none cursor-pointer">
                       <option value="">Any Time</option>
-                      <option value="today" <%= filters.period === 'today' ? 'selected' : '' %>>Last 24 Hours</option>
-                      <option value="week" <%= filters.period === 'week' ? 'selected' : '' %>>Last 7 Days</option>
-                      <option value="month" <%= filters.period === 'month' ? 'selected' : '' %>>Last 30 Days</option>
+                      <option value="today" <%= activeFilters.period === 'today' ? 'selected' : '' %>>Last 24 Hours</option>
+                      <option value="week" <%= activeFilters.period === 'week' ? 'selected' : '' %>>Last 7 Days</option>
+                      <option value="month" <%= activeFilters.period === 'month' ? 'selected' : '' %>>Last 30 Days</option>
                     </select>
                     <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">expand_more</span>
                   </label>
@@ -147,7 +148,7 @@
                     <span>Filter</span>
                   </button>
                 </div>
-                <% if (filters.q || filters.type || filters.period || filters.category) { %>
+                <% if (activeFilters.q || activeFilters.type || activeFilters.period || activeFilters.category) { %>
                   <div class="flex items-center justify-between gap-3 px-1">
                     <p class="text-[10px] text-slate-500">Showing <%= items.length %> matching active <%= items.length === 1 ? 'post' : 'posts' %>.</p>
                     <a href="/catalog" class="text-[10px] font-bold text-[#09436B] hover:underline">Clear filters</a>
@@ -322,7 +323,7 @@
           <div class="pt-2">
             <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs">
               <span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
-              <span>Live Recovery Ticker: <strong><%= stats.total_claimed %></strong> recovered</span>
+              <span>Live Recovery Ticker: <strong><%= (typeof stats !== 'undefined' && stats && statsObj.total_claimed) ? statsObj.total_claimed : 0 %></strong> recovered</span>
             </div>
           </div>
         </div>
@@ -376,8 +377,8 @@
       </div>
 
       <!-- Interactive Smart Match Spotlight Card (if any matches) -->
-      <% if (smartMatches && smartMatches.length > 0) { %>
-        <% const topMatch = smartMatches[0]; %>
+      <% if (smartMatchList && smartMatchList.length > 0) { %>
+        <% const topMatch = smartMatchList[0]; %>
         <div class="dashboard-match-card relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-500/10 via-white/85 to-sky-500/10 backdrop-blur-xl border border-teal-200/60 p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.08)] transition hover:border-teal-300">
           <div class="dashboard-match-glow absolute -right-12 -top-12 w-44 h-44 rounded-full bg-teal-300/20 blur-2xl pointer-events-none"></div>
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
@@ -419,7 +420,7 @@
             <span class="text-[11px] font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full">Lost</span>
           </div>
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.active_lost %></div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= statsObj.active_lost %></div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Active Lost</span>
               <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
@@ -436,7 +437,7 @@
             <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">Found</span>
           </div>
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.active_found %></div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= statsObj.active_found %></div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Posted Found</span>
               <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
@@ -453,7 +454,7 @@
             <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full">Resolved</span>
           </div>
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= stats.total_claimed %></div>
+            <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none"><%= statsObj.total_claimed %></div>
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-3 flex items-center justify-between">
               <span>Reunited Total</span>
               <span class="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform text-base">chevron_right</span>
@@ -462,7 +463,7 @@
         </a>
 
         <!-- Tile 4: Recovery Rate -->
-        <% const rate = stats.total_reports > 0 ? Math.min(100, Math.round((stats.total_claimed / stats.total_reports) * 100)) : 25; %>
+        <% const rate = statsObj.total_reports > 0 ? Math.min(100, Math.round((statsObj.total_claimed / statsObj.total_reports) * 100)) : 25; %>
         <a href="<%= user ? '/my-reports' : '/catalog' %>" class="p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-md transition flex flex-col justify-between group">
           <div class="flex items-center justify-between mb-4">
             <div class="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
@@ -592,20 +593,20 @@
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800">Live Peer Claim</h2>
                 </div>
-                <% if (recentClaim) { %>
-                  <span class="text-[10px] font-bold text-slate-400">Claim #<%= recentClaim.id %></span>
+                <% if (activeRecentClaim) { %>
+                  <span class="text-[10px] font-bold text-slate-400">Claim #<%= activeRecentClaim.id %></span>
                 <% } %>
               </div>
 
-              <% if (recentClaim) { %>
+              <% if (activeRecentClaim) { %>
                 <div class="mt-4 space-y-3">
                   <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-700 shrink-0">
                       <span class="material-symbols-outlined text-[18px]">handshake</span>
                     </div>
                     <div class="min-w-0">
-                      <h4 class="text-xs sm:text-sm font-bold text-slate-900 truncate"><%= recentClaim.item_name %></h4>
-                      <p class="text-[11px] text-slate-500">Peer: <%= recentClaim.claimant_id === user.id ? recentClaim.reporter_name : recentClaim.claimant_name %></p>
+                      <h4 class="text-xs sm:text-sm font-bold text-slate-900 truncate"><%= activeRecentClaim.item_name %></h4>
+                      <p class="text-[11px] text-slate-500">Peer: <%= (user && activeRecentClaim.claimant_id === user.id) ? activeRecentClaim.reporter_name : activeRecentClaim.claimant_name %></p>
                     </div>
                   </div>
 
@@ -613,16 +614,16 @@
                   <div class="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/60 relative">
                     <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-1">
                       <span class="material-symbols-outlined text-[12px] text-teal-600">forum</span>
-                      <span>Latest Activity • <%= recentClaim.last_message_at ? timeAgo(recentClaim.last_message_at) : 'Active' %></span>
+                      <span>Latest Activity • <%= activeRecentClaim.last_message_at ? timeAgo(activeRecentClaim.last_message_at) : 'Active' %></span>
                     </div>
                     <p class="text-xs text-slate-700 italic line-clamp-2 leading-relaxed">
-                      "<%= recentClaim.last_message || recentClaim.proof_details %>"
+                      "<%= activeRecentClaim.last_message || activeRecentClaim.proof_details %>"
                     </p>
                   </div>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 mt-4">
-                  <a href="/claims/<%= recentClaim.id %>" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:brightness-110 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs">
+                  <a href="/claims/<%= activeRecentClaim.id %>" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:brightness-110 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs">
                     <span class="material-symbols-outlined text-[16px]">chat</span>
                     <span>Open Conversation</span>
                   </a>
@@ -664,15 +665,15 @@
 
         <form method="GET" action="/dashboard" class="flex flex-wrap items-center gap-2.5">
           <div class="relative">
-            <input type="text" name="q" value="<%= filters.q %>" placeholder="Search item, location..." class="w-48 sm:w-64 h-10 pl-9 pr-4 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3B82F6] focus:bg-white shadow-2xs transition"/>
+            <input type="text" name="q" value="<%= activeFilters.q %>" placeholder="Search item, location..." class="w-48 sm:w-64 h-10 pl-9 pr-4 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#3B82F6] focus:bg-white shadow-2xs transition"/>
             <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-base">search</span>
           </div>
 
           <div class="relative">
             <select name="type" onchange="this.form.submit()" class="h-10 pl-3.5 pr-8 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-700 font-bold focus:outline-none shadow-2xs appearance-none cursor-pointer">
               <option value="">All Types</option>
-              <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost Only</option>
-              <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found Only</option>
+              <option value="lost" <%= activeFilters.type === 'lost' ? 'selected' : '' %>>Lost Only</option>
+              <option value="found" <%= activeFilters.type === 'found' ? 'selected' : '' %>>Found Only</option>
             </select>
             <span class="material-symbols-outlined absolute right-2.5 top-2.5 text-slate-400 text-sm pointer-events-none">expand_more</span>
           </div>
@@ -681,7 +682,7 @@
             <select name="category" onchange="this.form.submit()" class="h-10 pl-3.5 pr-8 rounded-full bg-slate-50/80 border border-slate-200 text-xs text-slate-700 font-bold focus:outline-none shadow-2xs appearance-none cursor-pointer">
               <option value="">All Categories</option>
               <% categories.forEach(cat => { %>
-                <option value="<%= cat %>" <%= filters.category === cat ? 'selected' : '' %>><%= cat %></option>
+                <option value="<%= cat %>" <%= activeFilters.category === cat ? 'selected' : '' %>><%= cat %></option>
               <% }) %>
             </select>
             <span class="material-symbols-outlined absolute right-2.5 top-2.5 text-slate-400 text-sm pointer-events-none">expand_more</span>
