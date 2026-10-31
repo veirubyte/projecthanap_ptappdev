@@ -74,6 +74,13 @@ function renderRegister(res, options = {}) {
 // GET /login
 
 const showLogin = (req, res) => {
+    if (req.query.reset_mfa === '1' || req.query.cancel_mfa === '1') {
+        delete req.session.pendingMfaUser;
+        delete req.session.pendingMfaCategory;
+        delete req.session.mfaCooldownUntil;
+        delete req.session.mfaAttemptsRemaining;
+    }
+
     // If already authenticated, redirect immediately based on authoritative database role
     const accessDenied = req.query.accessDenied === '1';
     if (req.session.user && !accessDenied) {
@@ -105,6 +112,14 @@ const showLogin = (req, res) => {
 };
 
 const login = async (req, res) => {
+    if (req.body.cancel_mfa === '1' || req.query.reset_mfa === '1' || req.query.cancel_mfa === '1') {
+        delete req.session.pendingMfaUser;
+        delete req.session.pendingMfaCategory;
+        delete req.session.mfaCooldownUntil;
+        delete req.session.mfaAttemptsRemaining;
+        return res.redirect('/login');
+    }
+
     if (req.session.pendingMfaUser) {
         const pendingUser = req.session.pendingMfaUser;
         const category = req.session.pendingMfaCategory || 'institution';
@@ -339,6 +354,14 @@ const login = async (req, res) => {
         const [mfaRows] = await userModel.loginQuery2([sessionUser.id], []);
 
         if (mfaRows.length > 0 && Boolean(mfaRows[0].mfa_enabled)) {
+            const initialCode = typeof req.body.mfa_code === 'string' ? req.body.mfa_code.trim() : '';
+            if (initialCode && /^\d{6}$/.test(initialCode)) {
+                const verification = await verifyCode(sessionUser.id, initialCode);
+                if (verification.status === 'verified') {
+                    return await establishAuthenticatedSession(req, res, sessionUser);
+                }
+            }
+
             const result = await issueCode(sessionUser.id, sessionUser.email);
             await new Promise((resolve, reject) => {
                 req.session.regenerate((error) => (error ? reject(error) : resolve()));

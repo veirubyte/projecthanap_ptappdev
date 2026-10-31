@@ -35,7 +35,7 @@
   </script>
 </head>
 <body class="login-page bg-[#F4F7FB] text-[#0F172A] font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-blue-500/20">
-  <main class="relative w-full min-h-screen bg-[#F4F7FB] flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-hidden <%= (typeof mfaPending !== 'undefined' && mfaPending) ? 'blur-sm pointer-events-none select-none' : '' %>" <% if (typeof mfaPending !== 'undefined' && mfaPending) { %>inert aria-hidden="true"<% } %>>
+  <main class="relative w-full min-h-screen bg-[#F4F7FB] flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-hidden">
     
     <!-- Ambient Aurora Mesh Glow Behind Glass Portal -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden flex items-center justify-center z-0" aria-hidden="true">
@@ -192,6 +192,28 @@
       <div class="md:w-[55%] w-full bg-white/50 backdrop-blur-sm p-6 sm:p-10 flex flex-col justify-between rounded-2xl">
         <div class="space-y-5">
           
+          <% if (typeof mfaPending !== 'undefined' && mfaPending) { %>
+          <!-- MFA Step Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-[#2B5B84] text-[11px] font-bold mb-2 shadow-2xs">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-teal-600"></i>
+                <span>Two-Factor Authentication</span>
+              </div>
+              <h2 class="text-2xl font-bold text-[#0F172A] tracking-tight" id="mfaDialogTitle">
+                Verify your sign-in
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5" id="mfaDialogDescription">
+                Enter the six-digit verification code sent to <strong class="text-slate-800"><%= mfaEmail %></strong>.
+              </p>
+            </div>
+
+            <a href="/login?reset_mfa=1" class="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-2xs" title="Cancel and return to sign in">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span>Back to Sign In</span>
+            </a>
+          </div>
+          <% } else { %>
           <!-- Header with Top-Level Login Toggle: [ Institution ] [ Guest ] -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -204,7 +226,6 @@
             </div>
 
             <!-- Segmented Category Pill Toggle -->
-            <% if (!(typeof mfaPending !== 'undefined' && mfaPending)) { %>
             <div class="inline-flex p-1 bg-slate-100/90 backdrop-blur-md rounded-full border border-slate-200/70 shadow-inner shrink-0 self-start sm:self-auto" role="tablist" aria-label="Login Category">
               <button class="px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer flex items-center gap-1.5 <%= (typeof category !== 'undefined' && category === 'guest') ? 'text-slate-500 hover:text-slate-900' : 'bg-white text-[#2B5B84] shadow-sm' %>" id="tab-institution" data-login-category="institution" type="button" role="tab" aria-selected="<%= (typeof category === 'undefined' || category !== 'guest') %>">
                 <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
@@ -215,13 +236,8 @@
                 <span>Guest</span>
               </button>
             </div>
-            <% } else { %>
-            <div class="px-4 py-2 rounded-xl bg-sky-50 border border-sky-100 text-xs text-sky-900 flex items-center gap-2">
-              <i data-lucide="mail" class="w-4 h-4 text-sky-700 shrink-0"></i>
-              <span>Enter the sign-in code sent to <strong><%= mfaEmail %></strong>.</span>
-            </div>
-            <% } %>
           </div>
+          <% } %>
 
           <!-- Reusable HANAP Alert Container (Accessible DIV) -->
           <div id="authAlertContainer" class="<%= (typeof errorMessage !== 'undefined' && errorMessage) || (typeof msg !== 'undefined' && msg) ? '' : 'hidden' %>" role="alert">
@@ -242,14 +258,14 @@
                 <!-- Contextual Action Buttons in Alert -->
                 <% if (typeof action !== 'undefined' && action === 'switch_to_guest') { %>
                   <div class="pt-1.5 pl-7">
-                    <button type="button" data-login-category="guest" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5">
+                    <button type="button" data-login-category="guest" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/60 text-rose-900 font-bold border border-rose-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
                       <span>Switch to Guest</span>
                       <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                     </button>
                   </div>
                 <% } else if (typeof action !== 'undefined' && action === 'switch_to_institution') { %>
                   <div class="pt-1.5 pl-7">
-                    <button type="button" data-login-category="institution" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-blue-100/60 text-[#09436B] font-bold border border-blue-300 shadow-2xs transition-all flex items-center gap-1.5">
+                    <button type="button" data-login-category="institution" class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-blue-100/60 text-[#09436B] font-bold border border-blue-300 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
                       <span>Switch to Institution</span>
                       <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                     </button>
@@ -275,7 +291,82 @@
             <% } %>
           </div>
 
-          <!-- Centralized Sign-in Form -->
+          <% if (typeof mfaPending !== 'undefined' && mfaPending) { %>
+          <!-- STEP 2: Dedicated In-Card 2FA Verification Form -->
+          <form class="space-y-4 pt-1" action="/login" method="POST" id="mfaVerifyForm" novalidate>
+            <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+            <% } %>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label 
+                  class="block text-xs font-semibold text-slate-700 flex items-center gap-1.5" 
+                  for="mfaCode">
+                  <i data-lucide="key-round" class="w-3.5 h-3.5 text-[#2B5B84]"></i>
+                  <span>Six-digit verification code</span>
+                </label>
+                <span class="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-teal-600"></i>
+                  <span id="mfaAttemptsRemaining"><%= typeof mfaAttemptsRemaining === 'number' ? mfaAttemptsRemaining : 5 %></span> of 5 attempts remaining
+                </span>
+              </div>
+              
+              <div class="relative">
+                <input 
+                  class="w-full h-14 px-4 bg-white/95 border border-slate-200/90 rounded-2xl text-center text-3xl font-extrabold tracking-[0.45em] text-[#0F172A] placeholder:text-slate-300 shadow-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B82F6]/50 focus:border-[#3B82F6] transition-all font-mono" 
+                  id="mfaCode" 
+                  name="mfa_code" 
+                  placeholder="••••••" 
+                  type="text" 
+                  inputmode="numeric" 
+                  autocomplete="one-time-code" 
+                  pattern="[0-9]{6}" 
+                  maxlength="6" 
+                  required 
+                  autofocus
+                />
+              </div>
+
+              <p class="text-[11px] text-slate-500 leading-relaxed">
+                Check your inbox for the one-time code. Codes expire after 10 minutes.
+              </p>
+            </div>
+
+            <!-- Primary Verify & Sign In CTA Button -->
+            <div class="pt-2">
+              <button 
+                class="w-full h-12 bg-gradient-to-r from-[#2B5B84] to-[#1E40AF] hover:from-[#244c70] hover:to-[#1a3899] active:scale-[0.99] text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-[0_8px_20px_-4px_rgba(43,91,132,0.4)] hover:shadow-[0_10px_24px_-4px_rgba(30,64,175,0.45)] ring-1 ring-white/20 transition-all text-center relative overflow-hidden group cursor-pointer" 
+                type="submit"
+                id="verifyBtn">
+                <span class="absolute inset-x-0 top-0 h-px bg-white/35"></span>
+                <span>Verify &amp; Sign In</span>
+                <span class="material-symbols-outlined text-base transition-transform group-hover:translate-x-0.5">arrow_forward</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Resend Code Subform & Cooldown -->
+          <div class="pt-2 flex flex-col items-center justify-center gap-1.5 text-center border-t border-slate-100/80 mt-4">
+            <form action="/login" method="POST" id="mfaResendForm" class="w-full">
+              <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+              <% } %>
+              <button 
+                id="mfaResendButton" 
+                type="submit" 
+                name="resend_code" 
+                value="1" 
+                formnovalidate 
+                class="w-full py-2 text-xs font-bold text-[#2B5B84] hover:text-[#0058be] hover:underline disabled:text-slate-400 disabled:no-underline cursor-pointer transition flex items-center justify-center gap-1.5">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span id="mfaResendLabel">Request a new code</span>
+              </button>
+            </form>
+            <p class="text-center text-[11px] text-slate-500" id="mfaCountdown" data-cooldown-seconds="<%= typeof mfaCooldownSeconds === 'number' ? mfaCooldownSeconds : 0 %>" aria-live="polite"></p>
+          </div>
+          <% } else { %>
+          <!-- Centralized Sign-in Form with 2FA Input Area -->
           <form class="space-y-4 pt-1" action="/login" method="POST" id="loginForm" novalidate>
             <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
@@ -332,6 +423,38 @@
               </div>
             </div>
 
+            <!-- Two-Factor Authentication (2FA) Input Area -->
+            <div class="space-y-1.5 pt-0.5">
+              <div class="flex items-center justify-between">
+                <label 
+                  class="block text-xs font-semibold text-slate-700 flex items-center gap-1.5" 
+                  for="mfaCodeInitial">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#2B5B84]"></i>
+                  <span>Two-Factor Authentication (2FA) Code</span>
+                </label>
+                <span class="text-[10px] font-bold text-[#2B5B84] bg-blue-50 border border-blue-200/70 px-2 py-0.5 rounded-full">
+                  If enabled
+                </span>
+              </div>
+              <div class="relative">
+                <input 
+                  class="w-full h-11 pl-10 pr-3.5 bg-white/90 border border-slate-200/80 rounded-xl text-sm text-[#0F172A] placeholder:text-slate-400 shadow-2xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B82F6]/40 focus:border-[#3B82F6] transition-all tracking-widest font-mono <%= (typeof invalidFields !== 'undefined' && invalidFields.includes('mfa_code')) ? 'border-rose-500 ring-2 ring-rose-200' : 'border-slate-200/80' %>" 
+                  id="mfaCodeInitial" 
+                  name="mfa_code" 
+                  placeholder="6-digit security code (e.g. 123456)" 
+                  type="text" 
+                  inputmode="numeric" 
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                />
+                <div class="absolute left-3 top-0 h-full flex items-center pointer-events-none text-slate-400">
+                  <i data-lucide="key-round" class="w-4 h-4 text-[#2B5B84]/60"></i>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-normal">If 2FA is active on your account, enter your 6-digit code here or leave blank to verify in the next step.</p>
+            </div>
+
             <!-- Keep me signed in & Forgot Password Link -->
             <div class="pt-0.5 flex items-center justify-between">
               <label class="inline-flex items-center gap-2 cursor-pointer select-none">
@@ -343,6 +466,7 @@
                 Forgot Password?
               </a>
             </div>
+
             <!-- Primary CTA Button -->
             <div class="pt-2">
               <button 
@@ -355,6 +479,7 @@
               </button>
             </div>
           </form>
+          <% } %>
         </div>
 
         <!-- Footer Navigation Links (No Dead Links) -->
@@ -371,50 +496,7 @@
     </div>
   </main>
 
-  <% if (typeof mfaPending !== 'undefined' && mfaPending) { %>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm" role="presentation">
-    <section class="w-full max-w-md rounded-3xl bg-white shadow-2xl border border-white/80 p-6 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="mfaDialogTitle" aria-describedby="mfaDialogDescription">
-      <div class="flex items-start gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#2B5B84] flex items-center justify-center shrink-0">
-          <span class="material-symbols-outlined text-2xl">mark_email_read</span>
-        </div>
-        <div>
-          <h2 id="mfaDialogTitle" class="text-xl font-bold text-slate-900">Verify your sign-in</h2>
-          <p id="mfaDialogDescription" class="text-sm text-slate-600 mt-1">Enter the six-digit code sent to <strong><%= mfaEmail %></strong>.</p>
-        </div>
-      </div>
-
-      <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
-      <div class="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
-        <strong><%= typeof errorTitle !== 'undefined' && errorTitle ? errorTitle : 'Verification required' %></strong>
-        <p class="mt-1"><%= errorMessage %></p>
-      </div>
-      <% } else if (typeof msg !== 'undefined' && msg) { %>
-      <p class="mt-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900" role="status"><%= msg %></p>
-      <% } %>
-
-      <form action="/login" method="POST" class="mt-5 space-y-4" id="mfaVerifyForm">
-        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
-        <% } %>
-        <label for="mfaCode" class="block text-sm font-semibold text-slate-700">Six-digit verification code</label>
-        <input class="w-full h-14 rounded-xl border border-slate-300 text-center text-2xl tracking-[0.5em] font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-200" id="mfaCode" name="mfa_code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus/>
-        <p class="text-xs text-slate-600"><span id="mfaAttemptsRemaining"><%= typeof mfaAttemptsRemaining === 'number' ? mfaAttemptsRemaining : 5 %></span> of 5 attempts remaining</p>
-        <button type="submit" class="w-full h-12 rounded-xl bg-gradient-to-r from-[#2B5B84] to-[#1E40AF] text-white font-semibold hover:brightness-105">Verify &amp; Sign In</button>
-      </form>
-
-      <form action="/login" method="POST" class="mt-4">
-        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
-        <% } %>
-        <button id="mfaResendButton" type="submit" name="resend_code" value="1" formnovalidate class="w-full py-2 text-sm font-semibold text-[#2B5B84] disabled:text-slate-400 disabled:no-underline hover:underline">
-          <span id="mfaResendLabel">Request a new code</span>
-        </button>
-        <p class="text-center text-xs text-slate-500" id="mfaCountdown" data-cooldown-seconds="<%= typeof mfaCooldownSeconds === 'number' ? mfaCooldownSeconds : 0 %>" aria-live="polite"></p>
-      </form>
-    </section>
-  </div>
-  <% } %>
+  
 
 
 
@@ -491,6 +573,8 @@
     function clearValidationErrors() {
       const emailInput = document.getElementById('email');
       const passwordInput = document.getElementById('password');
+      const initialMfa = document.getElementById('mfaCodeInitial');
+      const mfaInput = document.getElementById('mfaCode');
       if (emailInput) {
         emailInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
         emailInput.classList.add('border-slate-200/80');
@@ -498,6 +582,13 @@
       if (passwordInput) {
         passwordInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
         passwordInput.classList.add('border-slate-200/80');
+      }
+      if (initialMfa) {
+        initialMfa.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
+        initialMfa.classList.add('border-slate-200/80');
+      }
+      if (mfaInput) {
+        mfaInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
       }
     }
 
@@ -635,7 +726,27 @@
       }
     });
 
-    document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
+    document.getElementById('loginForm')?.addEventListener('submit', handleLoginSubmit);
+    document.getElementById('mfaVerifyForm')?.addEventListener('submit', (e) => {
+      const mfaInput = document.getElementById('mfaCode');
+      if (mfaInput && !/^\d{6}$/.test(mfaInput.value.trim())) {
+        e.preventDefault();
+        mfaInput.focus();
+        showClientAlert('Invalid verification code', 'Please enter a valid 6-digit numeric verification code.');
+        return false;
+      }
+    });
+
+    const mfaInputEl = document.getElementById('mfaCode');
+    if (mfaInputEl) {
+      mfaInputEl.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+        if (e.target.value.length === 6) {
+          const form = document.getElementById('mfaVerifyForm');
+          if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
+        }
+      });
+    }
 
     const mfaCountdown = document.getElementById('mfaCountdown');
     if (mfaCountdown) {
