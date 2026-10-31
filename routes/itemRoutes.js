@@ -81,7 +81,7 @@ router.post('/settings/guardian-links', requireNonAdminAuth, controller.createGu
 router.post('/settings/guardian-links/:id/:decision', requireNonAdminAuth, controller.decideGuardianLink);
 
 // POST /settings/profile - Update Personal Details
-router.post('/settings/profile', requireAuth, requireNonAdminAuth, controller.updateProfile);
+router.post('/settings/profile', requireAuth, controller.updateProfile);
 
 router.post('/settings/delete-account', requireAuth, requireNonAdminAuth, controller.deleteAccount);
 
@@ -99,6 +99,7 @@ router.post('/settings/notifications', requireAuth, controller.updateNotificatio
    ADMINISTRATOR PLATFORM FUNCTIONALITY
    ========================================================================== */
 
+router.get('/admin', requireAdmin, (req, res) => res.redirect('/admin/dashboard'));
 router.get('/admin/dashboard', requireAdmin, controller.showAdminDashboard);
 router.post('/admin/items/:id/accept-custody', requireAdmin, controller.acceptItemCustody);
 

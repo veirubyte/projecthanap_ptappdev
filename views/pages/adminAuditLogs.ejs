@@ -14,6 +14,7 @@
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col selection:bg-blue-600/15 selection:text-blue-700 relative overflow-x-hidden">
+<% const auditLogsList = (typeof logs !== 'undefined' && Array.isArray(logs)) ? logs : ((typeof auditLogs !== 'undefined' && Array.isArray(auditLogs)) ? auditLogs : []); %>
   <!-- Ambient Background Blobs -->
   <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
     <div class="absolute -top-[18%] -left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-br from-blue-300/30 via-indigo-200/20 to-transparent blur-[120px]"></div>
@@ -60,7 +61,7 @@
           />
         </div>
         <div class="text-xs font-semibold text-slate-500">
-          Total Logged Events: <span class="text-slate-900 font-bold"><%= logs ? logs.length : 0 %></span>
+          Total Logged Events: <span class="text-slate-900 font-bold"><%= (typeof logs !== 'undefined' && logs) ? logs.length : 0 %></span>
         </div>
       </div>
 
@@ -76,14 +77,14 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200/60" id="auditTableBody">
-            <% if (!logs || logs.length === 0) { %>
+            <% if (!auditLogsList || auditLogsList.length === 0) { %>
               <tr>
                 <td colspan="5" class="py-12 text-center text-slate-400 font-medium">
                   No administrative audit logs recorded yet.
                 </td>
               </tr>
             <% } else { %>
-              <% logs.forEach(log => { %>
+              <% auditLogsList.forEach(log => { %>
                 <tr class="audit-row hover:bg-slate-50/80 transition-colors">
                   <td class="py-3.5 px-6 font-mono font-semibold text-slate-500">#<%= log.id %></td>
                   <td class="py-3.5 px-6">

@@ -123,10 +123,10 @@ const showDashboard = async (req, res) => {
 
         const [statsRows] = statsResult;
         const stats = {
-            active_lost: statsRows[0].active_lost || 0,
-            active_found: statsRows[0].active_found || 0,
-            total_claimed: statsRows[0].total_claimed || 0,
-            total_reports: statsRows[0].total_reports || 0
+            active_lost: statsRows?.[0]?.active_lost || 0,
+            active_found: statsRows?.[0]?.active_found || 0,
+            total_claimed: statsRows?.[0]?.total_claimed || 0,
+            total_reports: statsRows?.[0]?.total_reports || 0
         };
 
         const [items] = itemsResult;

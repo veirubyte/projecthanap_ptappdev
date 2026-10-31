@@ -127,7 +127,7 @@
             <span class="material-symbols-outlined text-[16px]">verified</span>
           </div>
           <span class="text-xs text-on-surface-variant">
-            Verified by: <strong class="text-on-surface font-semibold">Officer <%= user.full_name %></strong> • Just now
+            Verified by: <strong class="text-on-surface font-semibold">Officer <%= (typeof user !== 'undefined' && user && user.full_name) ? user.full_name : 'Staff' %></strong> • Just now
           </span>
         </div>
 

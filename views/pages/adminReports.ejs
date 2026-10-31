@@ -30,6 +30,12 @@
   <%- include('partials/themeSetup') %>
 </head>
 <body class="admin-reports-page font-sans text-slate-800 min-h-screen flex flex-col justify-between antialiased relative overflow-x-hidden selection:bg-sky-500/20">
+<% 
+  const reportsList = (typeof reports !== 'undefined' && Array.isArray(reports)) ? reports : [];
+  const statsData = (typeof stats !== 'undefined' && stats) ? stats : { totalReports: reportsList.length, recoveryRate: 0, peerReturns: 0, deskHandovers: 0 };
+  const queueList = (typeof archiveQueue !== 'undefined' && Array.isArray(archiveQueue)) ? archiveQueue : [];
+  const logsList = (typeof auditLogs !== 'undefined' && Array.isArray(auditLogs)) ? auditLogs : [];
+%>
 
   <!-- Ambient Aurora Glow Canvas Blobs -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
@@ -59,7 +65,7 @@
             download="hanap_reports_ledger.csv"
             class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/80 bg-white/70 backdrop-blur-md text-xs font-semibold text-slate-700 hover:bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
             id="exportModalBtn"
-            data-csv="<%= reports ? reports.map(function(r) { return r.id + ',&quot;' + r.item_name + '&quot;,&quot;' + r.location_found_lost + '&quot;,' + r.status + ',&quot;' + r.reporter_name + '&quot;'; }).join('\n') : '' %>"
+            data-csv="<%= (typeof reports !== 'undefined' && reports) ? reports.map(function(r) { return r.id + ',&quot;' + r.item_name + '&quot;,&quot;' + r.location_found_lost + '&quot;,' + r.status + ',&quot;' + r.reporter_name + '&quot;'; }).join('\n') : '' %>"
           >
             <span class="material-symbols-outlined text-[16px]">download</span>
             <span>Export CSV</span>
@@ -76,7 +82,7 @@
         <!-- 1: Total Reports -->
         <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
           <span class="text-xs font-medium text-slate-500 block mb-1">Total Reports</span>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= stats ? stats.totalReports : reports.length %></div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.totalReports %></div>
         </div>
         <!-- 2: Recovery Rate (with glowing seafoam indicator) -->
         <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all relative overflow-hidden">
@@ -87,17 +93,17 @@
               Optimal
             </span>
           </div>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= stats ? stats.recoveryRate : '86' %>%</div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.recoveryRate || '86' %>%</div>
         </div>
         <!-- 3: Peer Returns -->
         <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
           <span class="text-xs font-medium text-slate-500 block mb-1">Peer Returns</span>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= stats ? stats.peerReturns : '94' %></div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.peerReturns || '94' %></div>
         </div>
         <!-- 4: Desk Handovers -->
         <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
           <span class="text-xs font-medium text-slate-500 block mb-1">Desk Handovers</span>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= stats ? stats.deskHandovers : '28' %></div>
+          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.deskHandovers || '28' %></div>
         </div>
       </div>
 
@@ -106,24 +112,24 @@
         <!-- Tab Navigation -->
         <div class="flex items-center border-b border-slate-200/60 px-4 sm:px-6 pt-3 bg-white/40 overflow-x-auto whitespace-nowrap flex-nowrap hanap-hide-scrollbar">
           <button class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 border-[#2B5B84] text-[#09436b] transition-colors cursor-pointer" id="tabQueueBtn" data-tab="queue" aria-selected="true">
-            60-Day Archive Queue (<%= archiveQueue ? archiveQueue.length : 3 %>)
+            60-Day Archive Queue (<%= queueList.length %>)
           </button>
           <button class="tab-btn px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" id="tabAuditBtn" data-tab="audit" aria-selected="false">
             System Audit Trail
           </button>
           <button class="tab-btn px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors cursor-pointer" id="tabAllBtn" data-tab="all" aria-selected="false">
-            All Campus Reports (<%= reports ? reports.length : 0 %>)
+            All Campus Reports (<%= reportsList ? reportsList.length : 0 %>)
           </button>
         </div>
 
         <!-- Tab 1: 60-Day Archive Queue -->
         <div class="divide-y divide-slate-100/80" id="queueTabContent">
-          <% if (!archiveQueue || archiveQueue.length === 0) { %>
+          <% if (!queueList || queueList.length === 0) { %>
             <div class="p-8 text-center text-xs text-slate-400">
               No items currently pending 60-day disposition.
             </div>
           <% } else { %>
-            <% archiveQueue.forEach(item => { %>
+            <% queueList.forEach(item => { %>
               <div class="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/60 transition-colors">
                 <div class="flex items-center gap-3.5">
                   <% if (item.primary_image_path) { %>
@@ -227,12 +233,12 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100/80">
-              <% if (!reports || reports.length === 0) { %>
+              <% if (!reportsList || reportsList.length === 0) { %>
                 <tr>
                   <td colspan="6" class="py-8 text-center text-slate-400">No reports recorded.</td>
                 </tr>
               <% } else { %>
-                <% reports.forEach(r => { %>
+                <% reportsList.forEach(r => { %>
                   <tr class="hover:bg-white/70 transition-colors">
                     <td class="py-3.5 px-5">
                       <div class="flex items-center gap-3">
