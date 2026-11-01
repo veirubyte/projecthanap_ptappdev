@@ -5,6 +5,8 @@
   const safeClaimsMade = (typeof claimsMade !== 'undefined' && Array.isArray(claimsMade)) ? claimsMade : [];
   const safeGuardianRequests = (typeof guardianRequests !== 'undefined' && Array.isArray(guardianRequests)) ? guardianRequests : [];
   const safeGuardianLinks = (typeof guardianLinks !== 'undefined' && Array.isArray(guardianLinks)) ? guardianLinks : [];
+  var isAdmin = (typeof locals !== 'undefined' && typeof locals.isAdmin !== 'undefined') ? Boolean(locals.isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
+  var profileUser = (typeof locals !== 'undefined' && locals.profileUser) ? locals.profileUser : (typeof user !== 'undefined' && user ? { ...user, role_label: (user.role === 'admin' ? 'System Administrator' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff Member' : (user.role === 'parent' ? 'Parent / Guest' : 'Guest Member')))) } : { full_name: 'User', email: '', role: 'guest', role_label: 'Guest' });
 %>
 <html class="h-full hanap-hide-scrollbar" lang="en">
 <head>

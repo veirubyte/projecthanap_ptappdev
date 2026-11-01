@@ -3,18 +3,18 @@
   const isAdminUser = (typeof isAdmin !== 'undefined') ? Boolean(isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
 %>
 <!-- Floating Glass Navbar Dock -->
-<header class="app-navbar sticky top-3 sm:top-4 z-50 px-4 sm:px-6 xl:px-8 mb-5 sm:mb-6 w-full">
-  <div class="max-w-[1440px] mx-auto rounded-3xl sm:rounded-[28px] bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.04)] px-4 sm:px-6 py-2.5 min-h-[68px] flex items-center justify-between gap-4 transition-all">
+<header class="app-navbar sticky top-2 sm:top-4 z-50 px-2 sm:px-6 xl:px-8 mb-4 sm:mb-6 w-full">
+  <div class="max-w-[1440px] mx-auto rounded-2xl sm:rounded-[28px] bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.04)] px-2.5 sm:px-6 py-2 sm:py-2.5 min-h-[58px] sm:min-h-[68px] flex items-center justify-between gap-1.5 sm:gap-4 transition-all">
     
     <!-- Left: Brand / Logo Section -->
-    <a class="flex items-center gap-3.5 group shrink-0" href="<%= isAdminUser ? '/admin/dashboard' : '/dashboard' %>">
-      <div class="navbar-brand-icon w-11 h-11 rounded-2xl bg-[#E5F0FD] dark:bg-white/95 flex items-center justify-center p-1.5 shadow-xs group-hover:scale-105 transition-transform">
-        <img src="/images/logo-icon.png" alt="Project HANAP Logo" class="w-8 h-8 object-contain" />
+    <a class="flex items-center gap-2 sm:gap-3.5 group shrink-0" href="<%= isAdminUser ? '/admin/dashboard' : '/dashboard' %>">
+      <div class="navbar-brand-icon w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#E5F0FD] dark:bg-white/95 flex items-center justify-center p-1 sm:p-1.5 shadow-xs group-hover:scale-105 transition-transform">
+        <img src="/images/logo-icon.png" alt="Project HANAP Logo" class="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
       </div>
       <div class="flex flex-col">
-        <div class="flex items-center gap-2 leading-none">
-          <span class="navbar-brand-title font-bold tracking-tight text-[#1E3A5F] text-base sm:text-lg">Project HANAP</span>
-          <span class="navbar-brand-badge px-2 py-0.5 rounded-md bg-[#EEF2F6] text-[#64748B] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">CSPC</span>
+        <div class="flex items-center gap-1.5 sm:gap-2 leading-none">
+          <span class="navbar-brand-title font-bold tracking-tight text-[#1E3A5F] text-sm sm:text-lg">Project HANAP</span>
+          <span class="navbar-brand-badge px-1.5 sm:px-2 py-0.5 rounded-md bg-[#EEF2F6] text-[#64748B] text-[9px] sm:text-[11px] font-bold uppercase tracking-wider hidden xs:inline-block">CSPC</span>
         </div>
         <span class="navbar-brand-subtitle text-xs text-[#64748B] font-medium leading-none mt-1 hidden sm:inline">Campus Lost &amp; Found Portal</span>
       </div>
@@ -64,32 +64,32 @@
     </nav>
 
     <!-- Right Controls: Theme Toggle, Notifications, Account Dropdown & Authentication -->
-    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
       
       <!-- Quick Theme Toggle Button (1-Click Switch) -->
       <button 
         type="button" 
-        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-amber-500 hover:bg-slate-100/80 transition-all cursor-pointer border border-transparent hover:border-slate-200/60"
+        class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-amber-500 hover:bg-slate-100/80 transition-all cursor-pointer border border-transparent hover:border-slate-200/60"
         title="Toggle Night / Light Mode"
         aria-label="Toggle light and dark mode"
         aria-pressed="false"
         data-theme-toggle
       >
-        <span class="material-symbols-outlined text-[21px]" id="navThemeIcon">dark_mode</span>
+        <span class="material-symbols-outlined text-[19px] sm:text-[21px]" id="navThemeIcon">dark_mode</span>
       </button>
 
       <% if (typeof user !== 'undefined' && user) { %>
         <% const notificationBadgeCount = Number(typeof unreadNotificationCount !== 'undefined' ? unreadNotificationCount : 0); %>
         <!-- Notification bell with recent unread count badge -->
-        <a id="notificationBellLink" href="/claims" aria-label="Notifications" class="relative w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors" title="Notifications" data-notification-count="<%= notificationBadgeCount %>">
-          <span class="material-symbols-outlined text-[22px]">notifications</span>
-          <span id="notificationBadge" class="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-[#1D63B8] text-white text-[9px] font-bold flex items-center justify-center shadow-xs ring-1 ring-white <%= notificationBadgeCount > 0 ? '' : 'hidden' %>" data-visible="<%= notificationBadgeCount > 0 ? 'true' : 'false' %>">
+        <a id="notificationBellLink" href="/claims" aria-label="Notifications" class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors" title="Notifications" data-notification-count="<%= notificationBadgeCount %>">
+          <span class="material-symbols-outlined text-[20px] sm:text-[22px]">notifications</span>
+          <span id="notificationBadge" class="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 min-w-[13px] h-[13px] sm:min-w-[14px] sm:h-[14px] px-0.5 sm:px-1 rounded-full bg-[#1D63B8] text-white text-[8px] sm:text-[9px] font-bold flex items-center justify-center shadow-xs ring-1 ring-white <%= notificationBadgeCount > 0 ? '' : 'hidden' %>" data-visible="<%= notificationBadgeCount > 0 ? 'true' : 'false' %>">
             <%= notificationBadgeCount > 99 ? '99+' : notificationBadgeCount %>
           </span>
         </a>
 
         <!-- Vertical Divider -->
-        <div class="h-6 w-px bg-slate-200/80 hidden sm:block"></div>
+        <div class="h-5 sm:h-6 w-px bg-slate-200/80 hidden xs:block"></div>
 
         <!-- Account Name Dropdown Button Container -->
         <div class="relative" id="userMenuContainer">
@@ -98,12 +98,12 @@
             id="userMenuBtn" 
             aria-expanded="false" 
             aria-haspopup="true"
-            class="flex items-center gap-2.5 p-1 pr-2 sm:pr-2.5 rounded-2xl hover:bg-slate-100/80 border border-transparent hover:border-slate-200/60 transition-all cursor-pointer group"
+            class="flex items-center gap-1.5 sm:gap-2.5 p-0.5 sm:p-1 pr-1 sm:pr-2.5 rounded-xl sm:rounded-2xl hover:bg-slate-100/80 border border-transparent hover:border-slate-200/60 transition-all cursor-pointer group"
           >
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#09436B] to-[#2B5B84] text-white flex items-center justify-center shadow-xs font-bold text-xs shrink-0">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-tr from-[#09436B] to-[#2B5B84] text-white flex items-center justify-center shadow-xs font-bold text-xs shrink-0">
               <%= (user.full_name || 'U').substring(0, 2).toUpperCase() %>
             </div>
-            <div class="hidden sm:flex flex-col text-left leading-tight whitespace-nowrap">
+            <div class="hidden md:flex flex-col text-left leading-tight whitespace-nowrap">
               <div class="flex items-center gap-1.5 whitespace-nowrap">
                 <span class="font-bold text-slate-800 text-xs sm:text-sm max-w-[120px] truncate whitespace-nowrap"><%= user.full_name %></span>
                 <span class="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold capitalize whitespace-nowrap shrink-0">
@@ -112,7 +112,7 @@
               </div>
               <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap">CSPC Account</span>
             </div>
-            <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-slate-700 transition-transform duration-200" id="userMenuChevron">expand_more</span>
+            <span class="material-symbols-outlined text-[16px] sm:text-[18px] text-slate-400 group-hover:text-slate-700 transition-transform duration-200" id="userMenuChevron">expand_more</span>
           </button>
 
           <!-- User Account Dropdown Menu -->
@@ -223,7 +223,42 @@
         </div>
 
       <% } else { %>
-        <a href="/login" class="px-5 py-2 rounded-full text-sm font-bold text-white bg-[#09436B] hover:bg-[#204667] transition-all shadow-xs">
+        <!-- Mobile Guest Navigation Menu Trigger (Visible on < lg screens) -->
+        <div class="relative lg:hidden" id="guestMenuContainer">
+          <button 
+            type="button" 
+            id="guestMenuBtn" 
+            aria-expanded="false" 
+            aria-label="Navigation Menu"
+            class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-[#09436B] hover:bg-slate-100/80 transition-all cursor-pointer border border-slate-200/60"
+          >
+            <span class="material-symbols-outlined text-[20px]">menu</span>
+          </button>
+          <div 
+            id="guestMenuDropdown" 
+            class="hidden absolute right-0 top-11 w-56 rounded-2xl bg-white/95 dark:bg-[#111C2E] backdrop-blur-2xl border border-slate-200/80 dark:border-[#2C3B50] shadow-xl p-2 z-50 flex flex-col gap-1 transition-all"
+          >
+            <a href="/catalog" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#172438] text-xs font-semibold transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-[#09436B] dark:text-sky-400">manage_search</span>
+              <span>Browse Catalog</span>
+            </a>
+            <a href="/claims/guest-claim" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#172438] text-xs font-semibold transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-[#09436B] dark:text-sky-400">help</span>
+              <span>Guest Claim Guide</span>
+            </a>
+            <div class="h-px bg-slate-100 dark:bg-[#2C3B50] my-1"></div>
+            <a href="/login" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#09436B] dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-[#172438] text-xs font-bold transition-colors">
+              <span class="material-symbols-outlined text-[18px]">login</span>
+              <span>Sign In</span>
+            </a>
+            <a href="/register" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#172438] text-xs font-semibold transition-colors">
+              <span class="material-symbols-outlined text-[18px]">person_add</span>
+              <span>Create Account</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="/login" class="px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-white bg-[#09436B] hover:bg-[#204667] transition-all shadow-xs">
           Sign In
         </a>
         <a href="/register" class="px-5 py-2 rounded-full text-sm font-bold text-[#09436B] bg-white hover:bg-slate-50 border border-slate-200 transition-all shadow-xs hidden sm:inline">
@@ -356,6 +391,25 @@
           userDropdown.classList.add('hidden');
           userBtn.setAttribute('aria-expanded', 'false');
           if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+        }
+      });
+    }
+
+    // Guest mobile menu toggle
+    const guestBtn = document.getElementById('guestMenuBtn');
+    const guestDropdown = document.getElementById('guestMenuDropdown');
+    if (guestBtn && guestDropdown) {
+      guestBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = guestDropdown.classList.contains('hidden');
+        guestDropdown.classList.toggle('hidden', !isHidden);
+        guestBtn.setAttribute('aria-expanded', String(isHidden));
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!guestDropdown.contains(e.target) && e.target !== guestBtn) {
+          guestDropdown.classList.add('hidden');
+          guestBtn.setAttribute('aria-expanded', 'false');
         }
       });
     }

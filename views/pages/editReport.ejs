@@ -48,7 +48,7 @@
 
   <main class="w-full pt-4 sm:pt-6 pb-16 flex-1 flex items-center justify-center px-4 sm:px-6 relative z-10">
     <!-- Elevated Floating Frosted Glass Modal Card -->
-    <div class="w-full max-w-[640px] bg-white/85 backdrop-blur-2xl rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.95)_inset,0_0_0_1px_rgba(255,255,255,0.8)] border border-white/60 p-7 sm:p-9 flex flex-col gap-6 transition-all relative">
+    <div class="w-full max-w-[640px] bg-white/85 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.08),0_1px_0_rgba(255,255,255,0.95)_inset,0_0_0_1px_rgba(255,255,255,0.8)] border border-white/60 p-4 sm:p-7 md:p-9 flex flex-col gap-6 transition-all relative">
       
       <!-- Flash Messages -->
       <% if (typeof error !== 'undefined' && error) { %>
@@ -234,8 +234,8 @@
         </div>
 
         <!-- Bottom Action Row -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100/80">
-          <a class="px-5 h-10 inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 hover:bg-slate-100/80 text-on-surface font-semibold text-sm transition-all active:scale-[0.98]" href="/items/<%= item.id %>">
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-3 border-t border-slate-100/80">
+          <a class="px-5 h-10 inline-flex items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 hover:bg-slate-100/80 text-on-surface font-semibold text-sm transition-all active:scale-[0.98] text-center" href="/items/<%= item.id %>">
             Cancel
           </a>
           <button 

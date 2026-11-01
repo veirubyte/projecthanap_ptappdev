@@ -77,7 +77,7 @@
             <%= users ? users.length : 0 %>
           </span>
         </div>
-        <div class="flex items-center gap-2.5">
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
           <!-- Testbed 403 Block Pill (from ZIP B) -->
           <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/70 hover:bg-rose-100/80 transition-all shadow-xs" href="/admin/test-403">
             <span class="material-symbols-outlined text-[14px]">lock</span>
@@ -112,8 +112,8 @@
 
       <!-- Translucent Directory Matrix Table Card -->
       <div class="admin-user-directory bg-white/65 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-[0_12px_40px_rgba(9,67,107,0.05)] overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
+        <div class="overflow-x-auto hanap-hide-scrollbar">
+          <table class="w-full text-left text-xs min-w-[560px]">
             <thead>
               <tr class="border-b border-slate-200/60 text-on-surface-variant/90 font-semibold bg-white/40 backdrop-blur-md">
                 <th class="py-3 px-5">User</th>

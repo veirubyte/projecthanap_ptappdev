@@ -48,7 +48,7 @@
   <main class="w-full max-w-[1020px] bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_24px_50px_-12px_rgba(15,23,42,0.08),0_10px_20px_-8px_rgba(43,91,132,0.05),0_0_0_1px_rgba(226,232,240,0.8)] border border-white/90 overflow-hidden flex flex-col md:flex-row relative z-10">
     
     <!-- LEFT SHOWCASE: Frosted glass panel with floating feature pills -->
-    <aside class="w-full md:w-[38%] bg-gradient-to-br from-[#EBF3FB]/90 via-[#E4EFF9]/80 to-[#D8E8F8]/70 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/70 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden select-none">
+    <aside class="hidden md:flex md:w-[38%] bg-gradient-to-br from-[#EBF3FB]/90 via-[#E4EFF9]/80 to-[#D8E8F8]/70 backdrop-blur-xl border-b md:border-b-0 md:border-r border-white/70 p-8 md:p-10 flex-col justify-between relative overflow-hidden select-none">
       <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white to-transparent"></div>
       <div>
         <!-- Logo & Brand Header -->
@@ -95,8 +95,27 @@
     </aside>
 
     <!-- RIGHT PANEL: Registration Form -->
-    <section class="w-full md:w-[62%] p-8 md:p-10 flex flex-col justify-center">
+    <section class="w-full md:w-[62%] p-4 sm:p-8 md:p-10 flex flex-col justify-center">
       <div class="max-w-[540px] w-full mx-auto space-y-5">
+        
+        <!-- Compact Mobile Brand Header (< md only) -->
+        <div class="md:hidden flex items-center justify-between pb-3.5 mb-2 border-b border-slate-200/60">
+          <a href="/" class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-center p-1">
+              <img src="/images/logo-icon.png" alt="Project HANAP Logo" class="w-6 h-6 object-contain" />
+            </div>
+            <div class="leading-none">
+              <div class="flex items-center gap-1.5">
+                <span class="text-base font-bold text-[#0F172A]">Project HANAP</span>
+                <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-blue-50 text-[#09436B] border border-blue-200/80">CSPC</span>
+              </div>
+              <p class="text-[10px] text-slate-500 mt-0.5">Nabua Campus Lost &amp; Found</p>
+            </div>
+          </a>
+          <a href="/login" class="text-xs font-semibold text-[#09436B] hover:underline px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200/60">
+            Sign In
+          </a>
+        </div>
         
         <!-- Header and Role Selection Toggle: [ CSPC Student / Staff ] [ Parent / Guest ] -->
         <div class="space-y-3">

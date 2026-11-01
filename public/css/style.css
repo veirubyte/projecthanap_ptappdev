@@ -35,6 +35,19 @@ svg.lucide, i[data-lucide] {
   flex-shrink: 0;
 }
 
+/* Seamless Horizontal Scrolling without Obtrusive Scrollbars */
+.hanap-hide-scrollbar,
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.hanap-hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* ==============================================================================
  * NIGHT MODE (html.dark) GLOBAL THEME OVERRIDES
  * Enables the Night Mode toggle in navbar & settings to work across all pages

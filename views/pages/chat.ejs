@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<%
+  const safeUserIsClaimant = typeof userIsClaimant !== 'undefined' ? Boolean(userIsClaimant) : (typeof user !== 'undefined' && user && claim && user.id === claim.claimant_id);
+  const safeUserIsReporter = (typeof locals !== 'undefined' && typeof locals.userIsReporter !== 'undefined') ? Boolean(locals.userIsReporter) : (typeof locals !== 'undefined' && typeof locals.userIsFinder !== 'undefined' ? Boolean(locals.userIsFinder) : (typeof user !== 'undefined' && user && claim && user.id === claim.reporter_id));
+  const safeMessages = (typeof locals !== 'undefined' && Array.isArray(locals.messages)) ? locals.messages : ((typeof locals !== 'undefined' && Array.isArray(locals.chatMessages)) ? locals.chatMessages : []);
+  const safeUserIsAdmin = (typeof locals !== 'undefined' && typeof locals.userIsAdmin !== 'undefined') ? Boolean(locals.userIsAdmin) : (typeof locals !== 'undefined' && typeof locals.isAdmin !== 'undefined') ? Boolean(locals.isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
+%>
 <html class="h-full hanap-hide-scrollbar hanap-reset-main-gutters" lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -112,28 +118,28 @@
                 <% } %>
               </div>
               <span class="text-[11px] sm:text-[12px] text-on-surface-variant/80 mt-0.5 truncate">
-                Direct handover coordination with <%= userIsClaimant ? (claim.reporter_name + ' (Finder)') : (claim.claimant_name + ' (Claimant)') %>
+                Direct handover coordination with <%= safeUserIsClaimant ? (claim.reporter_name + ' (Finder)') : (claim.claimant_name + ' (Claimant)') %>
               </span>
             </div>
           </div>
 
           <!-- Right: Gradient Mark Returned CTA & Menu -->
-          <div class="flex items-center gap-2 shrink-0 relative">
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 relative">
             <% const itemMarkedReturned = claim.item_status === 'returned' || claim.status === 'returned'; %>
-            <% if (!itemMarkedReturned && (claim.status === 'approved' || claim.status === 'pending' || claim.status === 'escalated') && (userIsReporter || userIsAdmin)) { %>
+            <% if (!itemMarkedReturned && (claim.status === 'approved' || claim.status === 'pending' || claim.status === 'escalated') && (safeUserIsReporter || safeUserIsAdmin)) { %>
               <form action="/claims/<%= claim.id %>/status" method="POST" class="inline" onsubmit="return confirm('Mark this item as returned and close the case?');">
                 <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
                 <% } %>
                 <input type="hidden" name="action" value="returned"/>
-                <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 h-9 sm:h-10 rounded-xl bg-gradient-to-r from-[#2B5B84] to-[#1d4d73] hover:from-[#204464] hover:to-[#173a56] text-white text-xs sm:text-sm shadow-md shadow-blue-950/15 hover:shadow-lg transition-all font-semibold active:scale-[0.98] border border-white/20 cursor-pointer">
-                  <span class="material-symbols-outlined text-[17px] sm:text-[18px]">check_circle</span>
-                  <span>Mark Returned</span>
+                <button type="submit" class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 h-8 sm:h-10 rounded-xl bg-gradient-to-r from-[#2B5B84] to-[#1d4d73] hover:from-[#204464] hover:to-[#173a56] text-white text-[11px] sm:text-sm shadow-md shadow-blue-950/15 hover:shadow-lg transition-all font-semibold active:scale-[0.98] border border-white/20 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] sm:text-[18px]">check_circle</span>
+                  <span><span class="hidden xs:inline">Mark </span>Returned</span>
                 </button>
               </form>
             <% } else if (itemMarkedReturned) { %>
-              <div class="inline-flex items-center gap-1 px-3 h-9 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-                <span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+              <div class="inline-flex items-center gap-1 px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                <span class="material-symbols-outlined text-[15px] sm:text-[16px] text-emerald-600">check_circle</span>
                 <span>Returned</span>
               </div>
             <% } %>
@@ -144,7 +150,7 @@
                 <span class="material-symbols-outlined text-[20px]">more_horiz</span>
               </button>
               <div class="hidden absolute right-0 top-12 w-56 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-xl py-1.5 z-30" id="optionsMenu">
-                <% if (claim.status === 'pending' && (userIsReporter || userIsAdmin)) { %>
+                <% if (claim.status === 'pending' && (safeUserIsReporter || safeUserIsAdmin)) { %>
                   <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Approve this ownership claim?');">
                     <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
@@ -167,7 +173,7 @@
                     <span>Escalate to Security</span>
                   </button>
                 </form>
-                <% if (claim.status === 'pending' && (userIsReporter || userIsAdmin)) { %>
+                <% if (claim.status === 'pending' && (safeUserIsReporter || safeUserIsAdmin)) { %>
                   <div class="h-px bg-slate-100 my-1"></div>
                   <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Reject this ownership claim?');">
                     <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
@@ -202,8 +208,8 @@
           </div>
 
           <!-- Loop Real Messages -->
-          <% if (messages && messages.length > 0) { %>
-            <% messages.forEach(msg => { %>
+          <% if (safeMessages && safeMessages.length > 0) { %>
+            <% safeMessages.forEach(msg => { %>
               <% const isMe = msg.sender_id === user.id; %>
               <% const initials = (msg.sender_name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(); %>
               
@@ -217,8 +223,9 @@
                     <div class="claim-incoming-message px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white/90 backdrop-blur-md border border-slate-200/60 text-slate-800 text-xs sm:text-sm shadow-[0_2px_8px_rgba(15,23,42,0.04)] leading-relaxed">
                       <%= msg.message %>
                     </div>
+                    <% const safeIncomingTime = (msg.sent_at || msg.created_at) ? new Date(msg.sent_at || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'; %>
                     <span class="claim-message-meta text-[11px] text-slate-400 mt-1 px-1 font-medium">
-                      <%= msg.sender_name %> • <%= new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
+                      <%= msg.sender_name %> • <%= safeIncomingTime %>
                     </span>
                   </div>
                 </div>
@@ -229,8 +236,9 @@
                     <div class="claim-outgoing-message px-4 py-2.5 rounded-2xl rounded-br-sm bg-gradient-to-br from-[#2B5B84] to-[#194060] text-white text-xs sm:text-sm shadow-md shadow-blue-950/15 border border-white/20 leading-relaxed">
                       <%= msg.message %>
                     </div>
+                    <% const safeOutgoingTime = (msg.sent_at || msg.created_at) ? new Date(msg.sent_at || msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'; %>
                     <div class="claim-message-meta flex items-center gap-1 text-[11px] text-slate-400 mt-1 px-1 font-medium">
-                      <span><%= new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+                      <span><%= safeOutgoingTime %></span>
                       <span class="material-symbols-outlined text-[13px] text-sky-600 font-semibold">done_all</span>
                     </div>
                   </div>
