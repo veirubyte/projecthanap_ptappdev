@@ -1444,6 +1444,7 @@ const listAdminReports = async (req, res) => {
             reports: enrichedReports,
             archiveQueue: archiveQueue.length > 0 ? archiveQueue : enrichedReports.slice(0, 5),
             auditLogs,
+            csrfToken: res.locals.csrfToken || '',
             stats: {
                 totalReports,
                 recoveryRate: recoveryRate || 86,
@@ -1575,6 +1576,7 @@ const listAuditLogs = async (req, res) => {
         res.render('adminAuditLogs', {
             user,
             logs,
+            csrfToken: res.locals.csrfToken || '',
             timeAgo,
             msg: req.query.msg || null,
             error: req.query.error || null

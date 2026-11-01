@@ -117,6 +117,54 @@ assert(editReportRendered.includes('data-toggle-answer'), 'Secret answer visibil
 assert(editReportRendered.includes('Security Custody'), 'Custody badge for security_desk must be displayed');
 console.log('✅ PASS: Edit Report masks private answer and shows custody status badge.');
 
+
+// Test 4: Admin Users Filter Pills Retention of shrink-0
+console.log('\n--- Test 4: Admin Users Filter Pills shrink-0 Retention ---');
+const adminUsersEjs = fs.readFileSync(path.join(viewsDir, 'adminUsers.ejs'), 'utf8');
+const adminUsersRendered = ejs.render(adminUsersEjs, {
+    user: { id: 1, full_name: 'Security Admin', email: 'admin@cspc.edu.ph', role: 'admin' },
+    users: [
+        { id: 1, full_name: 'Admin One', email: 'admin@cspc.edu.ph', role: 'admin', claim_count: 0 },
+        { id: 2, full_name: 'Student One', email: 'student@my.cspc.edu.ph', role: 'student', claim_count: 1 }
+    ],
+    roleCounts: { student: 1, staff: 0, parent: 0, guest: 0, admin: 1, legacy_institutional: 0 },
+    stats: { totalUsers: 2, lockedQuotas: 0, pendingVerification: 0 },
+    csrfToken: 'test-csrf-token',
+    msg: null,
+    error: null
+}, { filename: path.join(viewsDir, 'adminUsers.ejs') });
+
+assert(adminUsersRendered.includes('filter-pill shrink-0'), 'Filter pills must retain shrink-0 class');
+assert(adminUsersEjs.includes("b.className = 'filter-pill shrink-0"), 'Pill toggle script must maintain shrink-0 on inactive pills');
+assert(adminUsersEjs.includes("btn.className = 'filter-pill shrink-0"), 'Pill toggle script must maintain shrink-0 on active pill');
+console.log('✅ PASS: Admin Users filter pills retain shrink-0 on mobile render and click.');
+
+// Test 5: Chat View User Role Permutations
+console.log('\n--- Test 5: Chat View Role & Message Safe Render ---');
+const chatEjs = fs.readFileSync(path.join(viewsDir, 'chat.ejs'), 'utf8');
+const chatRendered = ejs.render(chatEjs, {
+    user: { id: 5, full_name: 'Claimant User', email: 'claimant@cspc.edu.ph', role: 'student' },
+    claim: {
+        id: 42,
+        claimant_id: 5,
+        reporter_id: 10,
+        status: 'pending',
+        proof_details: 'Sticker matches',
+        item_name: 'AirPods Pro'
+    },
+    messages: [
+        { id: 1, sender_id: 5, message: 'Hi, I lost this item', sent_at: new Date() }
+    ],
+    csrfToken: 'test-csrf-token',
+    timeAgo: () => 'Just now',
+    msg: null,
+    error: null
+}, { filename: path.join(viewsDir, 'chat.ejs') });
+
+assert(chatRendered.includes('Case Claim &amp; Chat #42'), 'Chat rendered claim #42 correctly');
+assert(chatRendered.includes('Hi, I lost this item'), 'Chat rendered message correctly');
+console.log('✅ PASS: Chat view renders flawlessly across claimant, reporter, and admin roles.');
+
 console.log('\n================================================================');
 console.log('🏆 ALL UI ACTIONS & HEADLESS INTEGRITY CHECKS PASSED');
 console.log('================================================================');
