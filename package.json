@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "node tests/test_ui_and_actions.js && node tests/test_all_views.js && node tests/test_mfa_flow.js && node tests/e2e_live_audit.js"
+    "test": "node tests/test_ui_and_actions.js && node tests/test_all_views.js && node tests/test_icons_render.js && node tests/test_mfa_flow.js && node tests/e2e_live_audit.js"
   },
   "keywords": [
     "project-hanap",

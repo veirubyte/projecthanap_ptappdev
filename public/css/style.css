@@ -29,10 +29,16 @@ body {
 }
 
 /* Lucide Icons Global Standard */
-svg.lucide, i[data-lucide] {
+svg.lucide, i[data-lucide], .lucide-icon {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
+}
+
+svg.lucide:not([class*="w-"]):not([class*="h-"]),
+.lucide-icon:not([class*="w-"]):not([class*="h-"]) {
+  width: 1.15em;
+  height: 1.15em;
 }
 
 /* Seamless Horizontal Scrolling without Obtrusive Scrollbars */
