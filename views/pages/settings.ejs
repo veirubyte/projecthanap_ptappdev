@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <%
   const mfaEnabledForView = typeof mfaEnabled !== 'undefined' && Boolean(mfaEnabled);
+  const safeMyReports = (typeof myReports !== 'undefined' && Array.isArray(myReports)) ? myReports : [];
+  const safeClaimsMade = (typeof claimsMade !== 'undefined' && Array.isArray(claimsMade)) ? claimsMade : [];
+  const safeGuardianRequests = (typeof guardianRequests !== 'undefined' && Array.isArray(guardianRequests)) ? guardianRequests : [];
+  const safeGuardianLinks = (typeof guardianLinks !== 'undefined' && Array.isArray(guardianLinks)) ? guardianLinks : [];
 %>
 <html class="h-full hanap-hide-scrollbar" lang="en">
 <head>
@@ -115,7 +119,6 @@
 
             <!-- Tab Buttons -->
             <nav class="flex flex-col gap-1" id="settingsTabNav">
-              <% if (!isAdmin) { %>
               <button 
                 type="button" 
                 data-tab="personal" 
@@ -127,12 +130,11 @@
                 </div>
                 <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
               </button>
-              <% } %>
 
               <button 
                 type="button" 
                 data-tab="security" 
-                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm <%= isAdmin ? 'font-bold bg-[#09436B] text-white shadow-xs' : 'font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70' %> transition-all cursor-pointer text-left"
+                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 transition-all cursor-pointer text-left"
               >
                 <div class="flex items-center gap-2.5">
                   <span class="material-symbols-outlined text-[19px]">shield</span>
@@ -150,7 +152,7 @@
                   <span class="material-symbols-outlined text-[19px]">inventory_2</span>
                   <span>Post &amp; Reports</span>
                 </div>
-                <span class="px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 text-[11px] font-bold"><%= myReports.length %></span>
+                <span class="px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 text-[11px] font-bold"><%= safeMyReports.length %></span>
               </button>
 
               <button 
@@ -175,8 +177,8 @@
                     <span class="material-symbols-outlined text-[19px]">family_restroom</span>
                     <span>Student Connections</span>
                   </div>
-                  <% if (profileUser.role === 'student' && guardianRequests.length > 0) { %>
-                    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold"><%= guardianRequests.length %></span>
+                  <% if (profileUser.role === 'student' && safeGuardianRequests.length > 0) { %>
+                    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold"><%= safeGuardianRequests.length %></span>
                   <% } %>
                 </button>
               <% } %>
@@ -221,10 +223,10 @@
               <% if (profileUser.role === 'student') { %>
                 <div class="space-y-3">
                   <h3 class="text-sm font-bold text-slate-800">Pending Parent / Guardian requests</h3>
-                  <% if (guardianRequests.length === 0) { %>
+                  <% if (safeGuardianRequests.length === 0) { %>
                     <p class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">You have no pending connection requests.</p>
                   <% } else { %>
-                    <% guardianRequests.forEach(request => { %>
+                    <% safeGuardianRequests.forEach(request => { %>
                       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
                         <div class="min-w-0">
                           <p class="text-sm font-bold text-slate-900 truncate"><%= request.guardian_name %></p>
@@ -258,10 +260,10 @@
 
                 <div class="space-y-3">
                   <h3 class="text-sm font-bold text-slate-800">Your Student connections</h3>
-                  <% if (guardianLinks.length === 0) { %>
+                  <% if (safeGuardianLinks.length === 0) { %>
                     <p class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">No Student connection requests yet.</p>
                   <% } else { %>
-                    <% guardianLinks.forEach(link => { %>
+                    <% safeGuardianLinks.forEach(link => { %>
                       <div class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
                         <div class="min-w-0">
                           <p class="text-sm font-bold text-slate-900 truncate"><%= link.student_name %></p>
@@ -277,7 +279,6 @@
           <% } %>
 
           <!-- ================= PANEL 1: PERSONAL DETAILS ================= -->
-          <% if (!isAdmin) { %>
           <div id="panel-personal" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6">
             <div class="border-b border-slate-100 pb-4">
               <h2 class="text-lg font-bold text-slate-900">Personal Details</h2>
@@ -376,7 +377,8 @@
               </div>
             </form>
 
-            <!-- Danger Zone: Account deletion -->
+            <!-- Danger Zone: Account deletion (Non-admin accounts only) -->
+            <% if (!isAdmin) { %>
             <div class="mt-4 pt-6 border-t border-rose-100">
               <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -393,11 +395,11 @@
                 </form>
               </div>
             </div>
+            <% } %>
           </div>
-          <% } %>
 
           <!-- ================= PANEL 2: SECURITY & PRIVACY ================= -->
-          <div id="panel-security" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 <%= isAdmin ? '' : 'hidden' %>">
+          <div id="panel-security" class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
             <div class="border-b border-slate-100 pb-4">
               <h2 class="text-lg font-bold text-slate-900">Security &amp; Privacy</h2>
               <p class="text-xs text-slate-500">Manage your password, privacy masking, and active campus authentication credentials.</p>
@@ -575,7 +577,7 @@
             </div>
 
             <!-- Reports List -->
-            <% if (!myReports || myReports.length === 0) { %>
+            <% if (safeMyReports.length === 0) { %>
               <div class="py-12 text-center text-slate-400 text-xs">
                 <span class="material-symbols-outlined text-4xl mb-2 text-slate-300">inventory_2</span>
                 <p class="font-semibold text-slate-700">No reports posted yet.</p>
@@ -583,7 +585,7 @@
               </div>
             <% } else { %>
               <div class="divide-y divide-slate-100">
-                <% myReports.forEach(item => { %>
+                <% safeMyReports.forEach(item => { %>
                   <% const canEditOwnedItem = true; %>
                   <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 p-2 rounded-2xl transition">
                     <div class="flex items-center gap-3.5 min-w-0">
@@ -656,8 +658,8 @@
               </div>
 
               <!-- Reports Log Loop -->
-              <% if (myReports && myReports.length > 0) { %>
-                <% myReports.slice(0, 5).forEach(r => { %>
+              <% if (safeMyReports.length > 0) { %>
+                <% safeMyReports.slice(0, 5).forEach(r => { %>
                   <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/80 border border-slate-200/60">
                     <div class="w-8 h-8 rounded-full bg-sky-100 text-[#09436B] flex items-center justify-center shrink-0 mt-0.5">
                       <span class="material-symbols-outlined text-[18px]">post_add</span>
@@ -672,8 +674,8 @@
               <% } %>
 
               <!-- Claims Log Loop -->
-              <% if (claimsMade && claimsMade.length > 0) { %>
-                <% claimsMade.forEach(c => { %>
+              <% if (safeClaimsMade.length > 0) { %>
+                <% safeClaimsMade.forEach(c => { %>
                   <div class="flex items-start gap-3 p-3 rounded-2xl bg-white/80 border border-slate-200/60">
                     <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
                       <span class="material-symbols-outlined text-[18px]">handshake</span>
@@ -927,11 +929,31 @@
       });
     });
 
+    function syncSettingsThemeState() {
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('hanap_theme') === 'dark';
+      const indicator = document.getElementById('sidebarThemeIndicator');
+      if (indicator) {
+        indicator.textContent = isDark ? 'Dark' : 'Light';
+      }
+      document.querySelectorAll('input[name="themePreference"]').forEach((radio) => {
+        radio.checked = radio.value === (isDark ? 'dark' : 'light');
+      });
+    }
+
+    syncSettingsThemeState();
+
     document.querySelectorAll('input[name="themePreference"]').forEach((radio) => {
       radio.addEventListener('change', () => {
         if (radio.checked && typeof window.setHanapTheme === 'function') {
           window.setHanapTheme(radio.value);
+          syncSettingsThemeState();
         }
+      });
+    });
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setTimeout(syncSettingsThemeState, 50);
       });
     });
   </script>

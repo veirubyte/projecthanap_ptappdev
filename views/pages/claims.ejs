@@ -180,10 +180,23 @@
 
                 <div class="flex items-center justify-between pt-1">
                   <span class="text-[11px] text-slate-400">Claim #<%= claim.id %></span>
-                  <a href="/claims/<%= claim.id %>" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition flex items-center gap-1">
-                    <span>Open Conversation</span>
-                    <span class="material-symbols-outlined text-sm">forum</span>
-                  </a>
+                  <div class="flex items-center gap-2">
+                    <% if (claim.status === 'pending') { %>
+                      <form action="/claims/<%= claim.id %>/cancel" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to withdraw this ownership claim?');">
+                        <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                        <% } %>
+                        <button type="submit" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold transition cursor-pointer flex items-center gap-1">
+                          <span class="material-symbols-outlined text-[15px]">cancel</span>
+                          <span>Withdraw</span>
+                        </button>
+                      </form>
+                    <% } %>
+                    <a href="/claims/<%= claim.id %>" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition flex items-center gap-1">
+                      <span>Open Conversation</span>
+                      <span class="material-symbols-outlined text-sm">forum</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             <% }) %>

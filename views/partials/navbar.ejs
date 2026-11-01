@@ -1,10 +1,13 @@
 
+<%
+  const isAdminUser = (typeof isAdmin !== 'undefined') ? Boolean(isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
+%>
 <!-- Floating Glass Navbar Dock -->
 <header class="app-navbar sticky top-3 sm:top-4 z-50 px-4 sm:px-6 xl:px-8 mb-5 sm:mb-6 w-full">
   <div class="max-w-[1440px] mx-auto rounded-3xl sm:rounded-[28px] bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.04)] px-4 sm:px-6 py-2.5 min-h-[68px] flex items-center justify-between gap-4 transition-all">
     
     <!-- Left: Brand / Logo Section -->
-    <a class="flex items-center gap-3.5 group shrink-0" href="<%= isAdmin ? '/admin/dashboard' : '/dashboard' %>">
+    <a class="flex items-center gap-3.5 group shrink-0" href="<%= isAdminUser ? '/admin/dashboard' : '/dashboard' %>">
       <div class="navbar-brand-icon w-11 h-11 rounded-2xl bg-[#E5F0FD] dark:bg-white/95 flex items-center justify-center p-1.5 shadow-xs group-hover:scale-105 transition-transform">
         <img src="/images/logo-icon.png" alt="Project HANAP Logo" class="w-8 h-8 object-contain" />
       </div>
@@ -19,7 +22,7 @@
 
     <!-- Center: Primary Navigation Links (Inline, single-line capsule track) -->
     <nav class="hidden lg:flex items-center flex-nowrap shrink-0 gap-1 p-1 bg-[#F4F7FB] rounded-full border border-slate-100/90 shadow-2xs whitespace-nowrap">
-      <% if (isAdmin) { %>
+      <% if (isAdminUser) { %>
         <!-- Admin Dedicated Direct Links (Guest, student, and staff links hidden) -->
         <a href="/admin/dashboard" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'admin-dashboard') ? 'bg-white text-[#09436B] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
           <span class="material-symbols-outlined text-[17px]">dashboard</span>
@@ -104,7 +107,7 @@
               <div class="flex items-center gap-1.5 whitespace-nowrap">
                 <span class="font-bold text-slate-800 text-xs sm:text-sm max-w-[120px] truncate whitespace-nowrap"><%= user.full_name %></span>
                 <span class="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold capitalize whitespace-nowrap shrink-0">
-                  <%= isAdmin ? 'Admin' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : (user.role === 'parent' ? 'Parent' : (user.role === 'legacy_institutional' ? 'Review' : 'Guest')))) %>
+                  <%= isAdminUser ? 'Admin' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : (user.role === 'parent' ? 'Parent' : (user.role === 'legacy_institutional' ? 'Review' : 'Guest')))) %>
                 </span>
               </div>
               <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap">CSPC Account</span>
@@ -130,7 +133,7 @@
 
             <!-- Mobile / Tablet Navigation Links (Visible when center nav is hidden) -->
             <div class="lg:hidden flex flex-col gap-0.5 py-1 border-b border-slate-100">
-              <% if (isAdmin) { %>
+              <% if (isAdminUser) { %>
                 <a href="/admin/dashboard" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100/80 text-xs font-semibold transition-colors">
                   <span class="material-symbols-outlined text-[18px] text-[#09436B]">dashboard</span>
                   <span>Admin Dashboard</span>
