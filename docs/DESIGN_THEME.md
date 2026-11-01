@@ -269,3 +269,4 @@ When generating new views or modifying existing templates, AI agents MUST follow
 - [ ] **Data Masking Standard:** Obscure private fields (phone numbers, challenge answers) using `••••••••` or privacy pill components to preserve student security.
 - [ ] **Responsive Padding:** Use responsive spacing (`px-4 sm:px-6 lg:px-8`) and ensure all interactive touch targets measure at least $44 \times 44\text{px}$.
 - [ ] **Accessibility Outlines:** Never remove focus outlines without replacing them with `focus:ring-2 focus:ring-sky-500/40`.
+

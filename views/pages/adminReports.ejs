@@ -54,12 +54,12 @@
       <div class="min-w-0 flex-1 w-full flex flex-col gap-5">
       
       <!-- Top Header Strip -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Archive &amp; Audit Trail</h1>
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Archive &amp; Audit Trail</h1>
           <p class="text-xs text-slate-500 mt-0.5">Manage 60-day item disposition and audit trails.</p>
         </div>
-        <div class="flex items-center gap-2.5">
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
           <a
             href="/admin/reports/export-csv"
             download="hanap_reports_ledger.csv"
@@ -70,40 +70,40 @@
             <span class="material-symbols-outlined text-[16px]">download</span>
             <span>Export CSV</span>
           </a>
-          <button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#09436b] to-[#2B5B84] hover:from-[#073656] hover:to-[#224869] text-white text-xs font-semibold shadow-[0_4px_16px_rgba(9,67,107,0.25)] border border-sky-300/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer" id="batchApproveBtn">
+          <button class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#09436b] to-[#2B5B84] hover:from-[#073656] hover:to-[#224869] text-white text-xs font-semibold shadow-[0_4px_16px_rgba(9,67,107,0.25)] border border-sky-300/30 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer" id="batchApproveBtn">
             <span class="material-symbols-outlined text-[16px]">done_all</span>
-            <span>Approve Archive Batch</span>
+            <span>Approve Batch</span>
           </button>
         </div>
       </div>
 
       <!-- 4 Glowing Admin Glass Bento KPI Tiles -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-7">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <!-- 1: Total Reports -->
-        <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
-          <span class="text-xs font-medium text-slate-500 block mb-1">Total Reports</span>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.totalReports %></div>
+        <div class="bg-white/60 backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
+          <span class="text-[11px] sm:text-xs font-medium text-slate-500 block mb-1 truncate">Total Reports</span>
+          <div class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.totalReports %></div>
         </div>
         <!-- 2: Recovery Rate (with glowing seafoam indicator) -->
-        <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all relative overflow-hidden">
+        <div class="bg-white/60 backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all relative overflow-hidden">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-slate-500">Recovery Rate</span>
-            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Recovery Rate</span>
+            <span class="hidden xs:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Optimal
             </span>
           </div>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.recoveryRate || '86' %>%</div>
+          <div class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.recoveryRate || '86' %>%</div>
         </div>
         <!-- 3: Peer Returns -->
-        <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
-          <span class="text-xs font-medium text-slate-500 block mb-1">Peer Returns</span>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.peerReturns || '94' %></div>
+        <div class="bg-white/60 backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
+          <span class="text-[11px] sm:text-xs font-medium text-slate-500 block mb-1 truncate">Peer Returns</span>
+          <div class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.peerReturns || '94' %></div>
         </div>
         <!-- 4: Desk Handovers -->
-        <div class="bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
-          <span class="text-xs font-medium text-slate-500 block mb-1">Desk Handovers</span>
-          <div class="text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.deskHandovers || '28' %></div>
+        <div class="bg-white/60 backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl border border-white/80 shadow-[0_8px_24px_rgba(9,67,107,0.05)] hover:shadow-[0_12px_28px_rgba(9,67,107,0.08)] transition-all">
+          <span class="text-[11px] sm:text-xs font-medium text-slate-500 block mb-1 truncate">Desk Handovers</span>
+          <div class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight"><%= statsData.deskHandovers || '28' %></div>
         </div>
       </div>
 

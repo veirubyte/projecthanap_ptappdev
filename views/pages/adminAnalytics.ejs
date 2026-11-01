@@ -53,13 +53,13 @@
 
   <!-- Main Container -->
   <main class="relative z-10 w-full pt-2 pb-14">
-    <div class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 xl:px-8 flex flex-col gap-6">
+    <div class="max-w-[1280px] w-full mx-auto px-3 sm:px-6 xl:px-8 flex flex-col gap-6">
       
       <!-- Main Content Area -->
       <div class="min-w-0 flex-1 w-full flex flex-col gap-6">
         
         <!-- Top Section Header Strip -->
-        <div class="bg-white/70 backdrop-blur-xl border border-white/80 rounded-2xl p-6 shadow-[0_8px_30px_rgb(9,67,107,0.05)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="bg-white/70 backdrop-blur-xl border border-white/80 rounded-2xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(9,67,107,0.05)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200/60">
@@ -67,7 +67,7 @@
                 Operational Efficiency Ledger
               </span>
             </div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">P2P vs Centralized Desk Analysis</h1>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">P2P vs Centralized Desk Analysis</h1>
             <p class="text-xs text-slate-500 mt-1 max-w-xl">
               Comparative effectiveness analysis evaluating decentralized Peer-to-Peer claim resolution versus centralized Campus Security Vault custody operations.
             </p>
@@ -84,60 +84,60 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           
           <!-- Card 1: Peer-to-Peer (P2P) Effectiveness Model -->
-          <div class="bg-white/80 backdrop-blur-2xl rounded-3xl p-6 sm:p-7 border border-white/90 shadow-[0_12px_40px_rgba(9,67,107,0.06)] flex flex-col justify-between relative overflow-hidden group">
+          <div class="bg-white/80 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-white/90 shadow-[0_12px_40px_rgba(9,67,107,0.06)] flex flex-col justify-between relative overflow-hidden group">
             <div class="absolute -top-12 -right-12 w-36 h-36 bg-blue-100/50 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
             
             <div class="relative z-10">
               <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#0058be] to-[#38BDF8] flex items-center justify-center text-white shadow-sm">
-                    <span class="material-symbols-outlined text-[22px]">diversity_3</span>
+                <div class="flex items-center gap-2.5 sm:gap-3">
+                  <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-[#0058be] to-[#38BDF8] flex items-center justify-center text-white shadow-sm shrink-0">
+                    <span class="material-symbols-outlined text-[20px] sm:text-[22px]">diversity_3</span>
                   </div>
                   <div>
-                    <h2 class="text-base font-bold text-slate-900">Peer-to-Peer (P2P)</h2>
-                    <span class="text-[11px] text-slate-500 font-medium">Decentralized Student Resolution</span>
+                    <h2 class="text-sm sm:text-base font-bold text-slate-900">Peer-to-Peer (P2P)</h2>
+                    <span class="text-[10px] sm:text-[11px] text-slate-500 font-medium">Decentralized Student Resolution</span>
                   </div>
                 </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
                   <%= p2pData.successRate %>% Rate
                 </span>
               </div>
 
-              <p class="text-xs text-slate-600 leading-relaxed mb-6">
+              <p class="text-xs text-slate-600 leading-relaxed mb-5">
                 <%= p2pData.description %>
               </p>
 
               <!-- Metrics Matrix Bento -->
-              <div class="grid grid-cols-3 gap-3 mb-6">
-                <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
-                  <span class="text-[10px] font-semibold text-slate-400 uppercase">P2P Claimed</span>
-                  <span class="text-xl font-bold text-slate-900 mt-0.5"><%= p2pData.approved %></span>
-                  <span class="text-[10px] text-emerald-600 font-medium mt-1">Verified</span>
+              <div class="grid grid-cols-3 gap-1.5 sm:gap-3 mb-5">
+                <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
+                  <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase truncate">P2P Claimed</span>
+                  <span class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5"><%= p2pData.approved %></span>
+                  <span class="text-[9px] sm:text-[10px] text-emerald-600 font-medium mt-0.5 sm:mt-1">Verified</span>
                 </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
-                  <span class="text-[10px] font-semibold text-slate-400 uppercase">Active / In-Chat</span>
-                  <span class="text-xl font-bold text-slate-900 mt-0.5"><%= p2pData.pending %></span>
-                  <span class="text-[10px] text-amber-600 font-medium mt-1">Pending</span>
+                <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
+                  <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase truncate">In-Chat</span>
+                  <span class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5"><%= p2pData.pending %></span>
+                  <span class="text-[9px] sm:text-[10px] text-amber-600 font-medium mt-0.5 sm:mt-1">Pending</span>
                 </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
-                  <span class="text-[10px] font-semibold text-slate-400 uppercase">Turnaround</span>
-                  <span class="text-xl font-bold text-slate-900 mt-0.5"><%= p2pData.avgHours %></span>
-                  <span class="text-[10px] text-sky-600 font-medium mt-1">Fast Return</span>
+                <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
+                  <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase truncate">Turnaround</span>
+                  <span class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5"><%= p2pData.avgHours %></span>
+                  <span class="text-[9px] sm:text-[10px] text-sky-600 font-medium mt-0.5 sm:mt-1">Fast Return</span>
                 </div>
               </div>
 
               <!-- Workflow Checkpoints -->
               <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 text-xs">
                 <div class="flex items-center gap-2 text-slate-600">
-                  <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
                   <span>Secret challenge answer match validation protects ownership</span>
                 </div>
                 <div class="flex items-center gap-2 text-slate-600">
-                  <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
                   <span>Direct peer chat enables seamless campus handover</span>
                 </div>
                 <div class="flex items-center gap-2 text-slate-600">
-                  <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
                   <span>Zero storage burden on Security Command Vault</span>
                 </div>
               </div>
@@ -145,60 +145,60 @@
           </div>
 
           <!-- Card 2: Centralized Admin Desk Model -->
-          <div class="bg-white/80 backdrop-blur-2xl rounded-3xl p-6 sm:p-7 border border-white/90 shadow-[0_12px_40px_rgba(9,67,107,0.06)] flex flex-col justify-between relative overflow-hidden group">
+          <div class="bg-white/80 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-white/90 shadow-[0_12px_40px_rgba(9,67,107,0.06)] flex flex-col justify-between relative overflow-hidden group">
             <div class="absolute -top-12 -right-12 w-36 h-36 bg-teal-100/50 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
             
             <div class="relative z-10">
               <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#09436b] to-[#2B5B84] flex items-center justify-center text-white shadow-sm">
-                    <span class="material-symbols-outlined text-[22px]">admin_panel_settings</span>
+                <div class="flex items-center gap-2.5 sm:gap-3">
+                  <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-[#09436b] to-[#2B5B84] flex items-center justify-center text-white shadow-sm shrink-0">
+                    <span class="material-symbols-outlined text-[20px] sm:text-[22px]">admin_panel_settings</span>
                   </div>
                   <div>
-                    <h2 class="text-base font-bold text-slate-900">Centralized Desk</h2>
-                    <span class="text-[11px] text-slate-500 font-medium">Security Vault Custody</span>
+                    <h2 class="text-sm sm:text-base font-bold text-slate-900">Centralized Desk</h2>
+                    <span class="text-[10px] sm:text-[11px] text-slate-500 font-medium">Security Vault Custody</span>
                   </div>
                 </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                   <%= deskData.successRate %>% Rate
                 </span>
               </div>
 
-              <p class="text-xs text-slate-600 leading-relaxed mb-6">
+              <p class="text-xs text-slate-600 leading-relaxed mb-5">
                 <%= deskData.description %>
               </p>
 
               <!-- Metrics Matrix Bento -->
-              <div class="grid grid-cols-3 gap-3 mb-6">
-                <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
-                  <span class="text-[10px] font-semibold text-slate-400 uppercase">Desk Handover</span>
-                  <span class="text-xl font-bold text-slate-900 mt-0.5"><%= deskData.approved %></span>
-                  <span class="text-[10px] text-emerald-600 font-medium mt-1">Released</span>
+              <div class="grid grid-cols-3 gap-1.5 sm:gap-3 mb-5">
+                <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
+                  <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase truncate">Desk Handover</span>
+                  <span class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5"><%= deskData.approved %></span>
+                  <span class="text-[9px] sm:text-[10px] text-emerald-600 font-medium mt-0.5 sm:mt-1">Released</span>
                 </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
-                  <span class="text-[10px] font-semibold text-slate-400 uppercase">In-Vault Queue</span>
-                  <span class="text-xl font-bold text-slate-900 mt-0.5"><%= deskData.pending %></span>
-                  <span class="text-[10px] text-amber-600 font-medium mt-1">Security Hold</span>
+                <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
+                  <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase truncate">In-Vault</span>
+                  <span class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5"><%= deskData.pending %></span>
+                  <span class="text-[9px] sm:text-[10px] text-amber-600 font-medium mt-0.5 sm:mt-1">Hold</span>
                 </div>
-                <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
-                  <span class="text-[10px] font-semibold text-slate-400 uppercase">ID Verification</span>
-                  <span class="text-xl font-bold text-slate-900 mt-0.5">100%</span>
-                  <span class="text-[10px] text-sky-600 font-medium mt-1">Physical ID</span>
+                <div class="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 border border-slate-100 flex flex-col">
+                  <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase truncate">ID Verify</span>
+                  <span class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">100%</span>
+                  <span class="text-[9px] sm:text-[10px] text-sky-600 font-medium mt-0.5 sm:mt-1">Physical ID</span>
                 </div>
               </div>
 
               <!-- Workflow Checkpoints -->
               <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 text-xs">
                 <div class="flex items-center gap-2 text-slate-600">
-                  <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
                   <span>Physical check of government ID, student COR, or staff badge</span>
                 </div>
                 <div class="flex items-center gap-2 text-slate-600">
-                  <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
                   <span>Guest &amp; parent claims securely resolved at the physical counter</span>
                 </div>
                 <div class="flex items-center gap-2 text-slate-600">
-                  <span class="material-symbols-outlined text-[16px] text-emerald-500">check_circle</span>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">check_circle</span>
                   <span>Full digital chain-of-custody logged with officer signature</span>
                 </div>
               </div>
@@ -246,7 +246,7 @@
           </div>
 
           <!-- 2: Top Recovered Item Categories -->
-          <div class="md:col-span-2 bg-white/75 backdrop-blur-xl border border-white/80 rounded-2xl p-5 shadow-[0_8px_30px_rgb(9,67,107,0.05)] flex flex-col justify-between">
+          <div class="md:col-span-2 bg-white/75 backdrop-blur-xl border border-white/80 rounded-2xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(9,67,107,0.05)] flex flex-col justify-between">
             <div>
               <div class="flex items-center justify-between mb-1">
                 <span class="text-xs font-bold text-slate-800">Top Claimed Categories</span>
@@ -256,21 +256,21 @@
 
               <div class="space-y-3">
                 <% categories.forEach(cat => { %>
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-2.5 w-1/3">
-                      <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                  <div class="flex items-center justify-between text-xs gap-1.5 sm:gap-2">
+                    <div class="flex items-center gap-2 w-28 sm:w-1/3 shrink-0">
+                      <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
                       <span class="font-medium text-slate-700 truncate"><%= cat.category %></span>
                     </div>
-                    <div class="w-1/2 h-2 rounded-full bg-slate-100 overflow-hidden mx-2">
+                    <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden mx-1 sm:mx-2">
                       <div class="h-full rounded-full bg-[#2B5B84] transition-all duration-500" data-progress="<%= Math.min(100, Math.round((cat.claim_count / 10) * 100)) %>%"></div>
                     </div>
-                    <span class="w-12 text-right font-bold text-slate-900"><%= cat.claim_count %> cases</span>
+                    <span class="w-16 shrink-0 text-right font-bold text-slate-900"><%= cat.claim_count %> cases</span>
                   </div>
                 <% }) %>
               </div>
             </div>
 
-            <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="pt-4 mt-4 border-t border-slate-100 flex flex-wrap sm:flex-nowrap items-center justify-between text-xs text-slate-500 gap-2">
               <span>Total campus items cataloged: <strong><%= reportsData ? reportsData.total_reports : 0 %></strong></span>
               <a href="/admin/reports" class="text-sky-700 hover:underline font-semibold">View Master Archive &rarr;</a>
             </div>

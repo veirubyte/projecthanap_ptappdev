@@ -35,7 +35,7 @@
   </script>
 </head>
 <body class="login-page bg-[#F4F7FB] text-[#0F172A] font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-blue-500/20">
-  <main class="relative w-full min-h-screen bg-[#F4F7FB] flex items-center justify-center p-4 sm:p-6 lg:p-12 overflow-hidden">
+  <main class="relative w-full min-h-screen bg-[#F4F7FB] flex items-center justify-center p-2.5 sm:p-6 lg:p-12 overflow-hidden">
     
     <!-- Ambient Aurora Mesh Glow Behind Glass Portal -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden flex items-center justify-center z-0" aria-hidden="true">
@@ -48,7 +48,7 @@
     <div class="relative z-10 w-full max-w-[1020px] bg-white/80 backdrop-blur-xl rounded-[28px] border border-white/90 shadow-[0_24px_50px_-12px_rgba(15,23,42,0.08),0_10px_20px_-8px_rgba(43,91,132,0.05),0_0_0_1px_rgba(226,232,240,0.8)] overflow-hidden flex flex-col md:flex-row p-3.5 sm:p-4 gap-4">
       
       <!-- LEFT SHOWCASE PANEL: Frosted sapphire-tinted glass with 3D motif & orbiting badges -->
-      <div class="md:w-[45%] w-full rounded-2xl bg-gradient-to-br from-[#EBF3FB]/90 via-[#E4EFF9]/80 to-[#D8E8F8]/70 border border-white/70 p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]">
+      <div class="hidden md:flex md:w-[45%] rounded-2xl bg-gradient-to-br from-[#EBF3FB]/90 via-[#E4EFF9]/80 to-[#D8E8F8]/70 border border-white/70 p-8 sm:p-10 flex-col justify-between relative overflow-hidden select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]">
         <!-- Specular shimmer gradient -->
         <div class="absolute -top-20 -right-20 w-44 h-44 rounded-full bg-white/40 blur-2xl pointer-events-none"></div>
         
@@ -189,8 +189,27 @@
       </div>
 
       <!-- RIGHT FORM PANEL: Refined Glass Experience -->
-      <div class="md:w-[55%] w-full bg-white/50 backdrop-blur-sm p-6 sm:p-10 flex flex-col justify-between rounded-2xl">
+      <div class="md:w-[55%] w-full bg-white/50 backdrop-blur-sm p-4 sm:p-8 md:p-10 flex flex-col justify-between rounded-2xl">
         <div class="space-y-5">
+          
+          <!-- Compact Mobile Brand Header (< md only) -->
+          <div class="md:hidden flex items-center justify-between pb-3.5 mb-2 border-b border-slate-200/60">
+            <a href="/" class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-center p-1">
+                <img src="/images/logo-icon.png" alt="Project HANAP Logo" class="w-6 h-6 object-contain" />
+              </div>
+              <div class="leading-none">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-base font-bold text-[#0F172A]">Project HANAP</span>
+                  <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-blue-50 text-[#09436B] border border-blue-200/80">CSPC</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-0.5">Nabua Campus Lost &amp; Found</p>
+              </div>
+            </a>
+            <a href="/catalog" class="text-xs font-semibold text-[#09436B] hover:underline px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200/60">
+              Catalog
+            </a>
+          </div>
           
           <% if (typeof mfaPending !== 'undefined' && mfaPending) { %>
           <!-- MFA Step Header -->

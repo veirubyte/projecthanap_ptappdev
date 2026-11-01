@@ -20,6 +20,13 @@
       : 'Enter a specific detail only the owner would know...');
   const reportImagesForView = typeof itemImages !== 'undefined' && Array.isArray(itemImages) ? itemImages : [];
   const primaryReportImage = reportImagesForView.length ? reportImagesForView[0].image_path : null;
+  const rawReportDate = item.date_reported || item.created_at;
+  const safeFormattedDate = (rawReportDate && !isNaN(new Date(rawReportDate).getTime()))
+    ? new Date(rawReportDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Recently';
+  const safeTimeAgo = (rawReportDate && typeof timeAgo === 'function')
+    ? timeAgo(rawReportDate)
+    : 'Recently';
 %>
 <html lang="en" class="h-full hanap-hide-scrollbar">
 <head>
@@ -84,13 +91,13 @@
       <% } %>
 
       <!-- Top Bar: Back to Catalog + Case # Pill + Options -->
-      <div class="flex items-center justify-between gap-3 py-1">
-        <a href="<%= isAdminViewer ? '/admin/reports' : '/catalog' %>" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-xs font-semibold text-[#09436B] border border-slate-200/80 shadow-2xs transition-all hover:shadow-xs group">
-          <span class="material-symbols-outlined text-[17px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+      <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 py-1">
+        <a href="<%= isAdminViewer ? '/admin/reports' : '/catalog' %>" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/90 hover:bg-white text-xs font-semibold text-[#09436B] border border-slate-200/80 shadow-2xs transition-all hover:shadow-xs group">
+          <span class="material-symbols-outlined text-[16px] sm:text-[17px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
           <span><%= isAdminViewer ? 'Back to All Reports' : 'Back to Catalog' %></span>
         </a>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <!-- Case Pill with copy action -->
           <button 
             type="button" 
@@ -193,7 +200,7 @@
               </span>
               <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 border border-slate-200/70 text-slate-700 text-xs font-semibold">
                 <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i>
-                <span><%= timeAgo(item.date_reported) %></span>
+                <span><%= safeTimeAgo %></span>
               </span>
             </div>
 
@@ -219,7 +226,7 @@
                 </div>
                 <div>
                   <span class="additional-details-label block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Report Date</span>
-                  <span class="additional-details-value font-bold text-slate-800"><%= new Date(item.date_reported).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                  <span class="additional-details-value font-bold text-slate-800"><%= safeFormattedDate %></span>
                 </div>
               </div>
             </div>
