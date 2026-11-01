@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <%
-  const safeUserIsClaimant = typeof userIsClaimant !== 'undefined' ? Boolean(userIsClaimant) : (typeof user !== 'undefined' && user && claim && user.id === claim.claimant_id);
+  const safeUserIsClaimant = (typeof locals !== 'undefined' && typeof locals.userIsClaimant !== 'undefined') ? Boolean(locals.userIsClaimant) : (typeof user !== 'undefined' && user && claim && user.id === claim.claimant_id);
   const safeUserIsReporter = (typeof locals !== 'undefined' && typeof locals.userIsReporter !== 'undefined') ? Boolean(locals.userIsReporter) : (typeof locals !== 'undefined' && typeof locals.userIsFinder !== 'undefined' ? Boolean(locals.userIsFinder) : (typeof user !== 'undefined' && user && claim && user.id === claim.reporter_id));
   const safeMessages = (typeof locals !== 'undefined' && Array.isArray(locals.messages)) ? locals.messages : ((typeof locals !== 'undefined' && Array.isArray(locals.chatMessages)) ? locals.chatMessages : []);
   const safeUserIsAdmin = (typeof locals !== 'undefined' && typeof locals.userIsAdmin !== 'undefined') ? Boolean(locals.userIsAdmin) : (typeof locals !== 'undefined' && typeof locals.isAdmin !== 'undefined') ? Boolean(locals.isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
