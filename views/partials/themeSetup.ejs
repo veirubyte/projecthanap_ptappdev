@@ -23,8 +23,10 @@
 <script>
   (function() {
     const iconMap = {
+      // Navigation & Dashboard
       'dashboard': 'layout-dashboard',
       'inventory_2': 'package',
+      'inventory': 'package',
       'group': 'users',
       'archive': 'archive',
       'monitoring': 'activity',
@@ -32,80 +34,154 @@
       'dark_mode': 'moon',
       'light_mode': 'sun',
       'notifications': 'bell',
-      'search': 'search',
-      'manage_search': 'search-check',
-      'add_circle': 'plus-circle',
-      'handshake': 'handshake',
-      'list_alt': 'clipboard-list',
+      'menu': 'menu',
       'settings': 'settings',
       'logout': 'log-out',
-      'expand_more': 'chevron-down',
-      'chevron_right': 'chevron-right',
-      'chevron_left': 'chevron-left',
-      'auto_awesome': 'sparkles',
+      'login': 'log-in',
+      'person_add': 'user-plus',
+      'person': 'user',
+      'manage_accounts': 'user-cog',
+      'family_restroom': 'users',
+      'supervised_user_circle': 'users',
+      'diversity_3': 'users',
+      'history': 'history',
+      'inbox': 'inbox',
+
+      // Actions, Search & Filtering
+      'search': 'search',
+      'manage_search': 'search-check',
+      'filter_list': 'list-filter',
+      'tune': 'sliders-horizontal',
+      'add_circle': 'plus-circle',
+      'add': 'plus',
+      'post_add': 'file-plus-2',
+      'note_add': 'file-plus',
+      'edit': 'edit-3',
+      'delete': 'trash-2',
+      'save': 'save',
       'close': 'x',
+      'clear': 'x',
+      'cancel': 'x-circle',
+      'done': 'check',
+      'check': 'check',
+      'check_circle': 'check-circle-2',
+      'task_alt': 'check-circle',
+      'done_all': 'check-check',
+      'download': 'download',
+      'content_copy': 'copy',
+      'refresh': 'refresh-cw',
+      'send': 'send',
+      'flag': 'flag',
+      'swap_horiz': 'arrow-left-right',
+      'open_in_full': 'maximize-2',
+
+      // Arrows & Navigation Chevrons
       'arrow_upward': 'arrow-up',
       'arrow_back': 'arrow-left',
       'arrow_forward': 'arrow-right',
-      'check': 'check',
-      'check_circle': 'check-circle-2',
-      'error': 'alert-circle',
-      'verified_user': 'shield-check',
+      'arrow_outward': 'external-link',
+      'arrow_back_ios': 'chevron-left',
+      'arrow_forward_ios': 'chevron-right',
+      'expand_more': 'chevron-down',
+      'chevron_right': 'chevron-right',
+      'chevron_left': 'chevron-left',
+
+      // Categories & Belongings
+      'category': 'folder',
+      'devices': 'laptop',
+      'key': 'key',
       'badge': 'id-card',
+      'work': 'briefcase',
+      'menu_book': 'book-open',
+      'checkroom': 'shirt',
+      'apps': 'layout-grid',
+      'photo_camera': 'camera',
+
+      // Locations & Campus Places
+      'location_on': 'map-pin',
+      'person_pin': 'map-pin',
+      'person_pin_circle': 'map-pin',
+      'pin_drop': 'map-pin',
+      'add_location_alt': 'map-pin-plus',
+      'apartment': 'building-2',
+      'desk': 'building-2',
+      'public': 'globe',
+      'explore': 'compass',
+      'school': 'graduation-cap',
+
+      // Trust, Verification & Security
+      'shield': 'shield',
+      'shield_lock': 'shield-check',
+      'shield_person': 'shield-check',
+      'security': 'shield-check',
+      'verified': 'badge-check',
+      'verified_user': 'shield-check',
+      'admin_panel_settings': 'shield-alert',
       'lock': 'lock',
       'lock_reset': 'key-round',
-      'visibility': 'eye',
-      'visibility_off': 'eye-off',
-      'edit': 'edit-3',
-      'delete': 'trash-2',
-      'person': 'user',
-      'manage_accounts': 'user-cog',
-      'history': 'history',
-      'family_restroom': 'users',
-      'description': 'file-text',
-      'pending_actions': 'clock',
-      'verified': 'badge-check',
-      'admin_panel_settings': 'shield-alert',
-      'download': 'download',
-      'done_all': 'check-check',
-      'login': 'log-in',
-      'shield': 'shield',
-      'person_pin': 'map-pin',
-      'help': 'help-circle',
+      'gpp_bad': 'shield-x',
+      'warning': 'alert-triangle',
+      'error': 'alert-circle',
       'info': 'info',
-      'open_in_full': 'maximize-2',
-      'photo_camera': 'camera',
-      'key': 'key',
-      'category': 'folder',
-      'school': 'graduation-cap',
-      'pin_drop': 'map-pin',
-      'schedule': 'clock',
-      'mail': 'mail',
-      'mark_email_read': 'mail-check',
-      'supervised_user_circle': 'users',
-      'desk': 'building-2',
-      'task_alt': 'check-circle',
-      'arrow_outward': 'external-link',
-      'person_add': 'user-plus',
-      'cancel': 'x-circle',
-      'thumb_up': 'thumbs-up',
-      'send': 'send',
+      'help': 'help-circle',
+      'help_outline': 'help-circle',
+
+      // Community & Communication
+      'handshake': 'handshake',
+      'volunteer_activism': 'heart-handshake',
+      'campaign': 'megaphone',
       'chat': 'message-square',
       'forum': 'messages-square',
-      'security': 'shield-check',
-      'warning': 'alert-triangle'
+      'mail': 'mail',
+      'mark_email_read': 'mail-check',
+      'call': 'phone',
+      'auto_awesome': 'sparkles',
+      'thumb_up': 'thumbs-up',
+
+      // Status, Time & Document Tracking
+      'schedule': 'clock',
+      'pending_actions': 'clock',
+      'calendar_today': 'calendar',
+      'hourglass_top': 'hourglass',
+      'more_horiz': 'more-horizontal',
+      'list_alt': 'clipboard-list',
+      'description': 'file-text',
+      'assignment_turned_in': 'clipboard-check',
+      'qr_code_scanner': 'scan',
+
+      // Visibility
+      'visibility': 'eye',
+      'visibility_off': 'eye-off'
     };
 
-    function initLucide() {
+    function toPascal(str) {
+      var camel = str.replace(/-([a-z0-9])/gi, function(_, letter) { return letter.toUpperCase(); });
+      return camel.charAt(0).toUpperCase() + camel.slice(1);
+    }
+
+    function initLucide(root) {
+      var container = (root && root.querySelectorAll) ? root : document;
+      
       // Seamlessly bridge material symbols to Lucide vector icons
-      document.querySelectorAll('.material-symbols-outlined').forEach(function(el) {
-        const text = (el.textContent || '').trim().toLowerCase();
-        const lucideName = iconMap[text] || text.replace(/_/g, '-');
-        const iconEl = document.createElement('i');
-        iconEl.setAttribute('data-lucide', lucideName);
-        iconEl.className = (el.className || '').replace('material-symbols-outlined', 'lucide-icon') + ' inline-block align-middle';
-        if (el.id) iconEl.id = el.id;
-        el.replaceWith(iconEl);
+      container.querySelectorAll('.material-symbols-outlined').forEach(function(el) {
+        if (el.getAttribute('data-lucide-processed')) return;
+        var text = (el.textContent || '').trim().toLowerCase();
+        if (!text) return;
+        var lucideName = iconMap[text] || text.replace(/_/g, '-');
+        var pascal = toPascal(lucideName);
+
+        // ONLY replace if Lucide actually HAS this icon in its library!
+        if (window.lucide && window.lucide.icons && window.lucide.icons[pascal]) {
+          var iconEl = document.createElement('i');
+          iconEl.setAttribute('data-lucide', lucideName);
+          iconEl.setAttribute('data-lucide-processed', 'true');
+          iconEl.className = (el.className || '').replace('material-symbols-outlined', 'lucide-icon') + ' inline-block align-middle';
+          if (el.id) iconEl.id = el.id;
+          el.replaceWith(iconEl);
+        } else {
+          // If not in Lucide, mark as processed and KEEP it as Material Symbols so Google Fonts renders the glyph!
+          el.setAttribute('data-lucide-processed', 'true');
+        }
       });
 
       if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -120,10 +196,32 @@
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initLucide);
+      document.addEventListener('DOMContentLoaded', function() { initLucide(); });
     } else {
       initLucide();
     }
+
+    // Auto-render newly added DOM elements (chat messages, image removal buttons, dynamic cards)
+    if (typeof MutationObserver !== 'undefined') {
+      var debounceTimer = null;
+      var observer = new MutationObserver(function(mutations) {
+        var shouldRender = false;
+        for (var i = 0; i < mutations.length; i++) {
+          if (mutations[i].addedNodes && mutations[i].addedNodes.length > 0) {
+            shouldRender = true;
+            break;
+          }
+        }
+        if (shouldRender) {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(function() {
+            initLucide();
+          }, 50);
+        }
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     window.renderLucide = initLucide;
   })();
 </script>
