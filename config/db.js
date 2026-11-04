@@ -84,7 +84,7 @@ if (isPostgres) {
     } else if (/ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
       translated = translated.replace(
         /ON\s+DUPLICATE\s+KEY\s+UPDATE[\s\S]*$/gi,
-        'ON CONFLICT (user_id) DO UPDATE SET code_hash = EXCLUDED.code_hash, code_expires_at = EXCLUDED.code_expires_at, attempts = 0, last_sent_at = (CURRENT_TIMESTAMP AT TIME ZONE \'UTC\')'
+        'ON CONFLICT (user_id) DO UPDATE SET code_hash = EXCLUDED.code_hash, code_expires_at = EXCLUDED.code_expires_at, attempts = 0, last_sent_at = CURRENT_TIMESTAMP'
       );
     }
 
@@ -170,7 +170,9 @@ if (isPostgres) {
     }
   }
 
-  testPostgresConnection();
+  if (!process.env.VERCEL) {
+    testPostgresConnection();
+  }
 
 } else {
   // MySQL connection mode
