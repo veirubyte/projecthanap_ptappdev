@@ -22,11 +22,12 @@ function getTransporter() {
         return transporter;
     }
 
+    const cleanPassword = typeof password === 'string' ? password.replace(/\s+/g, '') : password;
     transporter = nodemailer.createTransport({
         host,
         port,
         secure: port === 465,
-        auth: { user, pass: password }
+        auth: { user, pass: cleanPassword }
     });
 
     return transporter;
