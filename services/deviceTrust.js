@@ -155,3 +155,4 @@ module.exports = {
     decodeSignedPayload,
     getSecret
 };
+
