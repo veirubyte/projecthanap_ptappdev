@@ -162,6 +162,22 @@ const login = async (req, res) => {
                 return await establishAuthenticatedSession(req, res, pendingUser);
             }
 
+            if (verification.status === 'not_pending') {
+                const reissue = await issueCode(pendingUser.id, pendingUser.email);
+                req.session.mfaCooldownUntil = Date.now() + (reissue.retryAfterSeconds || 30) * 1000;
+                req.session.mfaAttemptsRemaining = reissue.attemptsRemaining;
+                return renderLogin(res, {
+                    category,
+                    mfaPending: true,
+                    mfaEmail: maskEmail(pendingUser.email),
+                    mfaCooldownSeconds: reissue.retryAfterSeconds || 30,
+                    mfaAttemptsRemaining: reissue.attemptsRemaining,
+                    msg: !process.env.SMTP_HOST
+                        ? `[Demo Mode - SMTP not configured]: Use code ${reissue.code || '123456'} to sign in.`
+                        : 'Your previous code was no longer active. A fresh verification code has been sent to your email.'
+                });
+            }
+
             if (verification.status === 'expired') req.session.mfaCooldownUntil = Date.now();
             if (verification.status === 'locked') {
                 req.session.mfaCooldownUntil = Date.now();
@@ -172,9 +188,7 @@ const login = async (req, res) => {
                 ? 'Your code expired. Request a new code to continue.'
                 : verification.status === 'locked'
                     ? 'You have used all five attempts. Request a new code to continue.'
-                    : verification.status === 'not_pending'
-                        ? 'There is no active code. Request a new code to continue.'
-                        : 'Enter the six-digit code from your email.';
+                    : 'Enter the six-digit code from your email.';
 
             return renderLogin(res, {
                 category,
