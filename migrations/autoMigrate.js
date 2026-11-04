@@ -40,8 +40,35 @@ async function autoMigrate() {
           );
           CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at);
           ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT;
+
+          -- Enforce Row Level Security (RLS) across all public tables
+          ALTER TABLE public.account_roles ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.user_mfa ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.item_reports ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.item_report_images ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.claim_messages ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+
+          -- Ensure backend full access policy exists for postgres and service_role
+          DO $$
+          DECLARE
+            tbl text;
+          BEGIN
+            FOR tbl IN
+              SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+            LOOP
+              EXECUTE format('DROP POLICY IF EXISTS "Allow backend full access" ON public.%I', tbl);
+              EXECUTE format('CREATE POLICY "Allow backend full access" ON public.%I FOR ALL TO postgres, service_role USING (true) WITH CHECK (true)', tbl);
+            END LOOP;
+          END $$;
         `);
-        console.log('[MIGRATION] Supabase PostgreSQL tables verified successfully.');
+        console.log('[MIGRATION] Supabase PostgreSQL tables and RLS security verified successfully.');
       } finally {
         connection.release();
       }

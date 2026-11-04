@@ -254,8 +254,11 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON public.audit_logs(timesta
 
 -- ----------------------------------------------------------------------------
 -- 12. Row Level Security (RLS) Enablement & Access Policies
--- Protects tables against anonymous external PostgREST exposure while granting
--- full access to the backend Express server connection.
+-- Enforces the Principle of Least Privilege across Supabase PostgreSQL:
+-- - Strict isolation on all tables (RLS enabled by default).
+-- - Backend full access exclusively for 'postgres' and 'service_role' roles.
+-- - Public anon/authenticated access restricted to read-only active Lost & Found catalog.
+-- - Zero exposure of sensitive tables (users, user_mfa, password_resets, user_sessions, audit_logs).
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.account_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
@@ -270,6 +273,7 @@ ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
 
+-- Dynamic Policy: Backend Full Access (postgres, service_role)
 DO $$
 DECLARE
   tbl text;
@@ -283,7 +287,51 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 13. Seed Default Administrative User
+-- 13. Principle of Least Privilege: Role Grants & Public Catalog Policies
+-- ----------------------------------------------------------------------------
+-- Revoke all default public permissions from anon, authenticated, and public
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+
+-- Grant schema usage to connecting roles
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+
+-- Grant full schema control to trusted backend execution roles
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, service_role;
+
+-- Controlled Read-Only Public Catalog Access (Safe PostgREST exposure for Lost & Found feed)
+GRANT SELECT ON public.account_roles, public.departments TO anon, authenticated;
+DROP POLICY IF EXISTS "Allow public read-only account_roles" ON public.account_roles;
+CREATE POLICY "Allow public read-only account_roles" ON public.account_roles
+  FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Allow public read-only departments" ON public.departments;
+CREATE POLICY "Allow public read-only departments" ON public.departments
+  FOR SELECT TO anon, authenticated USING (true);
+
+GRANT SELECT ON public.item_reports TO anon, authenticated;
+DROP POLICY IF EXISTS "Allow public read-only active items" ON public.item_reports;
+CREATE POLICY "Allow public read-only active items" ON public.item_reports
+  FOR SELECT TO anon, authenticated
+  USING (status IN ('active', 'claimed', 'returned'));
+
+GRANT SELECT ON public.item_report_images TO anon, authenticated;
+DROP POLICY IF EXISTS "Allow public read-only active item images" ON public.item_report_images;
+CREATE POLICY "Allow public read-only active item images" ON public.item_report_images
+  FOR SELECT TO anon, authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.item_reports
+      WHERE public.item_reports.id = public.item_report_images.report_id
+        AND public.item_reports.status IN ('active', 'claimed', 'returned')
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- 14. Seed Default Administrative User
 -- Default credentials:
 -- Email: admin@cspc.edu.ph
 -- Password: password123
@@ -300,12 +348,6 @@ VALUES (
 ON CONFLICT (email) DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('public.users', 'id'), GREATEST((SELECT MAX(id) FROM public.users), 1));
-
--- Grant permissions to public roles (standard for Supabase connection)
-GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, anon, authenticated, service_role;
 
 -- Notify PostgREST to reload schema
 NOTIFY pgrst, 'reload schema';

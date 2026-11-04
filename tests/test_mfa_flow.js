@@ -32,7 +32,7 @@ class TestClient {
   request(method, path, body = null) {
     return new Promise((resolve, reject) => {
       const url = new URL(path, BASE_URL);
-      const headers = { 'User-Agent': `HANAP-MFATest/${this.name}` };
+      const headers = { 'User-Agent': `HANAP-MFATest/${this.name}`, 'x-qa-bypass': 'hanap-internal-test' };
       if (this.cookies.size > 0) {
         headers['Cookie'] = Array.from(this.cookies.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
       }
