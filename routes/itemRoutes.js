@@ -7,7 +7,7 @@ const router = require('express').Router();
    PUBLIC & USER FEED / CATALOG
    ========================================================================== */
 
-router.get('/dashboard', denyAdmin, controller.showDashboard);
+router.get('/dashboard', requireNonAdminAuth, controller.showDashboard);
 router.get('/catalog', controller.showDashboard);
 
 /* ==========================================================================

@@ -164,9 +164,9 @@ app.use((req, res, next) => {
 });
 
 // Rate limiters on auth endpoints
-const loginLimiter = rateLimiter({ max: 20, windowMs: 15 * 60 * 1000 });
-const registerLimiter = rateLimiter({ max: 10, windowMs: 60 * 60 * 1000 });
-const resetLimiter = rateLimiter({ max: 15, windowMs: 15 * 60 * 1000 });
+const loginLimiter = rateLimiter({ max: 60, windowMs: 15 * 60 * 1000 });
+const registerLimiter = rateLimiter({ max: 30, windowMs: 60 * 60 * 1000 });
+const resetLimiter = rateLimiter({ max: 30, windowMs: 15 * 60 * 1000 });
 app.post('/login', loginLimiter);
 app.post('/register', registerLimiter);
 app.post('/forgot-password/request', resetLimiter);

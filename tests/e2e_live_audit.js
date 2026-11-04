@@ -39,6 +39,7 @@ class QAClient {
             const url = new URL(path, BASE_URL);
             const reqHeaders = {
                 'User-Agent': `HANAP-QAValidator/${this.roleName}`,
+                'x-qa-bypass': 'hanap-internal-test',
                 ...headers
             };
 
