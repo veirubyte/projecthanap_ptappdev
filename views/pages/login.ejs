@@ -708,8 +708,31 @@
       }
     });
 
-    document.getElementById('loginForm')?.addEventListener('submit', handleLoginSubmit);
+    let loginSubmitting = false;
+    let mfaSubmitting = false;
+
+    document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+      if (loginSubmitting) {
+        e.preventDefault();
+        return false;
+      }
+      const allowed = handleLoginSubmit(e);
+      if (allowed !== false && !e.defaultPrevented) {
+        loginSubmitting = true;
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        }
+      }
+      return allowed;
+    });
+
     document.getElementById('mfaVerifyForm')?.addEventListener('submit', (e) => {
+      if (mfaSubmitting) {
+        e.preventDefault();
+        return false;
+      }
       const mfaInput = document.getElementById('mfaCode');
       if (mfaInput && !/^\d{6}$/.test(mfaInput.value.trim())) {
         e.preventDefault();
@@ -717,16 +740,18 @@
         showClientAlert('Invalid verification code', 'Please enter a valid 6-digit numeric verification code.');
         return false;
       }
+      mfaSubmitting = true;
+      const verifyBtn = document.getElementById('verifyBtn');
+      if (verifyBtn) {
+        verifyBtn.disabled = true;
+        verifyBtn.classList.add('opacity-75', 'cursor-not-allowed');
+      }
     });
 
     const mfaInputEl = document.getElementById('mfaCode');
     if (mfaInputEl) {
       mfaInputEl.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
-        if (e.target.value.length === 6) {
-          const form = document.getElementById('mfaVerifyForm');
-          if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
-        }
       });
     }
 

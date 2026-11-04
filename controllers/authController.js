@@ -46,16 +46,37 @@ function maskEmail(email) {
     return `${name.slice(0, 1)}${'*'.repeat(Math.max(name.length - 1, 2))}@${domain}`;
 }
 
-async function establishAuthenticatedSession(req, res, sessionUser) {
-    await new Promise((resolve, reject) => {
-        req.session.regenerate((error) => (error ? reject(error) : resolve()));
+function recordSessionMfaCode(req, result) {
+    if (result && result.codeHash) {
+        const now = Date.now();
+        const list = Array.isArray(req.session.validMfaCodeHashes) ? req.session.validMfaCodeHashes : [];
+        const filtered = list.filter(
+            (item) => item && item.codeHash && Number(item.expiresAt) > now && item.codeHash !== result.codeHash
+        );
+        filtered.push({
+            codeHash: result.codeHash,
+            expiresAt: result.expiresAt || (now + 10 * 60 * 1000)
+        });
+        req.session.validMfaCodeHashes = filtered.slice(-5);
+    }
+}
+
+async function saveSession(req) {
+    await new Promise((resolve) => {
+        req.session.save(() => resolve());
     });
-    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+}
+
+async function establishAuthenticatedSession(req, res, sessionUser) {
+    delete req.session.pendingMfaUser;
+    delete req.session.pendingMfaCategory;
+    delete req.session.mfaCooldownUntil;
+    delete req.session.mfaAttemptsRemaining;
+    delete req.session.validMfaCodeHashes;
+    req.session.csrfToken = req.session.csrfToken || crypto.randomBytes(24).toString('hex');
     res.locals.csrfToken = req.session.csrfToken;
     req.session.user = sessionUser;
-    await new Promise((resolve, reject) => {
-        req.session.save((error) => (error ? reject(error) : resolve()));
-    });
+    await saveSession(req);
 
     return res.redirect(isAdmin(sessionUser) ? '/admin/dashboard' : '/dashboard');
 }
@@ -84,6 +105,7 @@ const showLogin = (req, res) => {
         delete req.session.pendingMfaCategory;
         delete req.session.mfaCooldownUntil;
         delete req.session.mfaAttemptsRemaining;
+        delete req.session.validMfaCodeHashes;
     }
 
     // If already authenticated, redirect immediately based on authoritative database role
@@ -122,7 +144,14 @@ const login = async (req, res) => {
         delete req.session.pendingMfaCategory;
         delete req.session.mfaCooldownUntil;
         delete req.session.mfaAttemptsRemaining;
+        delete req.session.validMfaCodeHashes;
+        await saveSession(req);
         return res.redirect('/login');
+    }
+
+    // If a duplicate/concurrent MFA verification POST arrives right after the first request already authenticated the session
+    if (req.session.user && !req.session.pendingMfaUser && req.body.mfa_code && !req.body.email) {
+        return res.redirect(isAdmin(req.session.user) ? '/admin/dashboard' : '/dashboard');
     }
 
     if (req.session.pendingMfaUser) {
@@ -132,8 +161,10 @@ const login = async (req, res) => {
         try {
             if (req.body.resend_code === '1') {
                 const result = await issueCode(pendingUser.id, pendingUser.email);
+                recordSessionMfaCode(req, result);
                 req.session.mfaCooldownUntil = Date.now() + result.retryAfterSeconds * 1000;
                 req.session.mfaAttemptsRemaining = result.attemptsRemaining;
+                await saveSession(req);
                 return renderLogin(res, {
                     category,
                     mfaPending: true,
@@ -151,21 +182,19 @@ const login = async (req, res) => {
             }
 
             const code = typeof req.body.mfa_code === 'string' ? req.body.mfa_code.trim() : '';
-            const verification = await verifyCode(pendingUser.id, code);
+            const verification = await verifyCode(pendingUser.id, code, req.session.validMfaCodeHashes);
             req.session.mfaAttemptsRemaining = verification.attemptsRemaining;
             if (verification.status === 'verified') {
                 recordDevice2FaVerification(req, res, pendingUser.id);
-                delete req.session.pendingMfaUser;
-                delete req.session.pendingMfaCategory;
-                delete req.session.mfaCooldownUntil;
-                delete req.session.mfaAttemptsRemaining;
                 return await establishAuthenticatedSession(req, res, pendingUser);
             }
 
             if (verification.status === 'not_pending') {
                 const reissue = await issueCode(pendingUser.id, pendingUser.email);
+                recordSessionMfaCode(req, reissue);
                 req.session.mfaCooldownUntil = Date.now() + (reissue.retryAfterSeconds || 30) * 1000;
                 req.session.mfaAttemptsRemaining = reissue.attemptsRemaining;
+                await saveSession(req);
                 return renderLogin(res, {
                     category,
                     mfaPending: true,
@@ -182,7 +211,9 @@ const login = async (req, res) => {
             if (verification.status === 'locked') {
                 req.session.mfaCooldownUntil = Date.now();
                 req.session.mfaAttemptsRemaining = 0;
+                delete req.session.validMfaCodeHashes;
             }
+            await saveSession(req);
 
             const errorMessage = verification.status === 'expired'
                 ? 'Your code expired. Request a new code to continue.'
@@ -382,25 +413,23 @@ const login = async (req, res) => {
             if (!isTrusted) {
             const initialCode = typeof req.body.mfa_code === 'string' ? req.body.mfa_code.trim() : '';
             if (initialCode && /^\d{6}$/.test(initialCode)) {
-                const verification = await verifyCode(sessionUser.id, initialCode);
+                const verification = await verifyCode(sessionUser.id, initialCode, req.session.validMfaCodeHashes);
                 if (verification.status === 'verified') {
+                    recordDevice2FaVerification(req, res, sessionUser.id);
                     return await establishAuthenticatedSession(req, res, sessionUser);
                 }
             }
 
             const result = await issueCode(sessionUser.id, sessionUser.email);
-            await new Promise((resolve, reject) => {
-                req.session.regenerate((error) => (error ? reject(error) : resolve()));
-            });
-            req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+            delete req.session.user;
+            req.session.csrfToken = req.session.csrfToken || crypto.randomBytes(24).toString('hex');
             res.locals.csrfToken = req.session.csrfToken;
             req.session.pendingMfaUser = sessionUser;
             req.session.pendingMfaCategory = category;
             req.session.mfaCooldownUntil = Date.now() + result.retryAfterSeconds * 1000;
             req.session.mfaAttemptsRemaining = result.attemptsRemaining;
-            await new Promise((resolve, reject) => {
-                req.session.save((error) => (error ? reject(error) : resolve()));
-            });
+            recordSessionMfaCode(req, result);
+            await saveSession(req);
 
             return renderLogin(res, {
                 category,
@@ -803,8 +832,12 @@ const requestPasswordReset = async (req, res) => {
             step: 'verify',
             verified: false,
             cooldownUntil: Date.now() + ((issueResult.retryAfterSeconds || 60) * 1000),
-            attemptsRemaining: issueResult.attemptsRemaining ?? 5
+            attemptsRemaining: issueResult.attemptsRemaining ?? 5,
+            validCodeHashes: issueResult.codeHash
+                ? [{ codeHash: issueResult.codeHash, expiresAt: issueResult.expiresAt || (Date.now() + 10 * 60 * 1000) }]
+                : []
         };
+        await saveSession(req);
 
         return res.redirect('/forgot-password');
     } catch (error) {
@@ -837,6 +870,12 @@ const resendPasswordResetCode = async (req, res) => {
         const result = await issuePasswordResetCode(resetState.userId, resetState.email);
         resetState.cooldownUntil = Date.now() + ((result.retryAfterSeconds || 60) * 1000);
         resetState.attemptsRemaining = result.attemptsRemaining ?? 5;
+        if (result.codeHash) {
+            const list = Array.isArray(resetState.validCodeHashes) ? resetState.validCodeHashes : [];
+            list.push({ codeHash: result.codeHash, expiresAt: result.expiresAt || (Date.now() + 10 * 60 * 1000) });
+            resetState.validCodeHashes = list.slice(-5);
+        }
+        await saveSession(req);
         return res.redirect('/forgot-password');
     } catch (error) {
         console.error('Resend reset code error:', error);
@@ -877,7 +916,7 @@ const verifyPasswordResetCode = async (req, res) => {
     }
 
     try {
-        const outcome = await verifyCode(resetState.userId, submittedCode);
+        const outcome = await verifyCode(resetState.userId, submittedCode, resetState.validCodeHashes);
 
         if (outcome.status === 'verified') {
             const token = crypto.randomBytes(32).toString('hex');

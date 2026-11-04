@@ -192,6 +192,25 @@ async function runMfaVerificationSuite() {
   const diffDeviceRequires2Fa = diffDeviceLogin.status === 200 && diffDeviceLogin.body.includes('id="mfaVerifyForm"');
   console.log(`[${diffDeviceRequires2Fa ? '✅ PASS' : '❌ FAIL'}] Different Device Correctly Requires 2FA:`, diffDeviceRequires2Fa);
 
+  // Step 9: Verify Active Code Persistence After Cooldown & Double-Submit Resilience
+  console.log('\n--- Step 9: Active Code Persistence & Double-Submit Resilience ---');
+  const wrongCodeRes = await differentDeviceClient.request('POST', '/login', {
+    mfa_code: '000000'
+  });
+  const isActivelyPending = wrongCodeRes.status === 200 &&
+                            wrongCodeRes.body.includes('Invalid verification code') &&
+                            !wrongCodeRes.body.includes('no longer active') &&
+                            !wrongCodeRes.body.includes('There is no active code');
+  console.log(`[${isActivelyPending ? '✅ PASS' : '❌ FAIL'}] Fresh Code Remains Active (Never False "No Longer Active"):`, isActivelyPending);
+
+  const [sub1, sub2] = await Promise.all([
+    differentDeviceClient.request('POST', '/login', { mfa_code: '123456' }),
+    new Promise((r) => setTimeout(r, 80)).then(() => differentDeviceClient.request('POST', '/login', { mfa_code: '123456' }))
+  ]);
+  const bothRedirectToDashboard = (sub1.status === 302 && sub1.location === '/dashboard') &&
+                                  (sub2.status === 302 && sub2.location === '/dashboard');
+  console.log(`[${bothRedirectToDashboard ? '✅ PASS' : '❌ FAIL'}] Double-Submit Resilience (Both Requests Redirect to /dashboard):`, bothRedirectToDashboard);
+
   console.log('\n================================================================');
   console.log('🏆 2-FACTOR AUTHENTICATION INTEGRATION SUITE COMPLETE');
   console.log('================================================================');

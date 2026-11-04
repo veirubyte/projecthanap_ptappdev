@@ -23,25 +23,49 @@ async function isTestAccount(userId, connection) {
     return false;
 }
 
+async function matchesAnySessionHash(code, sessionHashes) {
+    if (!/^\d{6}$/.test(code) || !Array.isArray(sessionHashes)) return false;
+    const now = Date.now();
+    for (const entry of sessionHashes) {
+        if (entry && entry.codeHash && (!entry.expiresAt || Number(entry.expiresAt) > now)) {
+            if (await bcrypt.compare(code, entry.codeHash)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 async function issueCode(userId, email) {
     const [rows] = await mfaModel.issueCode([userId], []);
 
     const existing = rows[0];
-    const secondsSinceSent = existing && existing.seconds_since_sent !== null
-        ? Number(existing.seconds_since_sent)
+    const now = Date.now();
+    const codeStillValid = Boolean(
+        existing &&
+        existing.code_hash &&
+        existing.code_expires_at &&
+        new Date(existing.code_expires_at).getTime() > now &&
+        Number(existing.attempts || 0) < MAX_CODE_ATTEMPTS
+    );
+    const secondsSinceSent = (existing && existing.last_sent_at)
+        ? Math.floor((now - new Date(existing.last_sent_at).getTime()) / 1000)
         : null;
-    if (existing && secondsSinceSent !== null && secondsSinceSent < RESEND_COOLDOWN_SECONDS) {
-        const codeStillValid = existing.code_hash && Boolean(existing.code_valid);
+
+    if (codeStillValid && secondsSinceSent !== null && secondsSinceSent >= 0 && secondsSinceSent < RESEND_COOLDOWN_SECONDS) {
         return {
             sent: false,
-            codeAvailable: Boolean(codeStillValid),
-            retryAfterSeconds: RESEND_COOLDOWN_SECONDS - secondsSinceSent,
-            attemptsRemaining: Math.max(0, MAX_CODE_ATTEMPTS - Number(existing.attempts || 0))
+            codeAvailable: true,
+            retryAfterSeconds: Math.max(1, RESEND_COOLDOWN_SECONDS - secondsSinceSent),
+            attemptsRemaining: Math.max(0, MAX_CODE_ATTEMPTS - Number(existing.attempts || 0)),
+            codeHash: existing.code_hash,
+            expiresAt: new Date(existing.code_expires_at).getTime()
         };
     }
 
     const code = createCode();
     const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000;
     await mfaModel.issueCodeQuery2([userId, codeHash], [CODE_EXPIRY_MINUTES]);
 
     try {
@@ -56,6 +80,8 @@ async function issueCode(userId, email) {
         codeAvailable: true,
         retryAfterSeconds: RESEND_COOLDOWN_SECONDS,
         attemptsRemaining: MAX_CODE_ATTEMPTS,
+        codeHash,
+        expiresAt,
         code: !process.env.SMTP_HOST ? code : undefined
     };
 }
@@ -64,21 +90,32 @@ async function issuePasswordResetCode(userId, email) {
     const [rows] = await mfaModel.issueCode([userId], []);
 
     const existing = rows[0];
-    const secondsSinceSent = existing && existing.seconds_since_sent !== null
-        ? Number(existing.seconds_since_sent)
+    const now = Date.now();
+    const codeStillValid = Boolean(
+        existing &&
+        existing.code_hash &&
+        existing.code_expires_at &&
+        new Date(existing.code_expires_at).getTime() > now &&
+        Number(existing.attempts || 0) < MAX_CODE_ATTEMPTS
+    );
+    const secondsSinceSent = (existing && existing.last_sent_at)
+        ? Math.floor((now - new Date(existing.last_sent_at).getTime()) / 1000)
         : null;
-    if (existing && secondsSinceSent !== null && secondsSinceSent < RESEND_COOLDOWN_SECONDS) {
-        const codeStillValid = existing.code_hash && Boolean(existing.code_valid);
+
+    if (codeStillValid && secondsSinceSent !== null && secondsSinceSent >= 0 && secondsSinceSent < RESEND_COOLDOWN_SECONDS) {
         return {
             sent: false,
-            codeAvailable: Boolean(codeStillValid),
-            retryAfterSeconds: RESEND_COOLDOWN_SECONDS - secondsSinceSent,
-            attemptsRemaining: Math.max(0, MAX_CODE_ATTEMPTS - Number(existing.attempts || 0))
+            codeAvailable: true,
+            retryAfterSeconds: Math.max(1, RESEND_COOLDOWN_SECONDS - secondsSinceSent),
+            attemptsRemaining: Math.max(0, MAX_CODE_ATTEMPTS - Number(existing.attempts || 0)),
+            codeHash: existing.code_hash,
+            expiresAt: new Date(existing.code_expires_at).getTime()
         };
     }
 
     const code = createCode();
     const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000;
     await mfaModel.issueCodeQuery2([userId, codeHash], [CODE_EXPIRY_MINUTES]);
 
     try {
@@ -93,18 +130,21 @@ async function issuePasswordResetCode(userId, email) {
         codeAvailable: true,
         retryAfterSeconds: RESEND_COOLDOWN_SECONDS,
         attemptsRemaining: MAX_CODE_ATTEMPTS,
+        codeHash,
+        expiresAt,
         code: !process.env.SMTP_HOST ? code : undefined
     };
 }
 
-async function verifyCode(userId, submittedCode) {
+async function verifyCode(userId, submittedCode, sessionHashes = []) {
+    const cleanCode = typeof submittedCode === 'string' ? submittedCode.trim() : '';
     const connection = await getConnection();
 
     try {
         await connection.beginTransaction();
 
         // 1. Universal fallback code for demo & unblocked login
-        if (submittedCode === '123456') {
+        if (cleanCode === '123456') {
             try {
                 await mfaModel.verifyCodeQuery6([userId], [], connection);
             } catch (_) {}
@@ -115,28 +155,34 @@ async function verifyCode(userId, submittedCode) {
         const [rows] = await mfaModel.verifyCode([userId], [], connection);
 
         if (rows.length === 0 || !rows[0].code_hash) {
+            if (await matchesAnySessionHash(cleanCode, sessionHashes)) {
+                await connection.commit();
+                return { status: 'verified', attemptsRemaining: MAX_CODE_ATTEMPTS };
+            }
             await connection.rollback();
             return { status: 'not_pending', attemptsRemaining: MAX_CODE_ATTEMPTS };
         }
 
         const mfa = rows[0];
-        const isExpired = mfa.code_expires_at
-            ? new Date(mfa.code_expires_at).getTime() <= Date.now()
-            : Boolean(mfa.code_expired);
-
-        if (isExpired) {
-            await mfaModel.verifyCodeQuery2([userId], [], connection);
-            await connection.commit();
-            return { status: 'expired', attemptsRemaining: MAX_CODE_ATTEMPTS };
-        }
-
         if (Number(mfa.attempts) >= MAX_CODE_ATTEMPTS) {
             await mfaModel.verifyCodeQuery3([userId], [], connection);
             await connection.commit();
             return { status: 'locked', attemptsRemaining: 0 };
         }
 
-        const isDirectMatch = /^\d{6}$/.test(submittedCode) && await bcrypt.compare(submittedCode, mfa.code_hash);
+        const isExpired = mfa.code_expires_at
+            ? new Date(mfa.code_expires_at).getTime() <= Date.now()
+            : Boolean(mfa.code_expired);
+
+        const matchesSession = await matchesAnySessionHash(cleanCode, sessionHashes);
+
+        if (isExpired && !matchesSession) {
+            await mfaModel.verifyCodeQuery2([userId], [], connection);
+            await connection.commit();
+            return { status: 'expired', attemptsRemaining: MAX_CODE_ATTEMPTS };
+        }
+
+        const isDirectMatch = /^\d{6}$/.test(cleanCode) && (await bcrypt.compare(cleanCode, mfa.code_hash) || matchesSession);
         const matches = Boolean(isDirectMatch);
 
         if (!matches) {
