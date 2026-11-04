@@ -62,13 +62,13 @@ if (isPostgres) {
     translated = translated.replace(/DATE_ADD\s*\(\s*(UTC_TIMESTAMP\(\)|NOW\(\))\s*,\s*INTERVAL\s*(\d+)\s*MINUTE\s*\)/gi, "($1 + INTERVAL '$2 minutes')");
     translated = translated.replace(
       /TIMESTAMPDIFF\s*\(\s*SECOND\s*,\s*([^,]+)\s*,\s*UTC_TIMESTAMP\(\)\s*\)/gi,
-      (match, col) => `EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - ${col.trim()}))::integer`
+      (match, col) => `EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ${col.trim()}))::integer`
     );
     translated = translated.replace(
       /TIMESTAMPDIFF\s*\(\s*SECOND\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi,
       (match, col1, col2) => `EXTRACT(EPOCH FROM (${col2.trim()} - ${col1.trim()}))::integer`
     );
-    translated = translated.replace(/UTC_TIMESTAMP\(\)/gi, "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')");
+    translated = translated.replace(/UTC_TIMESTAMP\(\)/gi, "CURRENT_TIMESTAMP");
 
     // 4. ON DUPLICATE KEY UPDATE handling
     if (/ON\s+DUPLICATE\s+KEY\s+UPDATE\s+id\s*=\s*LAST_INSERT_ID\s*\(\s*id\s*\)/i.test(translated)) {
