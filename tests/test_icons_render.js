@@ -145,17 +145,22 @@ server.listen(PORT, async () => {
     
     await new Promise((resolve) => {
       const proc = spawn(edgeExe, [
-        '--headless=new',
+        '--headless',
         '--disable-gpu',
-        '--virtual-time-budget=2000',
+        '--no-sandbox',
+        '--virtual-time-budget=1500',
         '--dump-dom',
         'http://127.0.0.1:' + PORT + '/render'
       ]);
       
       let dom = '';
-      proc.stdout.on('data', d => dom += d.toString());
-      proc.on('close', () => {
-        // Strip script tags so string literals inside JS functions are not matched
+      let resolved = false;
+
+      function finish() {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        try { proc.kill(); } catch (_) {}
         const domWithoutScripts = dom.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         const unrendered = domWithoutScripts.match(/<i[^>]*data-lucide="([^"]+)"[^>]*>[^<]*<\/i>/g) || [];
         const unrenderedIcons = unrendered.map(tag => {
@@ -164,7 +169,12 @@ server.listen(PORT, async () => {
         });
         brokenPerPage[pageLabel] = unrenderedIcons;
         resolve();
-      });
+      }
+
+      const timer = setTimeout(finish, 2500);
+      proc.stdout.on('data', d => dom += d.toString());
+      proc.on('close', finish);
+      proc.on('error', finish);
     });
   }
 
