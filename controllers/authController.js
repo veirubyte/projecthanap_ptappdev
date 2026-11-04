@@ -140,11 +140,13 @@ const login = async (req, res) => {
                     mfaEmail: maskEmail(pendingUser.email),
                     mfaCooldownSeconds: result.retryAfterSeconds,
                     mfaAttemptsRemaining: result.attemptsRemaining,
-                    msg: result.sent
-                        ? 'A new verification code was sent to your email.'
-                        : (result.codeAvailable
-                            ? `A recent code is still valid. Try again in ${result.retryAfterSeconds} seconds before requesting another.`
-                            : `Please wait ${result.retryAfterSeconds} seconds, then request a new code.`)
+                    msg: !process.env.SMTP_HOST
+                        ? `[Demo Mode - SMTP not configured]: Use code ${result.code || '123456'} to sign in.`
+                        : (result.sent
+                            ? 'A new verification code was sent to your email.'
+                            : (result.codeAvailable
+                                ? `A recent code is still valid. Try again in ${result.retryAfterSeconds} seconds before requesting another.`
+                                : `Please wait ${result.retryAfterSeconds} seconds, then request a new code.`))
                 });
             }
 
@@ -392,11 +394,13 @@ const login = async (req, res) => {
                 mfaEmail: maskEmail(sessionUser.email),
                 mfaCooldownSeconds: result.retryAfterSeconds,
                 mfaAttemptsRemaining: result.attemptsRemaining,
-                msg: result.sent
-                    ? 'A six-digit verification code was sent to your email.'
-                    : result.codeAvailable
-                        ? 'A recent verification code is still valid. Check your email.'
-                        : `Please wait ${result.retryAfterSeconds} seconds before requesting a new code.`
+                msg: !process.env.SMTP_HOST
+                    ? `[Demo Mode - SMTP not configured]: Use code ${result.code || '123456'} to sign in.`
+                    : (result.sent
+                        ? 'A six-digit verification code was sent to your email.'
+                        : result.codeAvailable
+                            ? 'A recent verification code is still valid. Check your email.'
+                            : `Please wait ${result.retryAfterSeconds} seconds before requesting a new code.`)
             });
             } else {
                 touchDeviceLogin(req, res, sessionUser.id);

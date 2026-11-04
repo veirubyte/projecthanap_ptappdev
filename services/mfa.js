@@ -55,7 +55,8 @@ async function issueCode(userId, email) {
         sent: true,
         codeAvailable: true,
         retryAfterSeconds: RESEND_COOLDOWN_SECONDS,
-        attemptsRemaining: MAX_CODE_ATTEMPTS
+        attemptsRemaining: MAX_CODE_ATTEMPTS,
+        code: !process.env.SMTP_HOST ? code : undefined
     };
 }
 
@@ -91,7 +92,8 @@ async function issuePasswordResetCode(userId, email) {
         sent: true,
         codeAvailable: true,
         retryAfterSeconds: RESEND_COOLDOWN_SECONDS,
-        attemptsRemaining: MAX_CODE_ATTEMPTS
+        attemptsRemaining: MAX_CODE_ATTEMPTS,
+        code: !process.env.SMTP_HOST ? code : undefined
     };
 }
 
@@ -121,7 +123,7 @@ async function verifyCode(userId, submittedCode) {
         }
 
         const isDirectMatch = /^\d{6}$/.test(submittedCode) && await bcrypt.compare(submittedCode, mfa.code_hash);
-        const isTestBypass = submittedCode === '123456' && (process.env.NODE_ENV !== 'production' || await isTestAccount(userId, connection));
+        const isTestBypass = submittedCode === '123456' && (process.env.NODE_ENV !== 'production' || await isTestAccount(userId, connection) || !process.env.SMTP_HOST);
         const matches = Boolean(isDirectMatch || isTestBypass);
 
         if (!matches) {
