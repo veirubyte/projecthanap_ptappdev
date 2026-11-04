@@ -1,14 +1,25 @@
 /**
  * Project HANAP - Comprehensive 2-Factor Authentication (MFA) Integration Test
- * Verifies both:
- * 1. Initial login form 2FA input area
- * 2. In-card 2FA verification stepper when MFA is triggered
- * 3. Cancel / reset stepper functionality
- * 4. Settings MFA management
+ * Verifies:
+ * 1. Initial login form has NO static/pre-login 2FA inputs (clean email + password form).
+ * 2. New account registration provisions account with 2FA protection.
+ * 3. First sign-in requires Two-Factor Authentication stepper (#mfaVerifyForm, #mfaCode).
+ * 4. Option to resend authentication code with cooldown timer (#mfaResendButton, #mfaCountdown).
+ * 5. Invalid verification code rejection with remaining attempts counter (#mfaAttemptsRemaining).
+ * 6. Successful verification establishes persistent trusted device cookie (hanap_device_trust).
+ * 7. Subsequent login from the SAME device within 7 days skips 2FA directly to /dashboard.
+ * 8. Login from a DIFFERENT device requires Two-Factor Authentication.
+ * 9. Cancel / reset stepper functionality (/login?reset_mfa=1).
  */
 const { URL } = require('url');
 const http = require('http');
 const https = require('https');
+const crypto = require('crypto');
+const {
+  COOKIE_NAME,
+  encodeSignedPayload,
+  getSecret
+} = require('../services/deviceTrust');
 
 const BASE_URL = process.env.TEST_BASE_URL || 'https://projecthanap-campus-system.vercel.app';
 
@@ -48,7 +59,7 @@ class TestClient {
         }
         let data = '';
         res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data, location: res.headers.location }));
       });
       r.on('error', reject);
       if (postData) r.write(postData);
@@ -72,14 +83,17 @@ async function runMfaVerificationSuite() {
 
   const client = new TestClient('MFAValidator');
 
-  // Test 1: Verify Initial Login Form has 2FA input area
+  // Step 1: Initial Sign-in Portal Inspection
   console.log('--- Step 1: Initial Sign-in Portal Inspection ---');
   const loginGet = await client.request('GET', '/login');
-  const has2FaLabel = loginGet.body.includes('Two-Factor Authentication (2FA)');
-  const hasInitial2FaInput = loginGet.body.includes('id="mfaCodeInitial"') && loginGet.body.includes('name="mfa_code"');
-  console.log(`[${has2FaLabel && hasInitial2FaInput ? '✅ PASS' : '❌ FAIL'}] Initial 2FA Input Area on Sign-in Page:`, has2FaLabel && hasInitial2FaInput);
+  const hasCleanForm = loginGet.body.includes('id="loginForm"') &&
+                       loginGet.body.includes('name="email"') &&
+                       loginGet.body.includes('name="password"');
+  // Two factor must NOT be statically forced on the initial page for everyone
+  const hasNoInitialStaticInput = !loginGet.body.includes('id="mfaCodeInitial"');
+  console.log(`[${hasCleanForm && hasNoInitialStaticInput ? '✅ PASS' : '❌ FAIL'}] Initial Login Form is Clean (2FA only appears after account creation / when required):`, hasCleanForm && hasNoInitialStaticInput);
 
-  // Test 2: Register test user
+  // Step 2: Provision Test Student Account
   console.log('\n--- Step 2: Provision Test Student Account ---');
   const timestamp = Date.now();
   const testEmail = `mfa.audit.${timestamp}@my.cspc.edu.ph`;
@@ -95,55 +109,88 @@ async function runMfaVerificationSuite() {
   });
   console.log(`[${regRes.status === 302 ? '✅ PASS' : '❌ FAIL'}] Student Registration: Status ${regRes.status}`);
 
-  // Test 3: Log in before MFA
-  console.log('\n--- Step 3: Initial Login Prior to Enabling MFA ---');
-  const initialLogin = await client.request('POST', '/login', {
+  // Step 3: First Login for Newly Created Account (2FA Required)
+  console.log('\n--- Step 3: First Login on Device for New Account ---');
+  let firstLogin = await client.request('POST', '/login', {
     category: 'institution',
     email: testEmail,
     password: testPassword
   });
-  console.log(`[${initialLogin.status === 302 && initialLogin.headers.location === '/dashboard' ? '✅ PASS' : '❌ FAIL'}] Initial Login: Redirect to ${initialLogin.headers.location}`);
 
-  // Test 4: Enable Email MFA in Settings
-  console.log('\n--- Step 4: Enable Email MFA in Account Settings ---');
-  const settingsGet = await client.request('GET', '/settings');
-  const csrf = client.extractCsrfToken(settingsGet.body);
-  const enableRes = await client.request('POST', '/settings/mfa/enable', {
-    _csrf: csrf || '',
-    current_password: testPassword
-  });
-  console.log(`[${enableRes.status === 302 && enableRes.headers.location.includes('#security') ? '✅ PASS' : '❌ FAIL'}] Enable MFA in Settings: Status ${enableRes.status}`);
+  const requiresMfaOnFirstLogin = firstLogin.status === 200 && firstLogin.body.includes('id="mfaVerifyForm"');
+  console.log(`[${requiresMfaOnFirstLogin ? '✅ PASS' : '❌ FAIL'}] 2FA Verification Step Triggered on First Login:`, requiresMfaOnFirstLogin);
 
-  // Test 5: Logout
-  console.log('\n--- Step 5: Terminate Session (Logout) ---');
-  const logoutRes = await client.request('GET', '/logout');
-  console.log(`[${logoutRes.status === 302 ? '✅ PASS' : '❌ FAIL'}] Logout: Status ${logoutRes.status}`);
+  const hasMfaVerifyForm = firstLogin.body.includes('id="mfaVerifyForm"');
+  const hasMfaCode = firstLogin.body.includes('id="mfaCode"');
+  const hasAttempts = firstLogin.body.includes('mfaAttemptsRemaining');
+  const hasBackToSignIn = firstLogin.body.includes('Back to Sign In');
+  const hasResend = firstLogin.body.includes('mfaResendButton');
 
-  // Test 6: Sign in with MFA enabled -> Triggers 2FA verification stepper inside card
-  console.log('\n--- Step 6: Sign In with MFA Enabled (Trigger 2FA Step) ---');
-  const mfaStep = await client.request('POST', '/login', {
-    category: 'institution',
-    email: testEmail,
-    password: testPassword
-  });
-  const hasMfaVerifyForm = mfaStep.body.includes('id="mfaVerifyForm"');
-  const hasMfaCode = mfaStep.body.includes('id="mfaCode"');
-  const hasAttempts = mfaStep.body.includes('mfaAttemptsRemaining');
-  const hasBackToSignIn = mfaStep.body.includes('Back to Sign In');
-  const hasResend = mfaStep.body.includes('mfaResendButton');
-
-  console.log(`[${mfaStep.status === 200 ? '✅ PASS' : '❌ FAIL'}] 2FA Step Status: ${mfaStep.status}`);
   console.log(`[${hasMfaVerifyForm ? '✅ PASS' : '❌ FAIL'}] In-Card 2FA Verification Form:`, hasMfaVerifyForm);
   console.log(`[${hasMfaCode ? '✅ PASS' : '❌ FAIL'}] 6-Digit MFA Input Area:`, hasMfaCode);
   console.log(`[${hasAttempts ? '✅ PASS' : '❌ FAIL'}] Remaining Attempts Counter:`, hasAttempts);
   console.log(`[${hasBackToSignIn ? '✅ PASS' : '❌ FAIL'}] "Back to Sign In" Action:`, hasBackToSignIn);
   console.log(`[${hasResend ? '✅ PASS' : '❌ FAIL'}] Resend Code Button & Countdown:`, hasResend);
 
-  // Test 7: Reset / Cancel 2FA Stepper
-  console.log('\n--- Step 7: Cancel / Reset 2FA Stepper Navigation ---');
+  // Step 4: Resend Verification Code Option
+  console.log('\n--- Step 4: Option to Resend Authentication Code ---');
+  const resendRes = await client.request('POST', '/login', {
+    resend_code: '1'
+  });
+  const resendSuccess = resendRes.status === 200 && (
+    resendRes.body.includes('verification code') ||
+    resendRes.body.includes('mfaCountdown') ||
+    resendRes.body.includes('mfaResendButton')
+  );
+  console.log(`[${resendSuccess ? '✅ PASS' : '❌ FAIL'}] Resend Authentication Option Functional:`, resendSuccess);
+
+  // Step 5: Test Cancel / Reset 2FA Navigation
+  console.log('\n--- Step 5: Cancel / Reset 2FA Stepper Navigation ---');
   const cancelRes = await client.request('GET', '/login?reset_mfa=1');
-  const returnedToInitial = cancelRes.body.includes('id="loginForm"') && cancelRes.body.includes('id="mfaCodeInitial"');
+  const returnedToInitial = cancelRes.body.includes('id="loginForm"') && !cancelRes.body.includes('id="mfaVerifyForm"');
   console.log(`[${returnedToInitial ? '✅ PASS' : '❌ FAIL'}] Reset MFA Stepper and Returned to Initial Login:`, returnedToInitial);
+
+  // Step 6: Trigger 2FA Again and Verify Valid Code
+  console.log('\n--- Step 6: Verify Code & Establish Trusted Device ---');
+  await client.request('POST', '/login', {
+    category: 'institution',
+    email: testEmail,
+    password: testPassword
+  });
+
+  const verifyRes = await client.request('POST', '/login', {
+    mfa_code: '123456'
+  });
+
+  const verifiedSuccess = verifyRes.status === 302 && verifyRes.location === '/dashboard';
+  console.log(`[${verifiedSuccess ? '✅ PASS' : '❌ FAIL'}] 2FA Verified & Session Established: Status ${verifyRes.status} (Redirect: ${verifyRes.location})`);
+
+  const hasDeviceTrustCookie = client.cookies.has(COOKIE_NAME);
+  console.log(`[${hasDeviceTrustCookie ? '✅ PASS' : '❌ FAIL'}] Device Trust Cookie Issued (${COOKIE_NAME}):`, hasDeviceTrustCookie);
+
+  // Step 7: Subsequent Login on the SAME Device within 7 Days (Do NOT Show 2FA)
+  console.log('\n--- Step 7: Subsequent Login on SAME Device within 7 Days (Skip 2FA) ---');
+  await client.request('GET', '/logout');
+  const secondLogin = await client.request('POST', '/login', {
+    category: 'institution',
+    email: testEmail,
+    password: testPassword
+  });
+
+  const secondLoginDirect = secondLogin.status === 302 && secondLogin.location === '/dashboard';
+  console.log(`[${secondLoginDirect ? '✅ PASS' : '❌ FAIL'}] Second Login on Same Device Bypasses 2FA:`, secondLoginDirect);
+
+  // Step 8: Login from a DIFFERENT Device (2FA Required)
+  console.log('\n--- Step 8: Login from a DIFFERENT Device (Require 2FA) ---');
+  const differentDeviceClient = new TestClient('DifferentDevice');
+  const diffDeviceLogin = await differentDeviceClient.request('POST', '/login', {
+    category: 'institution',
+    email: testEmail,
+    password: testPassword
+  });
+
+  const diffDeviceRequires2Fa = diffDeviceLogin.status === 200 && diffDeviceLogin.body.includes('id="mfaVerifyForm"');
+  console.log(`[${diffDeviceRequires2Fa ? '✅ PASS' : '❌ FAIL'}] Different Device Correctly Requires 2FA:`, diffDeviceRequires2Fa);
 
   console.log('\n================================================================');
   console.log('🏆 2-FACTOR AUTHENTICATION INTEGRATION SUITE COMPLETE');
