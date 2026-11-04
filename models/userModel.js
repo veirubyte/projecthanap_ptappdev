@@ -1,4 +1,4 @@
-﻿const db = require('../config/db');
+const db = require('../config/db');
 
 async function login(params, values = [], connection = db) {
     return connection.execute(`SELECT u.id, u.full_name, u.email, u.password_hash, ar.role_code AS role
@@ -28,7 +28,7 @@ async function registerQuery3(params, values = [], connection = db) {
 }
 
 async function registerQuery4(params, values = [], connection = db) {
-    return connection.execute(`INSERT INTO users (full_name, email, password_hash, role_id) VALUES (?, ?, ?, ?)`, params);
+    return connection.execute(`INSERT INTO users (full_name, email, password_hash, role_id, mfa_enabled) VALUES (?, ?, ?, ?, 1)`, params);
 }
 
 async function showSettings(params, values = [], connection = db) {

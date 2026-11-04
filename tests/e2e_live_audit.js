@@ -143,21 +143,31 @@ async function runComprehensiveLifecycle() {
 
         // --- PHASE 2: Authentication & Database Session Persistence ---
         console.log('\n--- Phase 2: Authentication & Persistent Database Sessions ---');
-        const studentLogin = await student.request('POST', '/login', {
+        let studentLogin = await student.request('POST', '/login', {
             category: 'institution',
             email: 'qa.tester@my.cspc.edu.ph',
             password: 'Password123!'
         });
+        if (studentLogin.status === 200 && studentLogin.body.includes('mfaVerifyForm')) {
+            studentLogin = await student.request('POST', '/login', {
+                mfa_code: '123456'
+            });
+        }
         record('Student Login', studentLogin.status === 302 && studentLogin.location === '/dashboard', `Redirect: ${studentLogin.location}`);
 
         const studentDash = await student.request('GET', '/dashboard');
         record('Student Dashboard Authorization', studentDash.status === 200 && studentDash.body.includes('qa.tester@my.cspc.edu.ph'), 'Session verified in Supabase user_sessions');
 
-        const guestLogin = await guest.request('POST', '/login', {
+        let guestLogin = await guest.request('POST', '/login', {
             category: 'guest',
             email: 'qa.guest@gmail.com',
             password: 'Password123!'
         });
+        if (guestLogin.status === 200 && guestLogin.body.includes('mfaVerifyForm')) {
+            guestLogin = await guest.request('POST', '/login', {
+                mfa_code: '123456'
+            });
+        }
         record('Guest Login', guestLogin.status === 302 && guestLogin.location === '/dashboard', `Redirect: ${guestLogin.location}`);
 
         const guestDash = await guest.request('GET', '/dashboard');

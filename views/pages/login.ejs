@@ -379,7 +379,7 @@
                 formnovalidate 
                 class="w-full py-2 text-xs font-bold text-[#2B5B84] hover:text-[#0058be] hover:underline disabled:text-slate-400 disabled:no-underline cursor-pointer transition flex items-center justify-center gap-1.5">
                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                <span id="mfaResendLabel">Request a new code</span>
+                <span id="mfaResendLabel">Didn't receive the code? Resend authentication</span>
               </button>
             </form>
             <p class="text-center text-[11px] text-slate-500" id="mfaCountdown" data-cooldown-seconds="<%= typeof mfaCooldownSeconds === 'number' ? mfaCooldownSeconds : 0 %>" aria-live="polite"></p>
@@ -440,38 +440,6 @@
                   </button>
                 </div>
               </div>
-            </div>
-
-            <!-- Two-Factor Authentication (2FA) Input Area -->
-            <div class="space-y-1.5 pt-0.5">
-              <div class="flex items-center justify-between">
-                <label 
-                  class="block text-xs font-semibold text-slate-700 flex items-center gap-1.5" 
-                  for="mfaCodeInitial">
-                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#2B5B84]"></i>
-                  <span>Two-Factor Authentication (2FA) Code</span>
-                </label>
-                <span class="text-[10px] font-bold text-[#2B5B84] bg-blue-50 border border-blue-200/70 px-2 py-0.5 rounded-full">
-                  If enabled
-                </span>
-              </div>
-              <div class="relative">
-                <input 
-                  class="w-full h-11 pl-10 pr-3.5 bg-white/90 border border-slate-200/80 rounded-xl text-sm text-[#0F172A] placeholder:text-slate-400 shadow-2xs focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#3B82F6]/40 focus:border-[#3B82F6] transition-all tracking-widest font-mono <%= (typeof invalidFields !== 'undefined' && invalidFields.includes('mfa_code')) ? 'border-rose-500 ring-2 ring-rose-200' : 'border-slate-200/80' %>" 
-                  id="mfaCodeInitial" 
-                  name="mfa_code" 
-                  placeholder="6-digit security code (e.g. 123456)" 
-                  type="text" 
-                  inputmode="numeric" 
-                  autocomplete="one-time-code"
-                  maxlength="6"
-                  pattern="[0-9]{6}"
-                />
-                <div class="absolute left-3 top-0 h-full flex items-center pointer-events-none text-slate-400">
-                  <i data-lucide="key-round" class="w-4 h-4 text-[#2B5B84]/60"></i>
-                </div>
-              </div>
-              <p class="text-[11px] text-slate-500 leading-normal">If 2FA is active on your account, enter your 6-digit code here or leave blank to verify in the next step.</p>
             </div>
 
             <!-- Keep me signed in & Forgot Password Link -->
@@ -592,7 +560,6 @@
     function clearValidationErrors() {
       const emailInput = document.getElementById('email');
       const passwordInput = document.getElementById('password');
-      const initialMfa = document.getElementById('mfaCodeInitial');
       const mfaInput = document.getElementById('mfaCode');
       if (emailInput) {
         emailInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
@@ -601,10 +568,6 @@
       if (passwordInput) {
         passwordInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
         passwordInput.classList.add('border-slate-200/80');
-      }
-      if (initialMfa) {
-        initialMfa.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
-        initialMfa.classList.add('border-slate-200/80');
       }
       if (mfaInput) {
         mfaInput.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
@@ -775,7 +738,7 @@
       let secondsRemaining = Number.isFinite(cooldownSeconds) ? Math.max(0, cooldownSeconds) : 0;
       const updateMfaCountdown = () => {
         resendButton.disabled = secondsRemaining > 0;
-        resendLabel.textContent = 'Request a new code';
+        resendLabel.textContent = "Didn't receive the code? Resend authentication";
         mfaCountdown.textContent = secondsRemaining > 0
           ? `You can request another code in ${secondsRemaining} seconds.`
           : 'You can request another code now.';

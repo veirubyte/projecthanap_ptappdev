@@ -13,6 +13,11 @@ const {
     isGuest
 } = require('../config/roles');
 const { issueCode, verifyCode, issuePasswordResetCode } = require('../services/mfa');
+const {
+    isDeviceTrustedForUser,
+    recordDevice2FaVerification,
+    touchDeviceLogin
+} = require('../services/deviceTrust');
 
 
 /**
@@ -147,6 +152,7 @@ const login = async (req, res) => {
             const verification = await verifyCode(pendingUser.id, code);
             req.session.mfaAttemptsRemaining = verification.attemptsRemaining;
             if (verification.status === 'verified') {
+                recordDevice2FaVerification(req, res, pendingUser.id);
                 delete req.session.pendingMfaUser;
                 delete req.session.pendingMfaCategory;
                 delete req.session.mfaCooldownUntil;
@@ -353,7 +359,11 @@ const login = async (req, res) => {
 
         const [mfaRows] = await userModel.loginQuery2([sessionUser.id], []);
 
-        if (mfaRows.length > 0 && Boolean(mfaRows[0].mfa_enabled)) {
+        const mfaEnabled = mfaRows.length > 0 && Boolean(mfaRows[0].mfa_enabled);
+
+        if (mfaEnabled) {
+            const isTrusted = isDeviceTrustedForUser(req, sessionUser.id);
+            if (!isTrusted) {
             const initialCode = typeof req.body.mfa_code === 'string' ? req.body.mfa_code.trim() : '';
             if (initialCode && /^\d{6}$/.test(initialCode)) {
                 const verification = await verifyCode(sessionUser.id, initialCode);
@@ -388,6 +398,10 @@ const login = async (req, res) => {
                         ? 'A recent verification code is still valid. Check your email.'
                         : `Please wait ${result.retryAfterSeconds} seconds before requesting a new code.`
             });
+            } else {
+                touchDeviceLogin(req, res, sessionUser.id);
+                return await establishAuthenticatedSession(req, res, sessionUser);
+            }
         }
 
         return await establishAuthenticatedSession(req, res, sessionUser);
