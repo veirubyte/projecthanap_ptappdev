@@ -118,3 +118,4 @@ function runTests() {
 }
 
 runTests();
+
