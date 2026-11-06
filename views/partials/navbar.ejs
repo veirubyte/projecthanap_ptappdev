@@ -52,7 +52,7 @@
         <!-- Guest, Student, and Staff Navigation Links -->
         <a href="/dashboard" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'dashboard') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Dashboard</a>
         <a href="/catalog" class="whitespace-nowrap inline-flex items-center shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && active === 'catalog') ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">Browse Catalog</a>
-        <a href="/items/new" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && (active === 'report-lost' || active === 'report-found' || active === 'report-item')) ? 'bg-[#09436B] text-white font-bold shadow-xs' : 'text-[#09436B] bg-sky-50/80 hover:bg-sky-100/90 font-bold border border-sky-200/60' %>">
+        <a href="/items/new" class="whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all <%= (typeof active !== 'undefined' && (active === 'report-lost' || active === 'report-found' || active === 'report-item')) ? 'bg-white text-[#1E3A5F] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-100' : 'text-slate-600 hover:text-slate-900' %>">
           <span class="material-symbols-outlined text-[17px]">add_circle</span>
           <span>Report Item</span>
         </a>
