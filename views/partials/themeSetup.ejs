@@ -17,6 +17,33 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png"/>
 <link rel="stylesheet" href="/css/style.css"/>
 <link rel="stylesheet" href="/css/assistant.css"/>
+<style>
+  /* Hit-target dead zone elimination & Edge password reveal suppression */
+  input::-ms-reveal, input::-ms-clear { display: none !important; width: 0 !important; height: 0 !important; pointer-events: none !important; }
+  button > svg, button > svg *, button > span, button > i, button > img,
+  a > svg, a > svg *, a > span, a > i, a > img,
+  button svg, button svg *, button span.material-symbols-outlined, button i[data-lucide], button .lucide,
+  a svg, a svg *, a span.material-symbols-outlined, a i[data-lucide], a .lucide,
+  .toggle-answer-btn *, [data-theme-toggle] *, [data-password-field] *, [data-password-toggle] * {
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+  .toggle-answer-btn, [data-password-field], [data-password-toggle] {
+    position: absolute !important;
+    z-index: 20 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    touch-action: manipulation;
+  }
+  [data-theme-toggle] {
+    cursor: pointer !important;
+    touch-action: manipulation;
+  }
+</style>
+
 
 <!-- Lucide Icons Vector System (Local Offline Bundle with zero CSP restrictions) -->
 <script src="/js/lucide.min.js"></script>
