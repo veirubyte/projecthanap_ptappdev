@@ -110,5 +110,92 @@ function calculateAnswerMatch(userAnswer, secretAnswer) {
     return Math.round(Math.max(tokenScore, characterScore));
 }
 
-module.exports = { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch };
+/**
+ * Safely parses raw challenge or answer column value from database or form into an array of strings.
+ * Supports:
+ * - Plain string: "What color is it?" -> ["What color is it?"]
+ * - JSON string array: '["Question 1", "Question 2"]' -> ["Question 1", "Question 2"]
+ * - JSON object array: '[{"question":"Q1"},{"question":"Q2"}]' -> ["Q1", "Q2"]
+ * - Null/empty/undefined -> []
+ * 
+ * @param {string|Array} raw 
+ * @returns {string[]}
+ */
+function parseChallenges(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+        return raw.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
+    }
+    if (typeof raw !== 'string') return [];
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith('[')) {
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+                return parsed.map((item) => {
+                    if (typeof item === 'string') return item.trim();
+                    if (item && typeof item === 'object') {
+                        if (typeof item.question === 'string') return item.question.trim();
+                        if (typeof item.answer === 'string') return item.answer.trim();
+                    }
+                    return '';
+                }).filter(Boolean);
+            }
+        } catch (_) {}
+    }
+    return [trimmed];
+}
+
+/**
+ * Evaluates match confidence across one or more challenge questions.
+ * Computes individual scores per question and aggregates into an overall average score.
+ * 
+ * @param {string|string[]} userAnswers - Answer(s) submitted by the claimant
+ * @param {string|string[]} secretAnswers - Expected secret answer(s)
+ * @returns {{ score: number, meetsThreshold: boolean, scores: number[], threshold: number, hasChallenge: boolean }}
+ */
+function calculateMultiAnswerMatch(userAnswers, secretAnswers) {
+    const expectedList = Array.isArray(secretAnswers)
+        ? secretAnswers.map((a) => (typeof a === 'string' ? a.trim() : '')).filter(Boolean)
+        : parseChallenges(secretAnswers);
+
+    if (expectedList.length === 0) {
+        return {
+            hasChallenge: false,
+            score: 100,
+            meetsThreshold: true,
+            scores: [],
+            threshold: ANSWER_MATCH_THRESHOLD
+        };
+    }
+
+    const claimantList = Array.isArray(userAnswers)
+        ? userAnswers.map((a) => (typeof a === 'string' ? a.trim() : ''))
+        : [typeof userAnswers === 'string' ? userAnswers.trim() : ''];
+
+    const scores = expectedList.map((expected, idx) => {
+        const claimantAnswer = claimantList[idx] || '';
+        const singleScore = calculateAnswerMatch(claimantAnswer, expected);
+        return singleScore !== null ? singleScore : 0;
+    });
+
+    const averageScore = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
+
+    return {
+        hasChallenge: true,
+        score: averageScore,
+        meetsThreshold: averageScore >= ANSWER_MATCH_THRESHOLD,
+        scores,
+        threshold: ANSWER_MATCH_THRESHOLD
+    };
+}
+
+module.exports = {
+    ANSWER_MATCH_THRESHOLD,
+    calculateAnswerMatch,
+    parseChallenges,
+    calculateMultiAnswerMatch
+};
 

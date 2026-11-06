@@ -193,43 +193,77 @@
           <p class="text-[11px] text-on-surface-variant">Add up to <%= Math.max(0, 6 - (typeof itemImages !== 'undefined' ? itemImages.length : 0)) %> more photos (JPEG, PNG, or WebP; 5 MB max each). Existing photos are kept.</p>
         </div>
 
-        <!-- 6. Verification Question -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[13px] font-semibold text-on-surface" for="challenge-question">Verification Question</label>
-          <p class="text-[11px] text-on-surface-variant">Optional. Enter the question and private answer together, or leave both blank.</p>
-          <div class="relative flex items-center group">
-            <span class="material-symbols-outlined text-[19px] text-on-surface-variant/60 absolute left-3.5 pointer-events-none">help_outline</span>
-            <input 
-              class="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-md text-on-surface text-[14px] shadow-sm focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all placeholder:text-slate-400" 
-              id="challenge-question" 
-              name="secret_challenge" 
-              type="text" 
-              placeholder="e.g. What specific pin is attached to the clip?" 
-              value="<%= item.secret_challenge || '' %>"
-            />
+        <% 
+          const existingPairs = (typeof challengePairs !== 'undefined' && challengePairs && challengePairs.length) 
+            ? challengePairs 
+            : [{ question: item.secret_challenge || '', answer: item.secret_answer || '' }];
+        %>
+        <!-- Verification Challenge Pod -->
+        <div class="flex flex-col gap-3 p-4 rounded-2xl bg-white/60 border border-slate-200/80 shadow-xs">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 text-primary font-bold text-sm">
+              <span class="material-symbols-outlined text-[20px]">key</span>
+              <span>Ownership Verification Challenge (Optional)</span>
+            </div>
+            <span id="questionCountBadge" class="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+              <%= existingPairs.length %> of 5 questions
+            </span>
           </div>
-        </div>
+          <p class="text-[11px] text-on-surface-variant -mt-1">
+            Optional. Add private questions and their correct answers. For each question added, enter both or leave both blank. Claimants never see the answers.
+          </p>
 
-        <!-- 7. Verification Secret Answer -->
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-center justify-between">
-            <label class="text-[13px] font-semibold text-on-surface" for="challenge-answer">Private Secret Answer</label>
-            <span class="text-[11px] text-on-surface-variant/70">Never shown publicly</span>
+          <!-- Dynamic Questions Container -->
+          <div id="questionsContainer" class="flex flex-col gap-3">
+            <% existingPairs.forEach((pair, idx) => { %>
+              <div class="question-row p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex flex-col gap-2 transition-all" data-question-index="<%= idx %>">
+                <div class="flex items-center justify-between">
+                  <span class="question-label text-xs font-bold text-primary flex items-center gap-1.5">
+                    <span class="w-5 h-5 rounded-full bg-[#09436B] text-white flex items-center justify-center text-[10px] font-bold question-number"><%= idx + 1 %></span>
+                    <span>Question <%= idx + 1 %></span>
+                  </span>
+                  <button type="button" class="remove-question-btn <%= existingPairs.length <= 1 ? 'hidden' : '' %> text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer" aria-label="Remove question">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                    <span>Remove</span>
+                  </button>
+                </div>
+                <div class="relative flex items-center">
+                  <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 pointer-events-none">help_outline</span>
+                  <input 
+                    class="ownership-challenge-input w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                    name="secret_challenges[]" 
+                    type="text" 
+                    placeholder="e.g. What specific pin is attached to the clip?" 
+                    value="<%= pair.question %>"
+                    maxlength="500"
+                  />
+                </div>
+                <div class="relative flex items-center">
+                  <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 pointer-events-none">lock</span>
+                  <input 
+                    class="ownership-answer-input w-full h-10 pl-9 pr-10 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                    name="secret_answers[]" 
+                    type="password" 
+                    autocomplete="off"
+                    placeholder="Private correct answer" 
+                    value="<%= pair.answer %>"
+                    maxlength="500"
+                  />
+                  <button type="button" data-toggle-answer class="toggle-answer-btn absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1" aria-label="Toggle answer visibility">
+                    <span class="material-symbols-outlined text-[18px] leading-none toggle-answer-icon">visibility</span>
+                  </button>
+                </div>
+              </div>
+            <% }) %>
           </div>
-          <div class="relative flex items-center group">
-            <span class="material-symbols-outlined text-[19px] text-on-surface-variant/60 absolute left-3.5 pointer-events-none">key</span>
-            <input 
-              class="w-full h-11 pl-10 pr-11 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-md text-on-surface text-[14px] shadow-sm focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none transition-all placeholder:text-slate-400" 
-              id="challenge-answer" 
-              name="secret_answer" 
-              type="password" 
-              autocomplete="off"
-              placeholder="Answer used to measure ownership match (e.g. CCS Enrolment Badge)" 
-              value="<%= item.secret_answer || '' %>"
-            />
-            <button type="button" data-toggle-answer class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer" aria-label="Toggle answer visibility">
-              <span class="material-symbols-outlined text-[18px]">visibility</span>
+
+          <!-- Add Question Button Row -->
+          <div class="flex items-center justify-between pt-1 border-t border-slate-200/60">
+            <button type="button" id="addQuestionBtn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-300 bg-sky-50 hover:bg-sky-100 text-[#09436B] text-xs font-bold transition shadow-2xs cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>+ Add Another Question</span>
             </button>
+            <span id="questionLimitNote" class="text-[11px] text-slate-400 font-medium">Max 5 questions</span>
           </div>
         </div>
 
@@ -268,15 +302,155 @@
   </footer>
 
   <script>
-    // Toggle secret answer visibility
-    const toggleBtn = document.querySelector('[data-toggle-answer]');
-    const answerInput = document.getElementById('challenge-answer');
-    if (toggleBtn && answerInput) {
-      toggleBtn.addEventListener('click', () => {
-        const isPw = answerInput.type === 'password';
-        answerInput.type = isPw ? 'text' : 'password';
-        const icon = toggleBtn.querySelector('span');
-        if (icon) icon.textContent = isPw ? 'visibility_off' : 'visibility';
+    // Multi-Question Management in Edit View
+    const questionsContainer = document.getElementById('questionsContainer');
+    const addQuestionBtn = document.getElementById('addQuestionBtn');
+    const questionCountBadge = document.getElementById('questionCountBadge');
+    const questionLimitNote = document.getElementById('questionLimitNote');
+    const MAX_QUESTIONS = 5;
+
+    function bindAnswerToggle(row) {
+      const toggleBtn = row.querySelector('.toggle-answer-btn');
+      const answerInput = row.querySelector('.ownership-answer-input');
+      const toggleIcon = row.querySelector('.toggle-answer-icon');
+      if (toggleBtn && answerInput && toggleIcon) {
+        toggleBtn.addEventListener('click', () => {
+          const isPw = answerInput.type === 'password';
+          answerInput.type = isPw ? 'text' : 'password';
+          toggleIcon.textContent = isPw ? 'visibility_off' : 'visibility';
+          toggleBtn.setAttribute('aria-label', isPw ? 'Hide answer' : 'Show answer');
+        });
+      }
+    }
+
+    function updateQuestionsState() {
+      if (!questionsContainer) return;
+      const rows = questionsContainer.querySelectorAll('.question-row');
+      const count = rows.length;
+      if (questionCountBadge) {
+        questionCountBadge.textContent = `${count} of ${MAX_QUESTIONS} question${count === 1 ? '' : 's'}`;
+      }
+      rows.forEach((row, idx) => {
+        row.dataset.questionIndex = idx;
+        const numEl = row.querySelector('.question-number');
+        const labelSpan = row.querySelector('.question-label span:last-child');
+        if (numEl) numEl.textContent = idx + 1;
+        if (labelSpan) labelSpan.textContent = `Question ${idx + 1}`;
+
+        const removeBtn = row.querySelector('.remove-question-btn');
+        if (removeBtn) {
+          removeBtn.classList.toggle('hidden', count <= 1);
+        }
+      });
+
+      if (addQuestionBtn) {
+        if (count >= MAX_QUESTIONS) {
+          addQuestionBtn.disabled = true;
+          addQuestionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          if (questionLimitNote) questionLimitNote.textContent = 'Maximum reached';
+        } else {
+          addQuestionBtn.disabled = false;
+          addQuestionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          if (questionLimitNote) questionLimitNote.textContent = 'Max 5 questions';
+        }
+      }
+    }
+
+    function addQuestionRow(initialQ = '', initialA = '') {
+      if (!questionsContainer) return;
+      const currentCount = questionsContainer.querySelectorAll('.question-row').length;
+      if (currentCount >= MAX_QUESTIONS) return;
+
+      const row = document.createElement('div');
+      row.className = 'question-row p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex flex-col gap-2 transition-all';
+      row.dataset.questionIndex = currentCount;
+      row.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="question-label text-xs font-bold text-primary flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-[#09436B] text-white flex items-center justify-center text-[10px] font-bold question-number">${currentCount + 1}</span>
+            <span>Question ${currentCount + 1}</span>
+          </span>
+          <button type="button" class="remove-question-btn text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer" aria-label="Remove question">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+            <span>Remove</span>
+          </button>
+        </div>
+        <div class="relative flex items-center">
+          <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 pointer-events-none">help_outline</span>
+          <input 
+            class="ownership-challenge-input w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+            name="secret_challenges[]" 
+            type="text" 
+            placeholder="e.g. What specific pin is attached to the clip?" 
+            maxlength="500"
+          />
+        </div>
+        <div class="relative flex items-center">
+          <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 pointer-events-none">lock</span>
+          <input 
+            class="ownership-answer-input w-full h-10 pl-9 pr-10 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-xs sm:text-sm focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+            name="secret_answers[]" 
+            type="password" 
+            autocomplete="off"
+            placeholder="Private correct answer" 
+            maxlength="500"
+          />
+          <button type="button" data-toggle-answer class="toggle-answer-btn absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1" aria-label="Toggle answer visibility">
+            <span class="material-symbols-outlined text-[18px] leading-none toggle-answer-icon">visibility</span>
+          </button>
+        </div>
+      `;
+
+      const qInput = row.querySelector('.ownership-challenge-input');
+      const aInput = row.querySelector('.ownership-answer-input');
+      if (initialQ) qInput.value = initialQ;
+      if (initialA) aInput.value = initialA;
+
+      const removeBtn = row.querySelector('.remove-question-btn');
+      removeBtn.addEventListener('click', () => {
+        row.remove();
+        updateQuestionsState();
+      });
+
+      bindAnswerToggle(row);
+      questionsContainer.appendChild(row);
+      updateQuestionsState();
+      qInput.focus();
+    }
+
+    if (addQuestionBtn) {
+      addQuestionBtn.addEventListener('click', () => addQuestionRow());
+    }
+
+    if (questionsContainer) {
+      const rows = questionsContainer.querySelectorAll('.question-row');
+      rows.forEach((row) => {
+        bindAnswerToggle(row);
+        const removeBtn = row.querySelector('.remove-question-btn');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateQuestionsState();
+          });
+        }
+      });
+      updateQuestionsState();
+    }
+
+    const editForm = document.querySelector('form[action*="/items/"]');
+    if (editForm && questionsContainer) {
+      editForm.addEventListener('submit', (e) => {
+        const rows = questionsContainer.querySelectorAll('.question-row');
+        for (const row of rows) {
+          const q = row.querySelector('.ownership-challenge-input').value.trim();
+          const a = row.querySelector('.ownership-answer-input').value.trim();
+          if ((q && !a) || (!q && a)) {
+            e.preventDefault();
+            alert('Please enter both the question and its private answer, or leave both blank.');
+            (q ? row.querySelector('.ownership-answer-input') : row.querySelector('.ownership-challenge-input')).focus();
+            return;
+          }
+        }
       });
     }
 

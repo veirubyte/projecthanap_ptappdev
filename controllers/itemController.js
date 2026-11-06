@@ -9,10 +9,33 @@ const guardianLinkModel = require('../models/guardianLinkModel');
 const mfaModel = require('../models/mfaModel');
 const { getConnection } = require('../models/connectionModel');
 const { isAdmin, isGuest, isInstitutionalEmail, validatePasswordStrength, isValidEmailSyntax } = require('../config/roles');
-const { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch } = require('../services/answerMatch');
+const { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch, parseChallenges, calculateMultiAnswerMatch } = require('../services/answerMatch');
 const { issueCode, verifyCode } = require('../services/mfa');
 const { sendMfaEnabledNotice, verifyEmailTransport } = require('../services/email');
 
+
+function extractVerificationPairs(body) {
+    let rawChallenges = body.secret_challenges !== undefined ? body.secret_challenges : body.secret_challenge;
+    let rawAnswers = body.secret_answers !== undefined ? body.secret_answers : body.secret_answer;
+
+    if (!Array.isArray(rawChallenges)) {
+        rawChallenges = rawChallenges !== undefined && rawChallenges !== null ? [rawChallenges] : [];
+    }
+    if (!Array.isArray(rawAnswers)) {
+        rawAnswers = rawAnswers !== undefined && rawAnswers !== null ? [rawAnswers] : [];
+    }
+
+    const pairs = [];
+    const maxCount = Math.max(rawChallenges.length, rawAnswers.length);
+    for (let i = 0; i < maxCount; i++) {
+        const q = typeof rawChallenges[i] === 'string' ? rawChallenges[i].trim() : '';
+        const a = typeof rawAnswers[i] === 'string' ? rawAnswers[i].trim() : '';
+        if (q || a) {
+            pairs.push({ question: q, answer: a });
+        }
+    }
+    return pairs;
+}
 
 // Helper: Relative time ago
 function timeAgo(d) {
@@ -230,28 +253,37 @@ const createItemReport = async (req, res) => {
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
     const location = typeof req.body.location_found_lost === 'string' ? req.body.location_found_lost.trim() : '';
     const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
-    const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
-    const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
     const custodyMode = req.body.custody_mode === 'security_desk' ? 'security_desk' : 'peer_meetup';
 
     if (!itemName || !location || !description) {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('Please fill in all required fields.')}`);
     }
-    const invalidVerificationInput = ['secret_challenge', 'secret_answer'].some((field) => (
-        req.body[field] !== undefined && typeof req.body[field] !== 'string'
-    ));
-    if (invalidVerificationInput) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('The ownership question and answer must be plain text.')}`);
-    }
-    if (Boolean(secretChallenge) !== Boolean(secretAnswer)) {
+
+    const verificationPairs = extractVerificationPairs(req.body);
+    const hasIncompletePair = verificationPairs.some((p) => !p.question || !p.answer);
+    if (hasIncompletePair) {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
     }
-    if ((secretChallenge && secretChallenge.length > 500) || (secretAnswer && secretAnswer.length > 500)) {
+    if (verificationPairs.length > 5) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('You can add up to 5 verification questions.')}`);
+    }
+    const exceedsLength = verificationPairs.some((p) => p.question.length > 500 || p.answer.length > 500);
+    if (exceedsLength) {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`${reportFormUrl}&error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
+    }
+
+    let secretChallenge = null;
+    let secretAnswer = null;
+    if (verificationPairs.length === 1) {
+        secretChallenge = verificationPairs[0].question;
+        secretAnswer = verificationPairs[0].answer;
+    } else if (verificationPairs.length > 1) {
+        secretChallenge = JSON.stringify(verificationPairs.map((p) => p.question));
+        secretAnswer = JSON.stringify(verificationPairs.map((p) => p.answer));
     }
 
     const imagePaths = uploadedFiles.map((file) => ({
@@ -311,12 +343,17 @@ const showItemDetails = async (req, res) => {
             : null;
         delete req.session.answerMatchResult;
 
+        const challenges = parseChallenges(item.secret_challenge);
+        const expectedAnswers = parseChallenges(item.secret_answer);
+        const hasConfiguredChallenge = challenges.length > 0 && expectedAnswers.length > 0;
+
         // Check if current user already has a pending claim on this item
         let existingClaim = null;
         if (user && claims.length > 0) {
             existingClaim = claims[0];
-            if (answerMatchScore === null && existingClaim.proof_details && item.secret_answer) {
-                answerMatchScore = calculateAnswerMatch(existingClaim.proof_details, item.secret_answer);
+            if (answerMatchScore === null && existingClaim.proof_details && expectedAnswers.length > 0) {
+                const matchResult = calculateMultiAnswerMatch(existingClaim.proof_details, expectedAnswers);
+                answerMatchScore = matchResult.score;
             }
         }
 
@@ -325,10 +362,8 @@ const showItemDetails = async (req, res) => {
             itemImages,
             user,
             existingClaim,
-            hasConfiguredChallenge: typeof item.secret_challenge === 'string' &&
-                Boolean(item.secret_challenge.trim()) &&
-                typeof item.secret_answer === 'string' &&
-                Boolean(item.secret_answer.trim()),
+            challenges,
+            hasConfiguredChallenge,
             answerMatchScore,
             answerMatchThreshold: ANSWER_MATCH_THRESHOLD,
             similar,
@@ -346,7 +381,7 @@ const showItemDetails = async (req, res) => {
  * POST /items/:id/match-preview
  * Live Match Preview Endpoint
  * 
- * Invokes calculateAnswerMatch() in real time as the claimant types their ownership proof.
+ * Invokes calculateMultiAnswerMatch() in real time as the claimant types their ownership proof.
  * Returns the confidence score (0-100%) and threshold status to drive the dynamic SVG
  * radial progression circle on the item detail view (views/pages/postDetail.ejs).
  */
@@ -355,7 +390,14 @@ const previewOwnershipMatch = async (req, res) => {
     if (!Number.isSafeInteger(itemId) || itemId < 1) {
         return res.status(400).json({ error: 'Invalid item ID.' });
     }
-    const userAnswer = typeof req.body.answer === 'string' ? req.body.answer.trim() : '';
+    const rawAnswers = req.body.answers;
+    const rawAnswer = req.body.answer;
+    let userAnswers = [];
+    if (Array.isArray(rawAnswers)) {
+        userAnswers = rawAnswers.map((a) => (typeof a === 'string' ? a.trim() : ''));
+    } else if (typeof rawAnswer === 'string') {
+        userAnswers = [rawAnswer.trim()];
+    }
 
     try {
         const [rows] = await itemReportModel.previewOwnershipMatch([itemId], []);
@@ -363,17 +405,19 @@ const previewOwnershipMatch = async (req, res) => {
             return res.status(404).json({ error: 'Item not found' });
         }
         const item = rows[0];
+        const expectedAnswers = parseChallenges(item.secret_answer);
         // If the item has no secret challenge, verification is bypassed (100% confidence)
-        if (!item.secret_answer || !item.secret_challenge) {
+        if (expectedAnswers.length === 0 || !item.secret_challenge) {
             return res.json({ hasChallenge: false, score: 100, meetsThreshold: true, threshold: ANSWER_MATCH_THRESHOLD });
         }
 
         // Calculate confidence score via the Campus Match Engine
-        const score = calculateAnswerMatch(userAnswer, item.secret_answer);
+        const matchResult = calculateMultiAnswerMatch(userAnswers, expectedAnswers);
         return res.json({
             hasChallenge: true,
-            score: score !== null ? score : 0,
-            meetsThreshold: score !== null && score >= ANSWER_MATCH_THRESHOLD,
+            score: matchResult.score,
+            meetsThreshold: matchResult.meetsThreshold,
+            scores: matchResult.scores,
             threshold: ANSWER_MATCH_THRESHOLD
         });
     } catch (err) {
@@ -387,13 +431,15 @@ const createClaim = async (req, res) => {
     if (!Number.isSafeInteger(itemId) || itemId < 1) {
         return res.redirect('/dashboard?error=Invalid item ID.');
     }
-    const proofDetails = typeof req.body.proof_details === 'string' ? req.body.proof_details.trim() : '';
-
-    if (!proofDetails) {
-        return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Proof of ownership details are required.')}`);
-    }
-    if (proofDetails.length > 500) {
-        return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Your answer must be 500 characters or fewer.')}`);
+    const rawProofAnswers = req.body.proof_answers;
+    const rawProofDetails = req.body.proof_details;
+    let claimantAnswers = [];
+    if (Array.isArray(rawProofAnswers)) {
+        claimantAnswers = rawProofAnswers.map((a) => (typeof a === 'string' ? a.trim() : ''));
+    } else if (Array.isArray(rawProofDetails)) {
+        claimantAnswers = rawProofDetails.map((a) => (typeof a === 'string' ? a.trim() : ''));
+    } else if (typeof rawProofDetails === 'string') {
+        claimantAnswers = [rawProofDetails.trim()];
     }
 
     try {
@@ -418,20 +464,47 @@ const createClaim = async (req, res) => {
             return res.redirect(`/claims/${existing[0].id}`);
         }
 
-        const answerMatchScore = calculateAnswerMatch(proofDetails, item.secret_answer);
-        if (answerMatchScore !== null && answerMatchScore < ANSWER_MATCH_THRESHOLD) {
-            req.session.answerMatchResult = { itemId, score: answerMatchScore };
-            return res.redirect(`/items/${itemId}?error=${encodeURIComponent(`Your answer scored ${answerMatchScore}%. A match of at least ${ANSWER_MATCH_THRESHOLD}% is required to file this claim.`)}`);
+        const questions = parseChallenges(item.secret_challenge);
+        const expectedAnswers = parseChallenges(item.secret_answer);
+
+        if (questions.length > 0) {
+            const hasEmptyAnswer = questions.some((_, idx) => !claimantAnswers[idx] || claimantAnswers[idx].trim().length === 0);
+            if (hasEmptyAnswer) {
+                return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Please answer all verification challenge questions.')}`);
+            }
+        } else {
+            if (!claimantAnswers[0] || claimantAnswers[0].trim().length === 0) {
+                return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Proof of ownership details are required.')}`);
+            }
+        }
+
+        const exceedsLength = claimantAnswers.some((a) => a.length > 500);
+        if (exceedsLength) {
+            return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Your answer must be 500 characters or fewer.')}`);
+        }
+
+        const matchResult = calculateMultiAnswerMatch(claimantAnswers, expectedAnswers);
+        if (matchResult.hasChallenge && !matchResult.meetsThreshold) {
+            req.session.answerMatchResult = { itemId, score: matchResult.score };
+            return res.redirect(`/items/${itemId}?error=${encodeURIComponent(`Your answer scored ${matchResult.score}%. A match of at least ${ANSWER_MATCH_THRESHOLD}% is required to file this claim.`)}`);
+        }
+
+        // Format proof details for storage
+        let proofDetailsToSave = '';
+        if (questions.length > 1) {
+            proofDetailsToSave = questions.map((q, idx) => `Q${idx + 1}: ${q}\nA: ${claimantAnswers[idx] || ''}`).join('\n\n');
+        } else {
+            proofDetailsToSave = claimantAnswers[0] || '';
         }
 
         // Insert into claims
-        const [claimResult] = await claimModel.createClaimQuery2([itemId, req.session.user.id, proofDetails], []);
+        const [claimResult] = await claimModel.createClaimQuery2([itemId, req.session.user.id, proofDetailsToSave], []);
         const claimId = claimResult.insertId;
 
         // Automatically start the communication thread in claim_messages
-        await claimModel.createClaimQuery3([claimId, req.session.user.id, `Ownership Claim Filed:\n"${proofDetails}"`], []);
+        await claimModel.createClaimQuery3([claimId, req.session.user.id, `Ownership Claim Filed:\n"${proofDetailsToSave}"`], []);
 
-        req.session.answerMatchResult = { itemId, score: answerMatchScore };
+        req.session.answerMatchResult = { itemId, score: matchResult.score };
         return res.redirect(`/items/${itemId}?msg=${encodeURIComponent('Claim submitted. You can now communicate with the finder.')}`);
     } catch (err) {
         console.error('Claim submission error:', err);
@@ -715,11 +788,22 @@ const showEditItemForm = async (req, res) => {
         const itemImages = storedImages.length
             ? storedImages
             : (item.primary_image_path ? [{ image_path: item.primary_image_path, is_primary: 1, sort_order: 0 }] : []);
+        const challengeQuestions = parseChallenges(item.secret_challenge);
+        const challengeAnswers = parseChallenges(item.secret_answer);
+        const challengePairs = [];
+        const maxPairs = Math.max(challengeQuestions.length, challengeAnswers.length);
+        for (let i = 0; i < maxPairs; i++) {
+            challengePairs.push({
+                question: challengeQuestions[i] || '',
+                answer: challengeAnswers[i] || ''
+            });
+        }
         res.render('editReport', {
             item,
             itemImages,
             user,
             categories: CATEGORIES,
+            challengePairs,
             csrfToken: res.locals.csrfToken || '',
             msg: req.query.msg || null,
             error: req.query.error || null
@@ -744,32 +828,41 @@ const updateItemReport = async (req, res) => {
     const status = typeof req.body.status === 'string' ? req.body.status.trim() : 'active';
     const location = typeof req.body.location_found_lost === 'string' ? req.body.location_found_lost.trim() : '';
     const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
-    const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
-    const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
-    const imagePaths = uploadedFiles.map((file) => ({
-        path: `/uploads/${file.filename}`,
-        fileData: file.base64Data || null
-    }));
-
     if (!itemName || !location || !description) {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('Please provide an item title, campus location, and description.')}`);
     }
-    const invalidVerificationInput = ['secret_challenge', 'secret_answer'].some((field) => (
-        req.body[field] !== undefined && typeof req.body[field] !== 'string'
-    ));
-    if (invalidVerificationInput) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('The ownership question and answer must be plain text.')}`);
-    }
-    if (Boolean(secretChallenge) !== Boolean(secretAnswer)) {
+
+    const verificationPairs = extractVerificationPairs(req.body);
+    const hasIncompletePair = verificationPairs.some((p) => !p.question || !p.answer);
+    if (hasIncompletePair) {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
     }
-    if ((secretChallenge && secretChallenge.length > 500) || (secretAnswer && secretAnswer.length > 500)) {
+    if (verificationPairs.length > 5) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('You can configure up to 5 verification questions.')}`);
+    }
+    const exceedsLength = verificationPairs.some((p) => p.question.length > 500 || p.answer.length > 500);
+    if (exceedsLength) {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
     }
+
+    let secretChallenge = null;
+    let secretAnswer = null;
+    if (verificationPairs.length === 1) {
+        secretChallenge = verificationPairs[0].question;
+        secretAnswer = verificationPairs[0].answer;
+    } else if (verificationPairs.length > 1) {
+        secretChallenge = JSON.stringify(verificationPairs.map((p) => p.question));
+        secretAnswer = JSON.stringify(verificationPairs.map((p) => p.answer));
+    }
+
+    const imagePaths = uploadedFiles.map((file) => ({
+        path: `/uploads/${file.filename}`,
+        fileData: file.base64Data || null
+    }));
 
     try {
         const [rows] = await itemReportModel.updateItemReport([itemId], []);
@@ -1594,36 +1687,36 @@ const createAdminItemReport = async (req, res) => {
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
     const location = typeof req.body.location_found_lost === 'string' ? req.body.location_found_lost.trim() : '';
     const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
-    const secretChallenge = typeof req.body.secret_challenge === 'string' ? req.body.secret_challenge.trim() || null : null;
-    const secretAnswer = typeof req.body.secret_answer === 'string' ? req.body.secret_answer.trim() || null : null;
+    const verificationPairs = extractVerificationPairs(req.body);
+    const hasIncompletePair = verificationPairs.some((p) => !p.question || !p.answer);
+    if (hasIncompletePair) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
+    }
+    if (verificationPairs.length > 5) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('You can configure up to 5 verification questions.')}`);
+    }
+    const exceedsLength = verificationPairs.some((p) => p.question.length > 500 || p.answer.length > 500);
+    if (exceedsLength) {
+        await removeUploadedFiles(uploadedFiles);
+        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
+    }
+
+    let secretChallenge = null;
+    let secretAnswer = null;
+    if (verificationPairs.length === 1) {
+        secretChallenge = verificationPairs[0].question;
+        secretAnswer = verificationPairs[0].answer;
+    } else if (verificationPairs.length > 1) {
+        secretChallenge = JSON.stringify(verificationPairs.map((p) => p.question));
+        secretAnswer = JSON.stringify(verificationPairs.map((p) => p.answer));
+    }
+
     const imagePaths = uploadedFiles.map((file) => ({
         path: `/uploads/${file.filename}`,
         fileData: file.base64Data || null
     }));
-
-    if (!itemName || !location || !description) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect('/admin/dashboard?tab=posted&error=Provide an item name, location, and description.');
-    }
-    if (!CATEGORIES.includes(category)) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect('/admin/dashboard?tab=posted&error=Choose a valid item category.');
-    }
-    const invalidVerificationInput = ['secret_challenge', 'secret_answer'].some((field) => (
-        req.body[field] !== undefined && typeof req.body[field] !== 'string'
-    ));
-    if (invalidVerificationInput) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('The ownership question and answer must be plain text.')}`);
-    }
-    if (Boolean(secretChallenge) !== Boolean(secretAnswer)) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('Enter both the ownership question and its private correct answer, or leave both blank.')}`);
-    }
-    if ((secretChallenge && secretChallenge.length > 500) || (secretAnswer && secretAnswer.length > 500)) {
-        await removeUploadedFiles(uploadedFiles);
-        return res.redirect(`/admin/dashboard?tab=posted&error=${encodeURIComponent('The ownership question and answer must each be 500 characters or fewer.')}`);
-    }
 
     try {
         const [result] = await itemReportModel.description(
