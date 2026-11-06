@@ -239,11 +239,16 @@
                       id="verificationChallenge" name="secret_challenge"
                       placeholder="e.g. What specific pin, keychain, or sticker is attached to it?" maxlength="500"
                       type="text" />
-                    <input
-                      class="ownership-challenge-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs"
-                      id="verificationAnswer" name="secret_answer"
-                      placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
-                      autocomplete="off" />
+                    <div class="relative flex items-center">
+                      <input
+                        class="ownership-challenge-input w-full h-11 pl-3.5 pr-11 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs"
+                        id="verificationAnswer" name="secret_answer"
+                        placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
+                        autocomplete="off" />
+                      <button type="button" id="toggleAnswerBtn" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors" aria-label="Toggle answer visibility">
+                        <span class="material-symbols-outlined text-[19px] leading-none" id="toggleAnswerIcon">visibility</span>
+                      </button>
+                    </div>
 
                     <!-- Custody Card Toggle -->
                     <div class="flex flex-col gap-2 pt-1">
@@ -333,6 +338,17 @@
 
       challengeInput.addEventListener('input', validateChallengePair);
       answerInput.addEventListener('input', validateChallengePair);
+
+      const toggleAnswerBtn = document.getElementById('toggleAnswerBtn');
+      const toggleAnswerIcon = document.getElementById('toggleAnswerIcon');
+      if (toggleAnswerBtn && answerInput && toggleAnswerIcon) {
+        toggleAnswerBtn.addEventListener('click', () => {
+          const isPw = answerInput.type === 'password';
+          answerInput.type = isPw ? 'text' : 'password';
+          toggleAnswerIcon.textContent = isPw ? 'visibility_off' : 'visibility';
+          toggleAnswerBtn.setAttribute('aria-label', isPw ? 'Hide answer' : 'Show answer');
+        });
+      }
 
       function switchReportType(type) {
         const lostBtn = document.getElementById('tabLostBtn');
