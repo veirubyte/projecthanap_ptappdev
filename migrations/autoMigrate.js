@@ -40,6 +40,8 @@ async function autoMigrate() {
           );
           CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at);
           ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT;
+          ALTER TABLE public.item_reports ALTER COLUMN secret_challenge TYPE TEXT;
+          ALTER TABLE public.item_reports ALTER COLUMN secret_answer TYPE TEXT;
 
           -- Enforce Row Level Security (RLS) across all public tables
           ALTER TABLE public.account_roles ENABLE ROW LEVEL SECURITY;

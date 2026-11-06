@@ -11,7 +11,23 @@
   const isOwnerOrAdminForView = Boolean(user && user.id === item.user_id && !isAdminViewer);
   const canEditReportForView = isOwnerOrAdminForView;
   const isResolvedForView = item.status === 'claimed' || item.status === 'returned';
-  const challengePromptText = item.secret_challenge || 'Please provide identifiable proof of ownership (e.g. unique scratches, serial number, lockscreen wallpaper, or internal contents).';
+  let parsedChallengeList = [];
+  if (typeof challenges !== 'undefined' && Array.isArray(challenges) && challenges.length) {
+    parsedChallengeList = challenges;
+  } else if (item.secret_challenge && typeof item.secret_challenge === 'string') {
+    const rawTrimmed = item.secret_challenge.trim();
+    if (rawTrimmed.startsWith('[')) {
+      try {
+        const arr = JSON.parse(rawTrimmed);
+        if (Array.isArray(arr)) parsedChallengeList = arr.filter(Boolean);
+      } catch (_) {}
+    }
+    if (parsedChallengeList.length === 0 && rawTrimmed) {
+      parsedChallengeList = [rawTrimmed];
+    }
+  }
+  const challengeList = parsedChallengeList;
+  const challengePromptText = challengeList.length ? challengeList[0] : (item.secret_challenge || 'Please provide identifiable proof of ownership (e.g. unique scratches, serial number, lockscreen wallpaper, or internal contents).');
   const challengeLower = String(challengePromptText).toLowerCase();
   const proofPlaceholder = challengeLower.includes('color')
     ? 'e.g. Black / Silver'
@@ -456,10 +472,18 @@
                     ?
                   </div>
                   <div class="space-y-1">
-                    <p class="claim-question-label text-[10px] font-bold uppercase tracking-wider text-slate-400">FINDER ASKS:</p>
-                    <label class="claim-question-prompt block text-xs sm:text-sm font-bold text-slate-900 leading-snug" for="proofDetails">
-                      “<%= challengePromptText %>”
-                    </label>
+                    <p class="claim-question-label text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      FINDER ASKS<%= challengeList.length > 1 ? ` (${challengeList.length} QUESTIONS)` : '' %>:
+                    </p>
+                    <% if (challengeList.length > 1) { %>
+                      <p class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                        Please answer all <%= challengeList.length %> questions below so the finder can verify your ownership:
+                      </p>
+                    <% } else { %>
+                      <label class="claim-question-prompt block text-xs sm:text-sm font-bold text-slate-900 leading-snug" for="proofDetails">
+                        “<%= challengePromptText %>”
+                      </label>
+                    <% } %>
                     <p class="claim-question-help text-[11px] text-slate-500 font-medium">Enter a detail only the owner is likely to know.</p>
                   </div>
                 </div>
@@ -477,18 +501,42 @@
                   <input type="hidden" name="_csrf" id="csrfTokenInput" value="<%= csrfToken %>"/>
                 <% } %>
 
-                <div class="relative">
-                  <input 
-                    type="text"
-                    id="proofDetails" 
-                    name="proof_details" 
-                    placeholder="<%= proofPlaceholder %>" 
-                    maxlength="500"
-                    required
-                    autocomplete="off"
-                    class="w-full h-12 px-4 rounded-xl border border-slate-200/90 bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] shadow-inner transition-all"
-                  />
-                </div>
+                <% if (challengeList.length > 1) { %>
+                  <div class="space-y-3" id="multiQuestionsInputs">
+                    <% challengeList.forEach((q, idx) => { %>
+                      <div class="space-y-1.5 p-3 rounded-xl bg-white/70 border border-slate-200/80 shadow-2xs">
+                        <label class="block text-xs font-bold text-slate-800" for="proofDetail_<%= idx %>">
+                          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#09436B] text-white text-[10px] font-bold mr-1.5"><%= idx + 1 %></span>
+                          <%= q %>
+                        </label>
+                        <input 
+                          type="text"
+                          id="proofDetail_<%= idx %>" 
+                          name="proof_answers[]" 
+                          data-challenge-index="<%= idx %>"
+                          placeholder="Your answer for Question <%= idx + 1 %>..." 
+                          maxlength="500"
+                          required
+                          autocomplete="off"
+                          class="claim-answer-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] shadow-inner transition-all"
+                        />
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <div class="relative">
+                    <input 
+                      type="text"
+                      id="proofDetails" 
+                      name="proof_details" 
+                      placeholder="<%= proofPlaceholder %>" 
+                      maxlength="500"
+                      required
+                      autocomplete="off"
+                      class="claim-answer-input w-full h-12 px-4 rounded-xl border border-slate-200/90 bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] shadow-inner transition-all"
+                    />
+                  </div>
+                <% } %>
 
                 <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
                   <span class="material-symbols-outlined text-[14px]">schedule</span>
@@ -715,7 +763,17 @@
         }
       }
 
-      async function evaluateMatchOnServer(answerValue) {
+      const allClaimInputs = Array.from(document.querySelectorAll('.claim-answer-input'));
+      function getAnswersPayload() {
+        if (allClaimInputs.length > 1) {
+          const answers = allClaimInputs.map((input) => input.value.trim());
+          return { answers, answer: answers.join(' ') };
+        }
+        const singleVal = allClaimInputs[0] ? allClaimInputs[0].value.trim() : (proofInput ? proofInput.value.trim() : '');
+        return { answer: singleVal, answers: [singleVal] };
+      }
+
+      async function evaluateMatchOnServer(payload) {
         if (!itemId) return null;
         try {
           const csrfTokenVal = csrfInput ? csrfInput.value : '';
@@ -727,16 +785,17 @@
             headers['CSRF-Token'] = csrfTokenVal;
             headers['x-csrf-token'] = csrfTokenVal;
           }
+          const bodyData = Object.assign({ _csrf: csrfTokenVal }, payload);
           const res = await fetch(`/items/${encodeURIComponent(itemId)}/match-preview`, {
             method: 'POST',
             credentials: 'same-origin',
             headers: headers,
-            body: JSON.stringify({ answer: answerValue, _csrf: csrfTokenVal })
+            body: JSON.stringify(bodyData)
           });
           if (!res.ok) return null;
           const data = await res.json();
           if (typeof data.score === 'number') {
-            lastEvaluatedAnswer = answerValue;
+            lastEvaluatedAnswer = JSON.stringify(payload);
             updateGauge(data.score);
             return data.score;
           }
@@ -747,43 +806,59 @@
         }
       }
 
-      if (proofInput) {
-        proofInput.addEventListener('input', () => {
-          clearTimeout(debounceTimer);
-          const val = proofInput.value.trim();
-          if (!val) {
-            lastEvaluatedAnswer = '';
-            updateGauge(0);
-            return;
-          }
+      function onClaimAnswerChanged() {
+        clearTimeout(debounceTimer);
+        const payload = getAnswersPayload();
+        const hasAnyVal = payload.answers.some((a) => a.length > 0);
+        if (!hasAnyVal) {
+          lastEvaluatedAnswer = '';
+          updateGauge(0);
+          return;
+        }
 
-          if (!hasChallenge) {
-            lastEvaluatedAnswer = val;
-            updateGauge(100);
-            return;
-          }
+        if (!hasChallenge) {
+          lastEvaluatedAnswer = JSON.stringify(payload);
+          updateGauge(100);
+          return;
+        }
 
-          debounceTimer = setTimeout(() => {
-            evaluateMatchOnServer(val);
-          }, 180);
-        });
+        debounceTimer = setTimeout(() => {
+          evaluateMatchOnServer(payload);
+        }, 180);
+      }
+
+      allClaimInputs.forEach((input) => {
+        input.addEventListener('input', onClaimAnswerChanged);
+      });
+      if (proofInput && !allClaimInputs.includes(proofInput)) {
+        proofInput.addEventListener('input', onClaimAnswerChanged);
       }
 
       // Enforce Constraint on Submission (with immediate evaluation if debounce is still pending)
       if (claimForm && hasChallenge) {
         claimForm.addEventListener('submit', async (e) => {
           if (isSubmittingVerified) return;
-          const val = proofInput ? proofInput.value.trim() : '';
-          if (!val) return;
+          const payload = getAnswersPayload();
+          const hasEmptyField = allClaimInputs.some((input) => !input.value.trim());
+          if (hasEmptyField) {
+            e.preventDefault();
+            if (constraintAlert && constraintAlertText) {
+              constraintAlertText.textContent = 'Please provide an answer for all verification questions before submitting.';
+              constraintAlert.classList.remove('hidden');
+            }
+            const firstEmpty = allClaimInputs.find((input) => !input.value.trim());
+            if (firstEmpty) firstEmpty.focus();
+            return;
+          }
 
-          if (lastEvaluatedAnswer === val && currentScore >= threshold) {
+          if (lastEvaluatedAnswer === JSON.stringify(payload) && currentScore >= threshold) {
             return;
           }
 
           e.preventDefault();
           clearTimeout(debounceTimer);
 
-          const evaluatedScore = await evaluateMatchOnServer(val);
+          const evaluatedScore = await evaluateMatchOnServer(payload);
           if (evaluatedScore === null || evaluatedScore >= threshold) {
             isSubmittingVerified = true;
             claimForm.submit();
@@ -794,7 +869,7 @@
             constraintAlertText.textContent = `Verification Constraint: Your answer scored ${currentScore}%. A match score of at least ${threshold}% is required before submitting your claim. Please specify identifying details.`;
             constraintAlert.classList.remove('hidden');
           }
-          if (proofInput) proofInput.focus();
+          if (allClaimInputs[0]) allClaimInputs[0].focus();
         });
       }
     })();

@@ -225,29 +225,58 @@
                   <!-- Found Verification Glass Pod (Shown for Found Items, optional for Lost) -->
                   <div
                     class="ownership-verification-card p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-sky-500/10 via-slate-50/60 to-indigo-500/5 backdrop-blur-xl border border-sky-200/60 shadow-xs flex flex-col gap-4">
-                    <div
-                      class="ownership-verification-heading flex items-center gap-2 text-[#09436B] font-bold text-sm">
-                      <span class="material-symbols-outlined text-[20px]">key</span>
-                      <span>Ownership Verification Challenge (Optional)</span>
+                    <div class="flex items-center justify-between gap-2">
+                      <div
+                        class="ownership-verification-heading flex items-center gap-2 text-[#09436B] font-bold text-sm">
+                        <span class="material-symbols-outlined text-[20px]">key</span>
+                        <span>Ownership Verification Challenge (Optional)</span>
+                      </div>
+                      <span id="questionCountBadge" class="text-[11px] font-semibold text-slate-500 bg-white/70 border border-slate-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
+                        1 of 5 questions
+                      </span>
                     </div>
                     <p class="ownership-verification-description text-xs text-slate-600 -mt-2">
-                      Add a private question and its correct answer. Both are optional, but you must enter both or leave
-                      both blank. Claimants never see the correct answer.
+                      Add private questions and their correct answers. You can add multiple questions to increase verification accuracy. Both are optional, but for each question added, you must enter both or leave both blank. Claimants never see the correct answers.
                     </p>
-                    <input
-                      class="ownership-challenge-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs"
-                      id="verificationChallenge" name="secret_challenge"
-                      placeholder="e.g. What specific pin, keychain, or sticker is attached to it?" maxlength="500"
-                      type="text" />
-                    <div class="relative flex items-center">
-                      <input
-                        class="ownership-challenge-input w-full h-11 pl-3.5 pr-11 rounded-xl border border-slate-200/90 bg-white/90 backdrop-blur-sm text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 focus:bg-white outline-none transition-all shadow-2xs"
-                        id="verificationAnswer" name="secret_answer"
-                        placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
-                        autocomplete="off" />
-                      <button type="button" id="toggleAnswerBtn" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors" aria-label="Toggle answer visibility">
-                        <span class="material-symbols-outlined text-[19px] leading-none" id="toggleAnswerIcon">visibility</span>
+
+                    <!-- Dynamic Question Pairs Container -->
+                    <div id="questionsContainer" class="flex flex-col gap-3.5">
+                      <div class="question-row p-3.5 rounded-xl bg-white/80 border border-sky-100 shadow-2xs flex flex-col gap-2.5 transition-all" data-question-index="0">
+                        <div class="flex items-center justify-between">
+                          <span class="question-label text-xs font-bold text-[#09436B] flex items-center gap-1.5">
+                            <span class="w-5 h-5 rounded-full bg-[#09436B] text-white flex items-center justify-center text-[10px] font-bold question-number">1</span>
+                            <span>Question 1</span>
+                          </span>
+                          <button type="button" class="remove-question-btn hidden text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer" aria-label="Remove question">
+                            <span class="material-symbols-outlined text-[16px]">delete</span>
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                        <input
+                          class="ownership-challenge-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 outline-none transition-all shadow-2xs"
+                          id="verificationChallenge_0" name="secret_challenges[]"
+                          placeholder="e.g. What specific pin, keychain, or sticker is attached to it?" maxlength="500"
+                          type="text" />
+                        <div class="relative flex items-center">
+                          <input
+                            class="ownership-answer-input w-full h-11 pl-3.5 pr-11 rounded-xl border border-slate-200/90 bg-white text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 outline-none transition-all shadow-2xs"
+                            id="verificationAnswer_0" name="secret_answers[]"
+                            placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
+                            autocomplete="off" />
+                          <button type="button" class="toggle-answer-btn absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors" aria-label="Toggle answer visibility">
+                            <span class="material-symbols-outlined text-[19px] leading-none toggle-answer-icon">visibility</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Add Question Button Row -->
+                    <div class="flex items-center justify-between pt-1 border-t border-sky-100/60">
+                      <button type="button" id="addQuestionBtn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-300 bg-sky-50/80 hover:bg-sky-100 text-[#09436B] text-xs font-bold transition shadow-2xs cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                        <span>+ Add Another Question</span>
                       </button>
+                      <span id="questionLimitNote" class="text-[11px] text-slate-400 font-medium">Max 5 questions</span>
                     </div>
 
                     <!-- Custody Card Toggle -->
@@ -318,37 +347,154 @@
     </footer>
 
     <script>
-      const challengeInput = document.getElementById('verificationChallenge');
-      const answerInput = document.getElementById('verificationAnswer');
+      const questionsContainer = document.getElementById('questionsContainer');
+      const addQuestionBtn = document.getElementById('addQuestionBtn');
+      const questionCountBadge = document.getElementById('questionCountBadge');
+      const questionLimitNote = document.getElementById('questionLimitNote');
+      const MAX_QUESTIONS = 5;
+
+      function bindAnswerToggle(row) {
+        const toggleBtn = row.querySelector('.toggle-answer-btn');
+        const answerInput = row.querySelector('.ownership-answer-input');
+        const toggleIcon = row.querySelector('.toggle-answer-icon');
+        if (toggleBtn && answerInput && toggleIcon) {
+          toggleBtn.addEventListener('click', () => {
+            const isPw = answerInput.type === 'password';
+            answerInput.type = isPw ? 'text' : 'password';
+            toggleIcon.textContent = isPw ? 'visibility_off' : 'visibility';
+            toggleBtn.setAttribute('aria-label', isPw ? 'Hide answer' : 'Show answer');
+          });
+        }
+      }
+
+      function updateQuestionsState() {
+        if (!questionsContainer) return;
+        const rows = questionsContainer.querySelectorAll('.question-row');
+        const count = rows.length;
+        if (questionCountBadge) {
+          questionCountBadge.textContent = `${count} of ${MAX_QUESTIONS} question${count === 1 ? '' : 's'}`;
+        }
+        rows.forEach((row, idx) => {
+          row.dataset.questionIndex = idx;
+          const numEl = row.querySelector('.question-number');
+          const labelSpan = row.querySelector('.question-label span:last-child');
+          if (numEl) numEl.textContent = idx + 1;
+          if (labelSpan) labelSpan.textContent = `Question ${idx + 1}`;
+
+          const removeBtn = row.querySelector('.remove-question-btn');
+          if (removeBtn) {
+            removeBtn.classList.toggle('hidden', count <= 1);
+          }
+        });
+
+        if (addQuestionBtn) {
+          if (count >= MAX_QUESTIONS) {
+            addQuestionBtn.disabled = true;
+            addQuestionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            if (questionLimitNote) questionLimitNote.textContent = 'Maximum reached';
+          } else {
+            addQuestionBtn.disabled = false;
+            addQuestionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            if (questionLimitNote) questionLimitNote.textContent = 'Max 5 questions';
+          }
+        }
+      }
+
+      function addQuestionRow(initialQ = '', initialA = '') {
+        if (!questionsContainer) return;
+        const currentCount = questionsContainer.querySelectorAll('.question-row').length;
+        if (currentCount >= MAX_QUESTIONS) return;
+
+        const row = document.createElement('div');
+        row.className = 'question-row p-3.5 rounded-xl bg-white/80 border border-sky-100 shadow-2xs flex flex-col gap-2.5 transition-all';
+        row.dataset.questionIndex = currentCount;
+        row.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="question-label text-xs font-bold text-[#09436B] flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-[#09436B] text-white flex items-center justify-center text-[10px] font-bold question-number">${currentCount + 1}</span>
+              <span>Question ${currentCount + 1}</span>
+            </span>
+            <button type="button" class="remove-question-btn text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer" aria-label="Remove question">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+              <span>Remove</span>
+            </button>
+          </div>
+          <input
+            class="ownership-challenge-input w-full h-11 px-3.5 rounded-xl border border-slate-200/90 bg-white text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 outline-none transition-all shadow-2xs"
+            name="secret_challenges[]"
+            placeholder="e.g. What specific pin, keychain, or sticker is attached to it?" maxlength="500"
+            type="text" />
+          <div class="relative flex items-center">
+            <input
+              class="ownership-answer-input w-full h-11 pl-3.5 pr-11 rounded-xl border border-slate-200/90 bg-white text-slate-900 text-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 outline-none transition-all shadow-2xs"
+              name="secret_answers[]"
+              placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
+              autocomplete="off" />
+            <button type="button" class="toggle-answer-btn absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors" aria-label="Toggle answer visibility">
+              <span class="material-symbols-outlined text-[19px] leading-none toggle-answer-icon">visibility</span>
+            </button>
+          </div>
+        `;
+
+        const qInput = row.querySelector('.ownership-challenge-input');
+        const aInput = row.querySelector('.ownership-answer-input');
+        if (initialQ) qInput.value = initialQ;
+        if (initialA) aInput.value = initialA;
+
+        const removeBtn = row.querySelector('.remove-question-btn');
+        removeBtn.addEventListener('click', () => {
+          row.remove();
+          updateQuestionsState();
+        });
+
+        bindAnswerToggle(row);
+        questionsContainer.appendChild(row);
+        updateQuestionsState();
+        qInput.focus();
+      }
+
+      if (addQuestionBtn) {
+        addQuestionBtn.addEventListener('click', () => addQuestionRow());
+      }
+
+      if (questionsContainer) {
+        const firstRow = questionsContainer.querySelector('.question-row');
+        if (firstRow) {
+          bindAnswerToggle(firstRow);
+          const initialRemoveBtn = firstRow.querySelector('.remove-question-btn');
+          if (initialRemoveBtn) {
+            initialRemoveBtn.addEventListener('click', () => {
+              firstRow.remove();
+              updateQuestionsState();
+            });
+          }
+        }
+        updateQuestionsState();
+      }
+
+      const itemReportFormEl = document.getElementById('itemReportForm');
+      if (itemReportFormEl && questionsContainer) {
+        itemReportFormEl.addEventListener('submit', (e) => {
+          const rows = questionsContainer.querySelectorAll('.question-row');
+          for (const row of rows) {
+            const q = row.querySelector('.ownership-challenge-input').value.trim();
+            const a = row.querySelector('.ownership-answer-input').value.trim();
+            if ((q && !a) || (!q && a)) {
+              e.preventDefault();
+              alert('Please enter both the question and its private answer, or leave both blank.');
+              (q ? row.querySelector('.ownership-answer-input') : row.querySelector('.ownership-challenge-input')).focus();
+              return;
+            }
+          }
+        });
+      }
+
       const MAX_REPORT_PHOTOS = 6;
       const photoInput = document.getElementById('photoInput');
       const photoLabel = document.getElementById('photoLabel');
       const photoPreviewGallery = document.getElementById('photoPreviewGallery');
       const photoUploadError = document.getElementById('photoUploadError');
       let photoPreviewUrls = [];
-
-      function validateChallengePair() {
-        const hasChallenge = challengeInput.value.trim().length > 0;
-        const hasAnswer = answerInput.value.trim().length > 0;
-        challengeInput.required = hasAnswer;
-        answerInput.required = hasChallenge;
-        challengeInput.setCustomValidity(hasAnswer && !hasChallenge ? 'Enter the ownership question too, or clear the private answer.' : '');
-        answerInput.setCustomValidity(hasChallenge && !hasAnswer ? 'Enter the private correct answer for this question.' : '');
-      }
-
-      challengeInput.addEventListener('input', validateChallengePair);
-      answerInput.addEventListener('input', validateChallengePair);
-
-      const toggleAnswerBtn = document.getElementById('toggleAnswerBtn');
-      const toggleAnswerIcon = document.getElementById('toggleAnswerIcon');
-      if (toggleAnswerBtn && answerInput && toggleAnswerIcon) {
-        toggleAnswerBtn.addEventListener('click', () => {
-          const isPw = answerInput.type === 'password';
-          answerInput.type = isPw ? 'text' : 'password';
-          toggleAnswerIcon.textContent = isPw ? 'visibility_off' : 'visibility';
-          toggleAnswerBtn.setAttribute('aria-label', isPw ? 'Hide answer' : 'Show answer');
-        });
-      }
 
       function switchReportType(type) {
         const lostBtn = document.getElementById('tabLostBtn');

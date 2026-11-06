@@ -155,9 +155,9 @@ CREATE TABLE IF NOT EXISTS public.item_reports (
   image_path VARCHAR(255),
   status VARCHAR(32) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'claimed', 'returned', 'archived', 'pending_review')),
   date_reported TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  secret_challenge VARCHAR(500),
+  secret_challenge TEXT,
   custody_mode VARCHAR(32) NOT NULL DEFAULT 'peer_meetup' CHECK (custody_mode IN ('peer_meetup', 'security_desk')),
-  secret_answer VARCHAR(500),
+  secret_answer TEXT,
   custody_received_at TIMESTAMPTZ,
   custody_received_by INT REFERENCES public.users(id) ON DELETE SET NULL
 );
