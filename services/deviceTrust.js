@@ -3,9 +3,10 @@ const crypto = require('crypto');
 const COOKIE_NAME = 'hanap_device_trust';
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+const RUNTIME_FALLBACK_SECRET = crypto.randomBytes(32).toString('hex');
 
 function getSecret() {
-    return process.env.SESSION_SECRET || 'project_hanap_cspc_campus_secret_key_2026';
+    return process.env.SESSION_SECRET || RUNTIME_FALLBACK_SECRET;
 }
 
 function parseCookieHeader(cookieHeader, name) {

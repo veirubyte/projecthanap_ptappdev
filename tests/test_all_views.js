@@ -106,7 +106,7 @@ pages.forEach(p => {
         // Render as admin
         renderFunc({
             ...defaultLocals,
-            user: { id: 99, full_name: 'Admin Officer', email: 'admin@cspc.edu.ph', role: 'admin', role_code: 'admin' },
+            user: { id: 99, full_name: 'Admin Officer', email: 'security.officer@cspc.edu.ph', role: 'admin', role_code: 'admin' },
             isAdmin: true,
             userIsAdmin: true
         });

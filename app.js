@@ -17,9 +17,10 @@ const path = require('path');
 const helmet = require('helmet');
 const compression = require('compression');
 
+const crypto = require('crypto');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const sessionSecret = process.env.SESSION_SECRET || 'project_hanap_secret_dev_key_2026';
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
 const port = Number(process.env.PORT || 3000);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {

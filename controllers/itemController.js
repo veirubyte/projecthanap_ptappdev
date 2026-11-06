@@ -1344,8 +1344,12 @@ const createAdminUser = async (req, res) => {
     if (!isValidEmailSyntax(email)) {
         return res.redirect('/admin/users?error=Enter a valid email address.');
     }
-    if (['student', 'staff'].includes(role) && !isInstitutionalEmail(email)) {
-        return res.redirect('/admin/users?error=Student and Staff accounts require a CSPC institutional email.');
+    if (['student', 'staff', 'admin'].includes(role) && !isInstitutionalEmail(email)) {
+        return res.redirect('/admin/users?error=Student, Staff, and Admin accounts require a CSPC institutional email.');
+    }
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+        return res.redirect(`/admin/users?error=${encodeURIComponent(`Password does not meet security requirements: ${strength.errors.join(', ')}.`)}`);
     }
 
     try {
@@ -1389,13 +1393,16 @@ const updateUserRole = async (req, res) => {
     if (!newRole) {
         return res.redirect('/admin/users?error=Select a valid account role.');
     }
+    if (targetUserId === req.session.user.id && newRole !== 'admin') {
+        return res.redirect('/admin/users?error=You cannot demote your own administrator account.');
+    }
     try {
         const [targetUsers] = await userModel.updateUserRole([targetUserId], []);
         if (targetUsers.length === 0) {
             return res.redirect('/admin/users?error=User account not found.');
         }
-        if (['student', 'staff'].includes(newRole) && !isInstitutionalEmail(targetUsers[0].email)) {
-            return res.redirect('/admin/users?error=Student and Staff accounts require a CSPC institutional email.');
+        if (['student', 'staff', 'admin'].includes(newRole) && !isInstitutionalEmail(targetUsers[0].email)) {
+            return res.redirect('/admin/users?error=Student, Staff, and Admin accounts require a CSPC institutional email.');
         }
         const [linkedGuardians] = await guardianLinkModel.updateUserRole([targetUserId], []);
         if (linkedGuardians.length > 0 && newRole !== 'parent') {
@@ -1750,20 +1757,28 @@ const createAdminItemReport = async (req, res) => {
     }
 };
 
+function sanitizeCsvCell(val) {
+    let str = String(val == null ? '' : val).replace(/"/g, '""');
+    if (/^[=+\-@\t\r]/.test(str)) {
+        str = `'${str}`;
+    }
+    return `"${str}"`;
+}
+
 const exportReportsCsv = async (req, res) => {
     try {
         const [reports] = await itemReportModel.listAdminReports(undefined, []);
         let csv = 'ID,Item Name,Category,Type,Location,Status,Date Reported,Reporter Name,Reporter Email\r\n';
         for (const r of reports) {
             const id = r.id;
-            const name = `"${(r.item_name || '').replace(/"/g, '""')}"`;
-            const cat = `"${(r.category || '').replace(/"/g, '""')}"`;
-            const type = r.report_type;
-            const loc = `"${(r.location_found_lost || '').replace(/"/g, '""')}"`;
-            const status = r.status;
+            const name = sanitizeCsvCell(r.item_name);
+            const cat = sanitizeCsvCell(r.category);
+            const type = sanitizeCsvCell(r.report_type);
+            const loc = sanitizeCsvCell(r.location_found_lost);
+            const status = sanitizeCsvCell(r.status);
             const date = new Date(r.date_reported).toISOString();
-            const repName = `"${(r.reporter_name || '').replace(/"/g, '""')}"`;
-            const repEmail = `"${(r.reporter_email || '').replace(/"/g, '""')}"`;
+            const repName = sanitizeCsvCell(r.reporter_name);
+            const repEmail = sanitizeCsvCell(r.reporter_email);
             csv += `${id},${name},${cat},${type},${loc},${status},${date},${repName},${repEmail}\r\n`;
         }
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -1781,10 +1796,10 @@ const exportAuditLogsCsv = async (req, res) => {
         let csv = 'Timestamp,Admin Name,Admin Email,Action,IP Address\r\n';
         for (const log of logs) {
             const time = new Date(log.timestamp).toISOString();
-            const name = `"${(log.admin_name || '').replace(/"/g, '""')}"`;
-            const email = `"${(log.admin_email || '').replace(/"/g, '""')}"`;
-            const action = `"${(log.action || '').replace(/"/g, '""')}"`;
-            const ip = `"${(log.ip_address || '').replace(/"/g, '""')}"`;
+            const name = sanitizeCsvCell(log.admin_name);
+            const email = sanitizeCsvCell(log.admin_email);
+            const action = sanitizeCsvCell(log.action);
+            const ip = sanitizeCsvCell(log.ip_address);
             csv += `${time},${name},${email},${action},${ip}\r\n`;
         }
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');

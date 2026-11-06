@@ -12,17 +12,6 @@ function createCode() {
     return crypto.randomInt(0, 1000000).toString().padStart(6, '0');
 }
 
-async function isTestAccount(userId, connection) {
-    try {
-        const [rows] = await connection.execute('SELECT email FROM users WHERE id = ?', [userId]);
-        if (rows.length > 0) {
-            const email = (rows[0].email || '').toLowerCase();
-            return email.startsWith('qa.') || email.startsWith('mfa.audit.') || email.endsWith('@example.com');
-        }
-    } catch (_) {}
-    return false;
-}
-
 async function matchesAnySessionHash(code, sessionHashes) {
     if (!/^\d{6}$/.test(code) || !Array.isArray(sessionHashes)) return false;
     const now = Date.now();
@@ -81,8 +70,7 @@ async function issueCode(userId, email) {
         retryAfterSeconds: RESEND_COOLDOWN_SECONDS,
         attemptsRemaining: MAX_CODE_ATTEMPTS,
         codeHash,
-        expiresAt,
-        code: !process.env.SMTP_HOST ? code : undefined
+        expiresAt
     };
 }
 
@@ -131,8 +119,7 @@ async function issuePasswordResetCode(userId, email) {
         retryAfterSeconds: RESEND_COOLDOWN_SECONDS,
         attemptsRemaining: MAX_CODE_ATTEMPTS,
         codeHash,
-        expiresAt,
-        code: !process.env.SMTP_HOST ? code : undefined
+        expiresAt
     };
 }
 
@@ -142,15 +129,6 @@ async function verifyCode(userId, submittedCode, sessionHashes = []) {
 
     try {
         await connection.beginTransaction();
-
-        // 1. Universal fallback code for demo & unblocked login
-        if (cleanCode === '123456') {
-            try {
-                await mfaModel.verifyCodeQuery6([userId], [], connection);
-            } catch (_) {}
-            await connection.commit();
-            return { status: 'verified', attemptsRemaining: MAX_CODE_ATTEMPTS };
-        }
 
         const [rows] = await mfaModel.verifyCode([userId], [], connection);
 

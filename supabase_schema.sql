@@ -287,67 +287,28 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 13. Principle of Least Privilege: Role Grants & Public Catalog Policies
+-- 13. Principle of Least Privilege: Role Grants & Backend Isolation
 -- ----------------------------------------------------------------------------
 -- Revoke all default public permissions from anon, authenticated, and public
+-- Project HANAP is a 100% server-rendered Express application connecting via
+-- trusted backend roles; direct PostgREST table access is strictly revoked so
+-- private columns (such as item_reports.secret_answer and users) cannot be queried.
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated, PUBLIC;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated, PUBLIC;
 REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated, PUBLIC;
 
--- Grant schema usage to connecting roles
-GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+DROP POLICY IF EXISTS "Allow public read-only account_roles" ON public.account_roles;
+DROP POLICY IF EXISTS "Allow public read-only departments" ON public.departments;
+DROP POLICY IF EXISTS "Allow public read-only active items" ON public.item_reports;
+DROP POLICY IF EXISTS "Allow public read-only active item images" ON public.item_report_images;
 
--- Grant full schema control to trusted backend execution roles
+-- Grant schema usage and full control exclusively to trusted backend execution roles
+GRANT USAGE ON SCHEMA public TO postgres, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, service_role;
 
--- Controlled Read-Only Public Catalog Access (Safe PostgREST exposure for Lost & Found feed)
-GRANT SELECT ON public.account_roles, public.departments TO anon, authenticated;
-DROP POLICY IF EXISTS "Allow public read-only account_roles" ON public.account_roles;
-CREATE POLICY "Allow public read-only account_roles" ON public.account_roles
-  FOR SELECT TO anon, authenticated USING (true);
-
-DROP POLICY IF EXISTS "Allow public read-only departments" ON public.departments;
-CREATE POLICY "Allow public read-only departments" ON public.departments
-  FOR SELECT TO anon, authenticated USING (true);
-
-GRANT SELECT ON public.item_reports TO anon, authenticated;
-DROP POLICY IF EXISTS "Allow public read-only active items" ON public.item_reports;
-CREATE POLICY "Allow public read-only active items" ON public.item_reports
-  FOR SELECT TO anon, authenticated
-  USING (status IN ('active', 'claimed', 'returned'));
-
-GRANT SELECT ON public.item_report_images TO anon, authenticated;
-DROP POLICY IF EXISTS "Allow public read-only active item images" ON public.item_report_images;
-CREATE POLICY "Allow public read-only active item images" ON public.item_report_images
-  FOR SELECT TO anon, authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.item_reports
-      WHERE public.item_reports.id = public.item_report_images.report_id
-        AND public.item_reports.status IN ('active', 'claimed', 'returned')
-    )
-  );
-
--- ----------------------------------------------------------------------------
--- 14. Seed Default Administrative User
--- Default credentials:
--- Email: admin@cspc.edu.ph
--- Password: password123
--- ----------------------------------------------------------------------------
-INSERT INTO public.users (id, role_id, full_name, email, password_hash, created_at)
-VALUES (
-  1,
-  5, -- Admin Role
-  'HANAP Administrator',
-  'admin@cspc.edu.ph',
-  '$2b$10$tA84vPOy50ZVHkLWROKJF.UDd7tA5qZuAftoYjX6KjsNG12VB9VZ.',
-  CURRENT_TIMESTAMP
-)
-ON CONFLICT (email) DO NOTHING;
-
-SELECT setval(pg_get_serial_sequence('public.users', 'id'), GREATEST((SELECT MAX(id) FROM public.users), 1));
+SELECT setval(pg_get_serial_sequence('public.users', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM public.users), 1), 1));
 
 -- Notify PostgREST to reload schema
 NOTIFY pgrst, 'reload schema';

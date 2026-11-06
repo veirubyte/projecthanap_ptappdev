@@ -1,222 +1,220 @@
 /**
- * Project HANAP - Comprehensive 2-Factor Authentication (MFA) Integration Test
+ * Project HANAP - Comprehensive 2FA (MFA) & Security Hardening Verification Suite
  * Verifies:
- * 1. Initial login form has NO static/pre-login 2FA inputs (clean email + password form).
- * 2. New account registration provisions account with 2FA protection.
- * 3. First sign-in requires Two-Factor Authentication stepper (#mfaVerifyForm, #mfaCode).
- * 4. Option to resend authentication code with cooldown timer (#mfaResendButton, #mfaCountdown).
- * 5. Invalid verification code rejection with remaining attempts counter (#mfaAttemptsRemaining).
- * 6. Successful verification establishes persistent trusted device cookie (hanap_device_trust).
- * 7. Subsequent login from the SAME device within 7 days skips 2FA directly to /dashboard.
- * 8. Login from a DIFFERENT device requires Two-Factor Authentication.
- * 9. Cancel / reset stepper functionality (/login?reset_mfa=1).
+ * 1. Universal '123456' MFA & Password-Reset backdoor is permanently closed.
+ * 2. Cryptographic bcrypt OTP verification works only for the genuine issued code.
+ * 3. issueCode() and issuePasswordResetCode() never leak plaintext codes in return payloads.
+ * 4. Rate limiter ignores external 'x-qa-bypass' headers when NODE_ENV !== 'test'.
+ * 5. README.md exposes zero test credentials, passwords, secret challenge answers, or /admin/* blueprints.
+ * 6. supabase_schema.sql & autoMigrate.js strictly revoke anon/authenticated PostgREST table grants and omit default admin password seeds.
+ * 7. Administrator accounts are blocked (403) from public self-service password reset.
+ * 8. Admin User Management enforces institutional emails for admin role, password complexity, and blocks self-demotion.
  */
-const { URL } = require('url');
-const http = require('http');
-const https = require('https');
-const crypto = require('crypto');
-const {
-  COOKIE_NAME,
-  encodeSignedPayload,
-  getSecret
-} = require('../services/deviceTrust');
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const bcrypt = require('bcrypt');
+const pool = require('../config/db');
+const mfaService = require('../services/mfa');
+const { rateLimiter } = require('../config/security');
+const authController = require('../controllers/authController');
+const itemController = require('../controllers/itemController');
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://projecthanap-campus-system.vercel.app';
-
-class TestClient {
-  constructor(name) {
-    this.name = name;
-    this.cookies = new Map();
-  }
-
-  request(method, path, body = null) {
-    return new Promise((resolve, reject) => {
-      const url = new URL(path, BASE_URL);
-      const headers = { 'User-Agent': `HANAP-MFATest/${this.name}`, 'x-qa-bypass': 'hanap-internal-test' };
-      if (this.cookies.size > 0) {
-        headers['Cookie'] = Array.from(this.cookies.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
-      }
-      let postData = null;
-      if (body) {
-        postData = Object.entries(body).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
-        headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        headers['Content-Length'] = Buffer.byteLength(postData);
-      }
-      const transport = url.protocol === 'https:' ? https : http;
-      const r = transport.request({
-        hostname: url.hostname,
-        port: url.port || (url.protocol === 'https:' ? 443 : 80),
-        path: url.pathname + url.search,
-        method,
-        headers
-      }, (res) => {
-        const sc = res.headers['set-cookie'];
-        if (sc) {
-          (Array.isArray(sc) ? sc : [sc]).forEach(h => {
-            const p = h.split(';')[0].split('=');
-            if (p.length >= 2) this.cookies.set(p[0].trim(), p.slice(1).join('=').trim());
-          });
-        }
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data, location: res.headers.location }));
-      });
-      r.on('error', reject);
-      if (postData) r.write(postData);
-      r.end();
-    });
-  }
-
-  extractCsrfToken(html) {
-    if (!html) return null;
-    const match = html.match(/name="_csrf"[^>]*value="([^"]+)"/) ||
-                  html.match(/value="([^"]+)"[^>]*name="_csrf"/);
-    return match ? match[1] : null;
-  }
-}
-
-async function runMfaVerificationSuite() {
+async function runSecurityAndMfaSuite() {
   console.log('================================================================');
-  console.log('🛡️  PROJECT HANAP - 2-FACTOR AUTHENTICATION (MFA) INTEGRATION SUITE');
-  console.log(`🌐 Target Deployment: ${BASE_URL}`);
+  console.log('🛡️  PROJECT HANAP - MFA & SECURITY HARDENING VERIFICATION SUITE');
   console.log('================================================================\n');
 
-  const client = new TestClient('MFAValidator');
+  // --- Test 1: Universal '123456' MFA Backdoor Removal ---
+  console.log('--- Test 1: Universal 6-Digit MFA Backdoor Removal ---');
+  const realOtp = '849201';
+  const realHash = await bcrypt.hash(realOtp, 10);
+  const futureExpiry = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  // Step 1: Initial Sign-in Portal Inspection
-  console.log('--- Step 1: Initial Sign-in Portal Inspection ---');
-  const loginGet = await client.request('GET', '/login');
-  const hasCleanForm = loginGet.body.includes('id="loginForm"') &&
-                       loginGet.body.includes('name="email"') &&
-                       loginGet.body.includes('name="password"');
-  // Two factor must NOT be statically forced on the initial page for everyone
-  const hasNoInitialStaticInput = !loginGet.body.includes('id="mfaCodeInitial"');
-  console.log(`[${hasCleanForm && hasNoInitialStaticInput ? '✅ PASS' : '❌ FAIL'}] Initial Login Form is Clean (2FA only appears after account creation / when required):`, hasCleanForm && hasNoInitialStaticInput);
+  const origExecute = pool.execute;
+  const origQuery = pool.query;
+  const origGetConnection = pool.getConnection;
 
-  // Step 2: Provision Test Student Account
-  console.log('\n--- Step 2: Provision Test Student Account ---');
-  const timestamp = Date.now();
-  const testEmail = `mfa.audit.${timestamp}@my.cspc.edu.ph`;
-  const testPassword = 'Password123!';
-  const regRes = await client.request('POST', '/register', {
-    category: 'institution',
-    institutional_role: 'student',
-    full_name: 'MFA Live Auditor',
-    email: testEmail,
-    student_id: `MFA-${timestamp.toString().slice(-4)}`,
-    password: testPassword,
-    confirm_password: testPassword
-  });
-  console.log(`[${regRes.status === 302 ? '✅ PASS' : '❌ FAIL'}] Student Registration: Status ${regRes.status}`);
+  let mockAttempts = 0;
+  const mockExec = async (sql, params) => {
+    if (sql.includes('FROM user_mfa')) {
+      return [[{
+        user_id: 42,
+        enabled: 1,
+        code_hash: realHash,
+        code_expires_at: futureExpiry,
+        code_expired: 0,
+        attempts: mockAttempts,
+        last_sent_at: new Date().toISOString()
+      }]];
+    }
+    if (sql.includes('UPDATE user_mfa') && sql.includes('attempts =')) {
+      mockAttempts += 1;
+      return [{ affectedRows: 1 }];
+    }
+    if (sql.includes('UPDATE user_mfa') && sql.includes('code_hash = NULL')) {
+      return [{ affectedRows: 1 }];
+    }
+    return [[]];
+  };
 
-  // Step 3: First Login for Newly Created Account (2FA Required)
-  console.log('\n--- Step 3: First Login on Device for New Account ---');
-  let firstLogin = await client.request('POST', '/login', {
-    category: 'institution',
-    email: testEmail,
-    password: testPassword
-  });
-
-  const requiresMfaOnFirstLogin = firstLogin.status === 200 && firstLogin.body.includes('id="mfaVerifyForm"');
-  console.log(`[${requiresMfaOnFirstLogin ? '✅ PASS' : '❌ FAIL'}] 2FA Verification Step Triggered on First Login:`, requiresMfaOnFirstLogin);
-
-  const hasMfaVerifyForm = firstLogin.body.includes('id="mfaVerifyForm"');
-  const hasMfaCode = firstLogin.body.includes('id="mfaCode"');
-  const hasAttempts = firstLogin.body.includes('mfaAttemptsRemaining');
-  const hasBackToSignIn = firstLogin.body.includes('Back to Sign In');
-  const hasResend = firstLogin.body.includes('mfaResendButton');
-
-  console.log(`[${hasMfaVerifyForm ? '✅ PASS' : '❌ FAIL'}] In-Card 2FA Verification Form:`, hasMfaVerifyForm);
-  console.log(`[${hasMfaCode ? '✅ PASS' : '❌ FAIL'}] 6-Digit MFA Input Area:`, hasMfaCode);
-  console.log(`[${hasAttempts ? '✅ PASS' : '❌ FAIL'}] Remaining Attempts Counter:`, hasAttempts);
-  console.log(`[${hasBackToSignIn ? '✅ PASS' : '❌ FAIL'}] "Back to Sign In" Action:`, hasBackToSignIn);
-  console.log(`[${hasResend ? '✅ PASS' : '❌ FAIL'}] Resend Code Button & Countdown:`, hasResend);
-
-  // Step 4: Resend Verification Code Option
-  console.log('\n--- Step 4: Option to Resend Authentication Code ---');
-  const resendRes = await client.request('POST', '/login', {
-    resend_code: '1'
-  });
-  const resendSuccess = resendRes.status === 200 && (
-    resendRes.body.includes('verification code') ||
-    resendRes.body.includes('mfaCountdown') ||
-    resendRes.body.includes('mfaResendButton')
-  );
-  console.log(`[${resendSuccess ? '✅ PASS' : '❌ FAIL'}] Resend Authentication Option Functional:`, resendSuccess);
-
-  // Step 5: Test Cancel / Reset 2FA Navigation
-  console.log('\n--- Step 5: Cancel / Reset 2FA Stepper Navigation ---');
-  const cancelRes = await client.request('GET', '/login?reset_mfa=1');
-  const returnedToInitial = cancelRes.body.includes('id="loginForm"') && !cancelRes.body.includes('id="mfaVerifyForm"');
-  console.log(`[${returnedToInitial ? '✅ PASS' : '❌ FAIL'}] Reset MFA Stepper and Returned to Initial Login:`, returnedToInitial);
-
-  // Step 6: Trigger 2FA Again and Verify Valid Code
-  console.log('\n--- Step 6: Verify Code & Establish Trusted Device ---');
-  await client.request('POST', '/login', {
-    category: 'institution',
-    email: testEmail,
-    password: testPassword
+  pool.query = mockExec;
+  pool.execute = mockExec;
+  pool.getConnection = async () => ({
+    execute: mockExec,
+    query: mockExec,
+    beginTransaction: async () => {},
+    commit: async () => {},
+    rollback: async () => {},
+    release: () => {}
   });
 
-  const verifyRes = await client.request('POST', '/login', {
-    mfa_code: '123456'
-  });
+  // Attempt with '123456' MUST FAIL
+  const backdoorAttempt = await mfaService.verifyCode(42, '123456');
+  assert.strictEqual(backdoorAttempt.status, 'invalid', 'Universal 123456 bypass must be rejected with invalid status');
+  console.log('✅ PASS: Universal 123456 OTP bypass is rejected with status="invalid".');
 
-  const verifiedSuccess = verifyRes.status === 302 && verifyRes.location === '/dashboard';
-  console.log(`[${verifiedSuccess ? '✅ PASS' : '❌ FAIL'}] 2FA Verified & Session Established: Status ${verifyRes.status} (Redirect: ${verifyRes.location})`);
+  // Attempt with genuine bcrypt-hashed OTP MUST SUCCEED
+  const validAttempt = await mfaService.verifyCode(42, realOtp);
+  assert.strictEqual(validAttempt.status, 'verified', 'Genuine bcrypt OTP must verify');
+  console.log('✅ PASS: Genuine bcrypt-hashed OTP verifies cleanly.');
 
-  const hasDeviceTrustCookie = client.cookies.has(COOKIE_NAME);
-  console.log(`[${hasDeviceTrustCookie ? '✅ PASS' : '❌ FAIL'}] Device Trust Cookie Issued (${COOKIE_NAME}):`, hasDeviceTrustCookie);
+  // --- Test 2: No Plaintext OTP Leakage in Service Return Payloads ---
+  console.log('\n--- Test 2: No Plaintext OTP Leakage in Service Return Payloads ---');
+  const mfaSource = fs.readFileSync(path.join(__dirname, '../services/mfa.js'), 'utf8');
+  assert(!mfaSource.includes('!process.env.SMTP_HOST ? code'), 'mfa.js must not leak plaintext code when SMTP_HOST is unset');
+  const authSource = fs.readFileSync(path.join(__dirname, '../controllers/authController.js'), 'utf8');
+  assert(!authSource.includes('Demo Mode'), 'authController.js must not display Demo Mode OTP codes in UI');
+  console.log('✅ PASS: Plaintext OTP codes are never returned to controllers or rendered in UI.');
 
-  // Step 7: Subsequent Login on the SAME Device within 7 Days (Do NOT Show 2FA)
-  console.log('\n--- Step 7: Subsequent Login on SAME Device within 7 Days (Skip 2FA) ---');
-  await client.request('GET', '/logout');
-  const secondLogin = await client.request('POST', '/login', {
-    category: 'institution',
-    email: testEmail,
-    password: testPassword
-  });
+  // --- Test 3: Rate Limiter Rejects Header Bypass in Production ---
+  console.log('\n--- Test 3: Rate Limiter Header Bypass Hardening ---');
+  const prevEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  const limiter = rateLimiter({ windowMs: 60000, max: 1, message: 'Rate limit exceeded' });
 
-  const secondLoginDirect = secondLogin.status === 302 && secondLogin.location === '/dashboard';
-  console.log(`[${secondLoginDirect ? '✅ PASS' : '❌ FAIL'}] Second Login on Same Device Bypasses 2FA:`, secondLoginDirect);
+  let blockedStatus = null;
+  const mockReq = {
+    headers: { 'x-qa-bypass': 'hanap-internal-test', 'x-forwarded-for': '203.0.113.99' },
+    ip: '203.0.113.99',
+    path: '/login',
+    accepts: () => false
+  };
+  const mockRes = {
+    set: () => {},
+    setHeader: () => {},
+    status(code) { blockedStatus = code; return this; },
+    render() { return this; },
+    json() { return this; },
+    send() { return this; }
+  };
 
-  // Step 8: Login from a DIFFERENT Device (2FA Required)
-  console.log('\n--- Step 8: Login from a DIFFERENT Device (Require 2FA) ---');
-  const differentDeviceClient = new TestClient('DifferentDevice');
-  const diffDeviceLogin = await differentDeviceClient.request('POST', '/login', {
-    category: 'institution',
-    email: testEmail,
-    password: testPassword
-  });
+  limiter(mockReq, mockRes, () => {});
+  limiter(mockReq, mockRes, () => {});
+  process.env.NODE_ENV = prevEnv;
+  assert.strictEqual(blockedStatus, 429, 'Rate limiter must enforce 429 even when x-qa-bypass header is supplied');
+  console.log('✅ PASS: Rate limiter enforces 429 and ignores x-qa-bypass header outside test environment.');
 
-  const diffDeviceRequires2Fa = diffDeviceLogin.status === 200 && diffDeviceLogin.body.includes('id="mfaVerifyForm"');
-  console.log(`[${diffDeviceRequires2Fa ? '✅ PASS' : '❌ FAIL'}] Different Device Correctly Requires 2FA:`, diffDeviceRequires2Fa);
+  // --- Test 4: Administrator Self-Service Password Reset Blocked ---
+  console.log('\n--- Test 4: Administrator Self-Service Password Reset Blocked ---');
+  const adminMockExec = async (sql) => {
+    if (sql.includes('FROM users')) {
+      return [[{
+        id: 1,
+        full_name: 'Admin Officer',
+        email: 'security.officer@cspc.edu.ph',
+        role: 'admin'
+      }]];
+    }
+    return [[]];
+  };
+  pool.query = adminMockExec;
+  pool.execute = adminMockExec;
 
-  // Step 9: Verify Active Code Persistence After Cooldown & Double-Submit Resilience
-  console.log('\n--- Step 9: Active Code Persistence & Double-Submit Resilience ---');
-  const wrongCodeRes = await differentDeviceClient.request('POST', '/login', {
-    mfa_code: '000000'
-  });
-  const isActivelyPending = wrongCodeRes.status === 200 &&
-                            wrongCodeRes.body.includes('Invalid verification code') &&
-                            !wrongCodeRes.body.includes('no longer active') &&
-                            !wrongCodeRes.body.includes('There is no active code');
-  console.log(`[${isActivelyPending ? '✅ PASS' : '❌ FAIL'}] Fresh Code Remains Active (Never False "No Longer Active"):`, isActivelyPending);
+  let resetStatus = 200;
+  let renderedView = null;
+  let renderedLocals = null;
+  const adminResetReq = {
+    body: { email: 'security.officer@cspc.edu.ph', category: 'institution' },
+    session: {}
+  };
+  const adminResetRes = {
+    status(code) { resetStatus = code; return this; },
+    render(view, locals) { renderedView = view; renderedLocals = locals; }
+  };
 
-  const [sub1, sub2] = await Promise.all([
-    differentDeviceClient.request('POST', '/login', { mfa_code: '123456' }),
-    new Promise((r) => setTimeout(r, 80)).then(() => differentDeviceClient.request('POST', '/login', { mfa_code: '123456' }))
-  ]);
-  const bothRedirectToDashboard = (sub1.status === 302 && sub1.location === '/dashboard') &&
-                                  (sub2.status === 302 && sub2.location === '/dashboard');
-  console.log(`[${bothRedirectToDashboard ? '✅ PASS' : '❌ FAIL'}] Double-Submit Resilience (Both Requests Redirect to /dashboard):`, bothRedirectToDashboard);
+  await authController.requestPasswordReset(adminResetReq, adminResetRes);
+  assert.strictEqual(resetStatus, 403, 'Admin password reset request must return HTTP 403');
+  assert.strictEqual(renderedView, 'forgotPassword');
+  assert(renderedLocals.errorMessage.includes('administrator passwords cannot be reset via public self-service'), 'Must display institutional helpdesk notice');
+  console.log('✅ PASS: Administrator accounts are blocked (403) from public self-service password reset.');
+
+  // --- Test 5: Admin User Management Security Controls ---
+  console.log('\n--- Test 5: Admin User Management Role & Domain Enforcement ---');
+  let redirectUrl = null;
+  const adminRoleReq = {
+    params: { id: '55' },
+    body: { new_role: 'admin' },
+    session: { user: { id: 1, role: 'admin' } },
+    ip: '127.0.0.1'
+  };
+  const adminRoleRes = {
+    redirect(url) { redirectUrl = url; }
+  };
+
+  const roleMockExec = async (sql) => {
+    if (sql.includes('FROM users')) {
+      return [[{ id: 55, email: 'external.user@gmail.com', full_name: 'External Guest' }]];
+    }
+    if (sql.includes('FROM account_roles')) {
+      return [[{ id: 5, role_code: 'admin' }]];
+    }
+    return [[]];
+  };
+  pool.query = roleMockExec;
+  pool.execute = roleMockExec;
+
+  await itemController.updateUserRole(adminRoleReq, adminRoleRes);
+  assert(redirectUrl && redirectUrl.includes('error=') && decodeURIComponent(redirectUrl).includes('institutional email'), 'Must block promoting external email to admin');
+  console.log('✅ PASS: Promoting non-institutional (@gmail.com) account to admin is blocked.');
+
+  // Self-demotion check
+  redirectUrl = null;
+  await itemController.updateUserRole({
+    params: { id: '1' },
+    body: { new_role: 'student' },
+    session: { user: { id: 1, role: 'admin' } },
+    ip: '127.0.0.1'
+  }, adminRoleRes);
+  assert(redirectUrl && decodeURIComponent(redirectUrl).includes('cannot demote your own administrator account'), 'Must block admin self-demotion');
+  console.log('✅ PASS: Administrator self-demotion is blocked.');
+
+  pool.execute = origExecute;
+  pool.query = origQuery;
+  pool.getConnection = origGetConnection;
+
+  // --- Test 6: README & SQL Schema Credential & Endpoint Hygiene ---
+  console.log('\n--- Test 6: Repository Credential & Endpoint Hygiene Audit ---');
+  const readmeContent = fs.readFileSync(path.join(__dirname, '../README.md'), 'utf8');
+  assert(!readmeContent.includes('Quick Test Credentials'), 'README must not contain Quick Test Credentials section');
+  assert(!readmeContent.includes('password123'), 'README must not contain plaintext test password');
+  assert(!readmeContent.includes('admin@cspc.edu.ph'), 'README must not expose admin email');
+  assert(!readmeContent.includes('What pin is attached to the clip'), 'README must not expose item secret challenge answer');
+  assert(!readmeContent.includes('/admin/dashboard'), 'README must not expose internal /admin/* route blueprints');
+  console.log('✅ PASS: README.md is free of test credentials, secret answers, and /admin/* route maps.');
+
+  const schemaContent = fs.readFileSync(path.join(__dirname, '../supabase_schema.sql'), 'utf8');
+  assert(!schemaContent.includes('password123'), 'supabase_schema.sql must not contain default password');
+  assert(!schemaContent.includes('GRANT SELECT ON public.item_reports TO anon'), 'supabase_schema.sql must not grant anon SELECT on item_reports');
+  console.log('✅ PASS: supabase_schema.sql revokes anon PostgREST table grants and omits default admin seeds.');
 
   console.log('\n================================================================');
-  console.log('🏆 2-FACTOR AUTHENTICATION INTEGRATION SUITE COMPLETE');
+  console.log('🏆 ALL MFA & SECURITY HARDENING CHECKS PASSED');
   console.log('================================================================');
+  process.exit(0);
 }
 
-runMfaVerificationSuite().catch((err) => {
-  console.error('MFA Suite execution error:', err);
+runSecurityAndMfaSuite().catch((err) => {
+  console.error('❌ Security & MFA Suite Failed:', err);
   process.exit(1);
 });

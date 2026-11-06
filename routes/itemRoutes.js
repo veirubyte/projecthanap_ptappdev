@@ -127,9 +127,6 @@ router.post('/admin/handover/:claimId/confirm', requireAdmin, controller.confirm
 // Admin Reject Handover
 router.post('/admin/handover/:claimId/reject', requireAdmin, controller.rejectHandover);
 
-// Test 403 Forbidden Screen
-router.get('/admin/test-403', requireAdmin, controller.showForbiddenPage);
-
 // Admin All Reports Management & 60-Day Archive
 router.get('/admin/reports', requireAdmin, controller.listAdminReports);
 
