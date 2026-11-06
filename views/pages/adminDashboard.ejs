@@ -375,8 +375,8 @@
           Private answer (never shown to claimants)
           <div class="relative flex items-center">
             <input class="w-full h-10 pl-3.5 pr-10 text-xs font-normal bg-white/60 border border-white/80 rounded-xl text-on-surface placeholder:text-on-surface-variant/70 focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all" id="adminSecretAnswer" name="secret_answer" placeholder="Correct answer" maxlength="500" type="password" autocomplete="new-password"/>
-            <button type="button" onclick="const f = document.getElementById('adminSecretAnswer'); const ic = this.querySelector('span'); const isPw = f.type === 'password'; f.type = isPw ? 'text' : 'password'; ic.textContent = isPw ? 'visibility_off' : 'visibility';" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1 rounded-md" aria-label="Toggle answer visibility">
-              <span class="material-symbols-outlined text-[18px] leading-none">visibility</span>
+            <button type="button" onclick="const f = document.getElementById('adminSecretAnswer'); const ic = this.querySelector('span, [data-lucide], svg, i'); const isPw = f.type === 'password'; f.type = isPw ? 'text' : 'password'; if (ic) { if (ic.tagName && ic.tagName.toLowerCase() === 'svg') { const ni = document.createElement('i'); ni.setAttribute('data-lucide', isPw ? 'eye-off' : 'eye'); ni.className = (ic.className.baseVal || ic.className) + ' pointer-events-none'; ic.replaceWith(ni); if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons(); } else { ic.setAttribute('data-lucide', isPw ? 'eye-off' : 'eye'); ic.textContent = isPw ? 'visibility_off' : 'visibility'; } }" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 cursor-pointer z-10" aria-label="Toggle answer visibility">
+              <span class="material-symbols-outlined text-[18px] leading-none pointer-events-none">visibility</span>
             </button>
           </div>
         </label>

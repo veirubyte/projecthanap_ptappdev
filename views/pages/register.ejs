@@ -297,9 +297,9 @@
                       class="w-full h-10 pl-3.5 pr-10 rounded-xl bg-white/90 border text-slate-900 text-sm focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/15 transition shadow-2xs <%= (typeof invalidFields !== 'undefined' && invalidFields.includes('password')) ? 'border-rose-500 ring-2 ring-rose-200' : 'border-slate-200/90' %>"
                       id="password" name="password" type="password" autocomplete="new-password" />
                     <button aria-label="Toggle password visibility"
-                      class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 transition-colors focus:outline-none z-10 cursor-pointer"
                       data-password-field="password" data-password-icon="eyeIcon1" type="button">
-                      <i data-lucide="eye" class="w-4 h-4 text-slate-400" id="eyeIcon1"></i>
+                      <i data-lucide="eye" class="w-4 h-4 text-slate-400 pointer-events-none" id="eyeIcon1"></i>
                     </button>
                   </div>
                 </div>
@@ -315,9 +315,9 @@
                       class="w-full h-10 pl-3.5 pr-10 rounded-xl bg-white/90 border text-slate-900 text-sm focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/15 transition shadow-2xs <%= (typeof invalidFields !== 'undefined' && invalidFields.includes('confirm_password')) ? 'border-rose-500 ring-2 ring-rose-200' : 'border-slate-200/90' %>"
                       id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" />
                     <button aria-label="Toggle confirm password visibility"
-                      class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition-colors focus:outline-none"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 transition-colors focus:outline-none z-10 cursor-pointer"
                       data-password-field="confirm_password" data-password-icon="eyeIcon2" type="button">
-                      <i data-lucide="eye" class="w-4 h-4 text-slate-400" id="eyeIcon2"></i>
+                      <i data-lucide="eye" class="w-4 h-4 text-slate-400 pointer-events-none" id="eyeIcon2"></i>
                     </button>
                   </div>
                 </div>
@@ -426,20 +426,33 @@
       }
     }
 
-    function togglePasswordVisibility(fieldId, iconId) {
-      const field = document.getElementById(fieldId);
-      const icon = document.getElementById(iconId);
-      if (!field || !icon) return;
-
-      if (field.type === 'password') {
-        field.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
+    function togglePasswordVisibility(buttonOrFieldId, optionalIconId) {
+      let fieldId, button, icon;
+      if (typeof buttonOrFieldId === 'string') {
+        fieldId = buttonOrFieldId;
+        icon = document.getElementById(optionalIconId);
       } else {
-        field.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
+        button = buttonOrFieldId;
+        fieldId = button.dataset.passwordField;
+        icon = button.querySelector('[data-lucide], svg, span, i') || document.getElementById(button.dataset.passwordIcon);
       }
-      if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+
+      const isPw = field.type === 'password';
+      field.type = isPw ? 'text' : 'password';
+      if (icon) {
+        if (icon.tagName && icon.tagName.toLowerCase() === 'svg') {
+          const newIcon = document.createElement('i');
+          newIcon.setAttribute('data-lucide', isPw ? 'eye-off' : 'eye');
+          newIcon.className = (icon.className.baseVal || icon.className) + ' pointer-events-none';
+          icon.replaceWith(newIcon);
+        } else {
+          icon.setAttribute('data-lucide', isPw ? 'eye-off' : 'eye');
+        }
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
       }
     }
 
@@ -708,7 +721,7 @@
 
       const passwordButton = event.target.closest('[data-password-field]');
       if (passwordButton) {
-        togglePasswordVisibility(passwordButton.dataset.passwordField, passwordButton.dataset.passwordIcon);
+        togglePasswordVisibility(passwordButton);
       }
     });
 

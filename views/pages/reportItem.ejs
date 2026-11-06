@@ -263,8 +263,8 @@
                             id="verificationAnswer_0" name="secret_answers[]"
                             placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
                             autocomplete="off" />
-                          <button type="button" class="toggle-answer-btn absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors" aria-label="Toggle answer visibility">
-                            <span class="material-symbols-outlined text-[19px] leading-none toggle-answer-icon">visibility</span>
+                          <button type="button" class="toggle-answer-btn absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors z-10" aria-label="Toggle answer visibility">
+                            <span class="material-symbols-outlined text-[19px] leading-none toggle-answer-icon pointer-events-none">visibility</span>
                           </button>
                         </div>
                       </div>
@@ -356,12 +356,26 @@
       function bindAnswerToggle(row) {
         const toggleBtn = row.querySelector('.toggle-answer-btn');
         const answerInput = row.querySelector('.ownership-answer-input');
-        const toggleIcon = row.querySelector('.toggle-answer-icon');
-        if (toggleBtn && answerInput && toggleIcon) {
-          toggleBtn.addEventListener('click', () => {
+        if (toggleBtn && answerInput) {
+          toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             const isPw = answerInput.type === 'password';
             answerInput.type = isPw ? 'text' : 'password';
-            toggleIcon.textContent = isPw ? 'visibility_off' : 'visibility';
+            const icon = row.querySelector('.toggle-answer-icon') || row.querySelector('.toggle-answer-btn [data-lucide], .toggle-answer-btn svg, .toggle-answer-btn span');
+            if (icon) {
+              if (icon.tagName && icon.tagName.toLowerCase() === 'svg') {
+                const newIcon = document.createElement('i');
+                newIcon.setAttribute('data-lucide', isPw ? 'eye-off' : 'eye');
+                newIcon.className = (icon.className.baseVal || icon.className) + ' pointer-events-none';
+                icon.replaceWith(newIcon);
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                  window.lucide.createIcons();
+                }
+              } else {
+                icon.setAttribute('data-lucide', isPw ? 'eye-off' : 'eye');
+                icon.textContent = isPw ? 'visibility_off' : 'visibility';
+              }
+            }
             toggleBtn.setAttribute('aria-label', isPw ? 'Hide answer' : 'Show answer');
           });
         }
@@ -430,9 +444,9 @@
               name="secret_answers[]"
               placeholder="Private correct answer (never shown to claimants)" maxlength="500" type="password"
               autocomplete="off" />
-            <button type="button" class="toggle-answer-btn absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors" aria-label="Toggle answer visibility">
-              <span class="material-symbols-outlined text-[19px] leading-none toggle-answer-icon">visibility</span>
-            </button>
+            <button type="button" class="toggle-answer-btn absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-colors z-10" aria-label="Toggle answer visibility">
+                            <span class="material-symbols-outlined text-[19px] leading-none toggle-answer-icon pointer-events-none">visibility</span>
+                          </button>
           </div>
         `;
 

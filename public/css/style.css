@@ -28,6 +28,71 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* ==============================================================================
+ * INTERACTIVE BUTTON & HIT-TARGET NORMALIZATION
+ * Eliminates dead zones, hollow SVG stroke click-through, and browser conflicts
+ * ============================================================================== */
+
+/* Suppress native Edge / IE password reveal and clear controls that conflict with custom eye buttons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure all icon button contents (SVGs, paths, Material Symbols, Lucide icons, text) pass pointer events to the button */
+button > svg,
+button > svg *,
+button > span,
+button > i,
+button > img,
+a > svg,
+a > svg *,
+a > span,
+a > i,
+a > img,
+button svg,
+button svg *,
+button span.material-symbols-outlined,
+button i[data-lucide],
+button .lucide,
+a svg,
+a svg *,
+a span.material-symbols-outlined,
+a i[data-lucide],
+a .lucide,
+.toggle-answer-btn *,
+[data-theme-toggle] *,
+[data-password-field] *,
+[data-password-toggle] * {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Guarantee responsive hit-target sizing, positioning & z-indexing for all password & answer toggles */
+.toggle-answer-btn,
+[data-password-field],
+[data-password-toggle] {
+  position: absolute !important;
+  z-index: 20 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Standard minimum clickable target size for standalone icon buttons */
+[data-theme-toggle] {
+  cursor: pointer !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Lucide Icons Global Standard */
 svg.lucide, i[data-lucide], .lucide-icon {
   display: inline-block;

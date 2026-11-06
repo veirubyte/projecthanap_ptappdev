@@ -463,8 +463,8 @@
                                         class="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" />
                                       <button type="button" data-password-toggle="currentPassword"
                                         aria-label="Show current password" aria-pressed="false"
-                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
-                                        <span class="material-symbols-outlined text-[19px]"
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors z-10 cursor-pointer">
+                                        <span class="material-symbols-outlined text-[19px] pointer-events-none"
                                           aria-hidden="true">visibility</span>
                                       </button>
                                     </div>
@@ -479,11 +479,11 @@
                                           autocomplete="new-password" required
                                           class="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" />
                                         <button type="button" data-password-toggle="newPassword"
-                                          aria-label="Show new password" aria-pressed="false"
-                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
-                                          <span class="material-symbols-outlined text-[19px]"
-                                            aria-hidden="true">visibility</span>
-                                        </button>
+                                           aria-label="Show new password" aria-pressed="false"
+                                           class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors z-10 cursor-pointer">
+                                           <span class="material-symbols-outlined text-[19px] pointer-events-none"
+                                             aria-hidden="true">visibility</span>
+                                         </button>
                                       </div>
                                     </div>
                                     <div class="flex flex-col gap-1.5">
@@ -494,11 +494,11 @@
                                           autocomplete="new-password" required
                                           class="w-full h-11 pl-4 pr-12 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" />
                                         <button type="button" data-password-toggle="confirmPassword"
-                                          aria-label="Show confirmation password" aria-pressed="false"
-                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
-                                          <span class="material-symbols-outlined text-[19px]"
-                                            aria-hidden="true">visibility</span>
-                                        </button>
+                                           aria-label="Show confirmation password" aria-pressed="false"
+                                           class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors z-10 cursor-pointer">
+                                           <span class="material-symbols-outlined text-[19px] pointer-events-none"
+                                             aria-hidden="true">visibility</span>
+                                         </button>
                                       </div>
                                     </div>
                                   </div>
@@ -575,11 +575,11 @@
                                             autocomplete="current-password" required
                                             class="w-full h-10 pl-3 pr-11 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" />
                                           <button type="button" data-password-toggle="disableMfaPassword"
-                                            aria-label="Show current password" aria-pressed="false"
-                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
-                                            <span class="material-symbols-outlined text-[19px]"
-                                              aria-hidden="true">visibility</span>
-                                          </button>
+                                             aria-label="Show current password" aria-pressed="false"
+                                             class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors z-10 cursor-pointer">
+                                             <span class="material-symbols-outlined text-[19px] pointer-events-none"
+                                               aria-hidden="true">visibility</span>
+                                           </button>
                                         </div>
                                       </div>
                                       <button type="submit"
@@ -601,11 +601,11 @@
                                               autocomplete="current-password" required
                                               class="w-full h-10 pl-3 pr-11 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" />
                                             <button type="button" data-password-toggle="enableMfaPassword"
-                                              aria-label="Show current password" aria-pressed="false"
-                                              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
-                                              <span class="material-symbols-outlined text-[19px]"
-                                                aria-hidden="true">visibility</span>
-                                            </button>
+                                               aria-label="Show current password" aria-pressed="false"
+                                               class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-colors z-10 cursor-pointer">
+                                               <span class="material-symbols-outlined text-[19px] pointer-events-none"
+                                                 aria-hidden="true">visibility</span>
+                                             </button>
                                           </div>
                                         </div>
                                         <button type="submit"
@@ -1073,7 +1073,21 @@
             input.type = shouldShow ? 'text' : 'password';
             button.setAttribute('aria-pressed', String(shouldShow));
             button.setAttribute('aria-label', `${shouldShow ? 'Hide' : 'Show'} ${input.labels?.[0]?.textContent.trim().toLowerCase() || 'password'}`);
-            button.querySelector('span').textContent = shouldShow ? 'visibility_off' : 'visibility';
+            const icon = button.querySelector('[data-lucide], svg, span, i');
+            if (icon) {
+              if (icon.tagName && icon.tagName.toLowerCase() === 'svg') {
+                const newIcon = document.createElement('i');
+                newIcon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+                newIcon.className = (icon.className.baseVal || icon.className) + ' pointer-events-none';
+                icon.replaceWith(newIcon);
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                  window.lucide.createIcons();
+                }
+              } else {
+                icon.setAttribute('data-lucide', shouldShow ? 'eye-off' : 'eye');
+                icon.textContent = shouldShow ? 'visibility_off' : 'visibility';
+              }
+            }
           });
         });
 

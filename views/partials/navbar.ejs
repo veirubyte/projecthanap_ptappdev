@@ -69,13 +69,13 @@
       <!-- Quick Theme Toggle Button (1-Click Switch) -->
       <button 
         type="button" 
-        class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-amber-500 hover:bg-slate-100/80 transition-all cursor-pointer border border-transparent hover:border-slate-200/60"
+        class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-slate-600 hover:text-amber-500 hover:bg-slate-100/80 transition-all cursor-pointer border border-transparent hover:border-slate-200/60 select-none relative z-10 shrink-0"
         title="Toggle Night / Light Mode"
         aria-label="Toggle light and dark mode"
         aria-pressed="false"
         data-theme-toggle
       >
-        <span class="material-symbols-outlined text-[19px] sm:text-[21px]" id="navThemeIcon">dark_mode</span>
+        <span class="material-symbols-outlined text-[19px] sm:text-[21px] pointer-events-none" id="navThemeIcon">dark_mode</span>
       </button>
 
       <% if (typeof user !== 'undefined' && user) { %>
@@ -296,7 +296,21 @@
     });
 
     if (isDark) {
-      if (navIcon) navIcon.textContent = 'light_mode';
+      if (navIcon) {
+        if (navIcon.tagName && navIcon.tagName.toLowerCase() === 'svg') {
+          const newIcon = document.createElement('i');
+          newIcon.setAttribute('data-lucide', 'sun');
+          newIcon.id = 'navThemeIcon';
+          newIcon.className = (navIcon.className.baseVal || navIcon.className) + ' pointer-events-none';
+          navIcon.replaceWith(newIcon);
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        } else {
+          navIcon.textContent = 'light_mode';
+          navIcon.setAttribute('data-lucide', 'sun');
+        }
+      }
       if (dropdownIcon) dropdownIcon.textContent = 'light_mode';
       if (dropdownLabel) dropdownLabel.textContent = 'Light Mode';
       if (dropdownSwitch) dropdownSwitch.className = 'w-8 h-4.5 rounded-full bg-sky-600 flex items-center p-0.5 transition-colors';
@@ -305,7 +319,21 @@
       if (themeBtnText) themeBtnText.textContent = 'Switch to Light Mode';
       if (sidebarThemeIndicator) sidebarThemeIndicator.textContent = 'Active: Dark';
     } else {
-      if (navIcon) navIcon.textContent = 'dark_mode';
+      if (navIcon) {
+        if (navIcon.tagName && navIcon.tagName.toLowerCase() === 'svg') {
+          const newIcon = document.createElement('i');
+          newIcon.setAttribute('data-lucide', 'moon');
+          newIcon.id = 'navThemeIcon';
+          newIcon.className = (navIcon.className.baseVal || navIcon.className) + ' pointer-events-none';
+          navIcon.replaceWith(newIcon);
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        } else {
+          navIcon.textContent = 'dark_mode';
+          navIcon.setAttribute('data-lucide', 'moon');
+        }
+      }
       if (dropdownIcon) dropdownIcon.textContent = 'dark_mode';
       if (dropdownLabel) dropdownLabel.textContent = 'Night Mode';
       if (dropdownSwitch) dropdownSwitch.className = 'w-8 h-4.5 rounded-full bg-slate-300 flex items-center p-0.5 transition-colors';
