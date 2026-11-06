@@ -183,6 +183,8 @@ html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navb
 }
 
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a {
+  background-color: transparent !important;
+  border-color: transparent !important;
   color: #cbd5e1 !important;
 }
 
@@ -191,10 +193,44 @@ html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navb
   color: #ffffff !important;
 }
 
-html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a[class*="bg-white"] {
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a[class*="bg-white"],
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar nav a[class*="bg-[#09436B]"] {
   background-color: #2563eb !important;
   border-color: #3b82f6 !important;
   color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35) !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar [data-theme-toggle],
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #notificationBellLink,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuBtn {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar [data-theme-toggle]:hover,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #notificationBellLink:hover,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuBtn:hover {
+  background-color: rgba(51, 65, 85, 0.7) !important;
+  border-color: rgba(71, 85, 105, 0.6) !important;
+  color: #f8fafc !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuDropdown {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(51, 65, 85, 0.85) !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuDropdown a,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuDropdown button {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuDropdown a:hover,
+html.dark body:not(.landing-page):not(.login-page):not(.register-page) .app-navbar #userMenuDropdown button:hover {
+  background-color: rgba(51, 65, 85, 0.65) !important;
 }
 
 html.dark body:not(.landing-page):not(.login-page):not(.register-page) .dashboard-match-card {
