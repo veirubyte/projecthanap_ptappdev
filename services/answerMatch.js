@@ -14,7 +14,7 @@
  * Minimum confidence score required (0-100%) for a claimant to bypass the
  * anti-fraud barrier and submit an official ownership claim.
  */
-const ANSWER_MATCH_THRESHOLD = 80;
+const ANSWER_MATCH_THRESHOLD = 75;
 
 /**
  * Normalizes input strings to ensure fair, case-insensitive, and accent-insensitive comparison.

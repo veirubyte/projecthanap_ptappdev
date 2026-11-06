@@ -4,9 +4,10 @@
     ? hasConfiguredChallenge
     : Boolean(item.secret_challenge && item.secret_answer);
   const matchScoreForView = typeof answerMatchScore !== 'undefined' ? answerMatchScore : null;
-  const matchThresholdForView = typeof answerMatchThreshold !== 'undefined' ? answerMatchThreshold : 80;
+  const matchThresholdForView = typeof answerMatchThreshold !== 'undefined' ? answerMatchThreshold : 75;
+  const isLostReportForView = item.report_type === 'lost';
   const meetsMatchThresholdForView = matchScoreForView !== null &&
-    Math.max(Number(matchScoreForView), Number(matchThresholdForView)) === Number(matchScoreForView);
+    (isLostReportForView || Math.max(Number(matchScoreForView), Number(matchThresholdForView)) === Number(matchScoreForView));
   const isAdminViewer = Boolean(user && (user.role === 'admin' || user.role === 'administrator' || (typeof isAdmin !== 'undefined' && isAdmin)));
   const isOwnerOrAdminForView = Boolean(user && user.id === item.user_id && !isAdminViewer);
   const canEditReportForView = isOwnerOrAdminForView;
@@ -27,13 +28,19 @@
     }
   }
   const challengeList = parsedChallengeList;
-  const challengePromptText = challengeList.length ? challengeList[0] : (item.secret_challenge || 'Please provide identifiable proof of ownership (e.g. unique scratches, serial number, lockscreen wallpaper, or internal contents).');
+  const challengePromptText = challengeList.length
+    ? challengeList[0]
+    : (item.secret_challenge || (isLostReportForView
+        ? 'Please describe where and when you found this item, and how the owner can retrieve it.'
+        : 'Please provide identifiable proof of ownership (e.g. unique scratches, serial number, lockscreen wallpaper, or internal contents).'));
   const challengeLower = String(challengePromptText).toLowerCase();
   const proofPlaceholder = challengeLower.includes('color')
     ? 'e.g. Black / Silver'
     : (challengeLower.includes('pin') || challengeLower.includes('clip') || challengeLower.includes('department')
       ? 'e.g. College of Computer Studies'
-      : 'Enter a specific detail only the owner would know...');
+      : (isLostReportForView && !hasChallengeForView
+          ? 'e.g. Found near Library 2F table, left at Main Gate Guardhouse...'
+          : 'Enter a specific detail only the owner would know...'));
   const reportImagesForView = typeof itemImages !== 'undefined' && Array.isArray(itemImages) ? itemImages : [];
   const primaryReportImage = reportImagesForView.length ? reportImagesForView[0].image_path : null;
   const rawReportDate = item.date_reported || item.created_at;
@@ -255,6 +262,7 @@
           class="lg:col-span-5 flex flex-col gap-4"
           id="claim"
           data-item-id="<%= item.id %>"
+          data-report-type="<%= item.report_type %>"
           data-has-challenge="<%= hasChallengeForView ? 'true' : 'false' %>"
           data-threshold="<%= matchThresholdForView %>"
           data-initial-score="<%= matchScoreForView !== null ? matchScoreForView : 0 %>"
@@ -313,11 +321,15 @@
               <i id="matchBannerIcon" data-lucide="sparkles" class="w-4 h-4 text-amber-500 shrink-0"></i>
               <span id="matchBannerText">
                 <% if (matchScoreForView !== null) { %>
-                  <%= matchScoreForView %>% Match · <%= meetsMatchThresholdForView ? `Meets the ${matchThresholdForView}% minimum` : `Below the ${matchThresholdForView}% minimum required` %>
+                  <% if (isLostReportForView) { %>
+                    <%= matchScoreForView %>% Match · Advisory score recorded to help the owner prioritize responses
+                  <% } else { %>
+                    <%= matchScoreForView %>% Match · <%= meetsMatchThresholdForView ? `Meets the ${matchThresholdForView}% minimum` : `Below the ${matchThresholdForView}% minimum required` %>
+                  <% } %>
                 <% } else if (hasChallengeForView) { %>
                   Type your answer below to measure match confidence in real-time
                 <% } else { %>
-                  Direct review by reporter · No private challenge configured
+                  Direct review by <%= isLostReportForView ? 'owner' : 'reporter' %> · No private challenge configured
                 <% } %>
               </span>
             </div>
@@ -350,7 +362,7 @@
                 <div class="w-8 h-8 rounded-lg bg-[#09436B] text-white flex items-center justify-center shadow-xs">
                   <span class="material-symbols-outlined text-[18px]">verified_user</span>
                 </div>
-                <span class="text-sm font-bold text-slate-800">Verify Ownership</span>
+                <span class="text-sm font-bold text-slate-800"><%= isLostReportForView ? 'Found This Item?' : 'Verify Ownership' %></span>
               </div>
               <span id="stepBadgePill" class="px-2.5 py-0.5 rounded-full <%= (existingClaim || meetsMatchThresholdForView) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600' %> text-[11px] font-bold">
                 <%= (existingClaim || meetsMatchThresholdForView) ? 'Step 2 of 2' : 'Step 1 of 2' %>
@@ -361,7 +373,7 @@
             <div class="flex items-center justify-between text-xs px-2 py-1">
               <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-[#09436B] text-white font-bold text-[11px] flex items-center justify-center">1</span>
-                <span class="font-bold text-[#09436B]">Verify Ownership</span>
+                <span class="font-bold text-[#09436B]"><%= isLostReportForView ? 'Found Item Details' : 'Verify Ownership' %></span>
               </div>
               <div id="stepConnectorBar" class="flex-1 h-0.5 <%= (existingClaim || meetsMatchThresholdForView) ? 'bg-[#09436B]' : 'bg-slate-200' %> mx-3 transition-colors duration-300"></div>
               <div id="step2Container" class="flex items-center gap-2 <%= (existingClaim || meetsMatchThresholdForView) ? 'text-[#09436B] font-bold' : 'text-slate-400' %> transition-colors duration-300">
@@ -374,9 +386,9 @@
             <% if (!user) { %>
               <!-- Unauthenticated State -->
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
-                <p class="text-xs text-slate-600">Please sign in to your institutional or guest account to verify ownership and file a claim.</p>
+                <p class="text-xs text-slate-600"><%= isLostReportForView ? 'Please sign in to report that you found this item and coordinate handover with the owner.' : 'Please sign in to your institutional or guest account to verify ownership and file a claim.' %></p>
                 <a href="/login" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#09436B] text-white text-xs font-bold shadow-xs hover:bg-[#204667] transition">
-                  <span>Sign In to Claim</span>
+                  <span><%= isLostReportForView ? 'Sign In to Report Found' : 'Sign In to Claim' %></span>
                   <span class="material-symbols-outlined text-sm">login</span>
                 </a>
               </div>
@@ -459,13 +471,13 @@
                 <p class="font-bold text-slate-800"><%= item.status === 'returned' ? 'This item has already been returned.' : 'This item has already been reunited.' %></p>
                 <p>No new claims can be filed on this case.</p>
               </div>
-            <% } else if (item.report_type !== 'found' || item.status !== 'active') { %>
+            <% } else if (item.status !== 'active') { %>
               <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 text-slate-600 text-xs text-center">
-                Claims can only be submitted for active found-item reports.
+                Claims can only be submitted for active item reports.
               </div>
             <% } else { %>
               <!-- Active Claim Verification Form -->
-              <!-- Finder Asks Speech Box -->
+              <!-- Finder / Owner Asks Speech Box -->
               <div class="claim-question-card relative p-3.5 rounded-2xl bg-sky-50/80 border border-sky-100/90 shadow-2xs">
                 <div class="flex items-start gap-2.5">
                   <div class="claim-question-icon w-6 h-6 rounded-full bg-[#09436B] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
@@ -473,18 +485,18 @@
                   </div>
                   <div class="space-y-1">
                     <p class="claim-question-label text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      FINDER ASKS<%= challengeList.length > 1 ? ` (${challengeList.length} QUESTIONS)` : '' %>:
+                      <%= isLostReportForView ? (hasChallengeForView ? 'OWNER ASKS' : 'FOUND DETAILS & HANDOVER') : 'FINDER ASKS' %><%= challengeList.length > 1 ? ` (${challengeList.length} QUESTIONS)` : '' %>:
                     </p>
                     <% if (challengeList.length > 1) { %>
                       <p class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                        Please answer all <%= challengeList.length %> questions below so the finder can verify your ownership:
+                        Please answer all <%= challengeList.length %> questions below <%= isLostReportForView ? 'so the owner can prioritize your response:' : 'so the finder can verify your ownership:' %>
                       </p>
                     <% } else { %>
                       <label class="claim-question-prompt block text-xs sm:text-sm font-bold text-slate-900 leading-snug" for="proofDetails">
                         “<%= challengePromptText %>”
                       </label>
                     <% } %>
-                    <p class="claim-question-help text-[11px] text-slate-500 font-medium">Enter a detail only the owner is likely to know.</p>
+                    <p class="claim-question-help text-[11px] text-slate-500 font-medium"><%= isLostReportForView ? (hasChallengeForView ? 'Higher match scores help the owner prioritize responses, even if you do not know every detail.' : 'Describe where you found the item and how the owner can retrieve it.') : 'Enter a detail only the owner is likely to know.' %></p>
                   </div>
                 </div>
               </div>
@@ -540,7 +552,7 @@
 
                 <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
                   <span class="material-symbols-outlined text-[14px]">schedule</span>
-                  <span id="matchStatusHelp">This information helps us confirm the item belongs to you.<%= hasChallengeForView ? ` Minimum ${matchThresholdForView}% match required.` : '' %></span>
+                  <span id="matchStatusHelp"><%= isLostReportForView ? (hasChallengeForView ? 'Your match score helps the owner prioritize responses. You can still submit & chat below 75%.' : 'Your message will open a direct handover chat with the owner.') : `This information helps us confirm the item belongs to you.${hasChallengeForView ? ` Minimum ${matchThresholdForView}% match required.` : ''}` %></span>
                 </div>
 
                 <button 
@@ -548,7 +560,7 @@
                   id="submitClaimBtn" 
                   class="w-full h-11 sm:h-12 rounded-xl bg-gradient-to-r from-[#09436B] to-[#2B5B84] hover:brightness-110 active:scale-[0.99] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(9,67,107,0.25)] transition-all cursor-pointer"
                 >
-                  <span>Submit Claim</span>
+                  <span><%= isLostReportForView ? 'I Found This — Notify Owner' : 'Submit Claim' %></span>
                   <span class="material-symbols-outlined text-base">arrow_forward</span>
                 </button>
               </form>
@@ -679,8 +691,9 @@
       // 4. Campus Match Engine & Live Ownership Verification
       const claimContainer = document.getElementById('claim');
       const itemId = claimContainer ? (claimContainer.getAttribute('data-item-id') || '') : '';
+      const isLostReport = claimContainer ? claimContainer.getAttribute('data-report-type') === 'lost' : false;
       const hasChallenge = claimContainer ? claimContainer.getAttribute('data-has-challenge') === 'true' : false;
-      const threshold = claimContainer ? Number(claimContainer.getAttribute('data-threshold') || 80) : 80;
+      const threshold = claimContainer ? Number(claimContainer.getAttribute('data-threshold') || 75) : 75;
       let currentScore = claimContainer ? Number(claimContainer.getAttribute('data-initial-score') || 0) : 0;
 
       const proofInput = document.getElementById('proofDetails');
@@ -743,13 +756,18 @@
           if (constraintAlert) constraintAlert.classList.add('hidden');
           updateStepper(true);
         } else if (score > 0) {
-          if (titleEl) titleEl.textContent = 'Moderate Match (Needs Refinement)';
+          if (titleEl) titleEl.textContent = isLostReport ? 'Advisory Match Score' : 'Moderate Match (Needs Refinement)';
           if (bannerIconEl) {
             bannerIconEl.setAttribute('data-lucide', 'zap');
             if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
           }
-          if (bannerTextEl) bannerTextEl.textContent = `${score}% Match · Minimum ${threshold}% required to submit claim`;
-          updateStepper(false);
+          if (bannerTextEl) {
+            bannerTextEl.textContent = isLostReport
+              ? `${score}% Match · Advisory score recorded to help owner prioritize responses`
+              : `${score}% Match · Minimum ${threshold}% required to submit claim`;
+          }
+          if (isLostReport && constraintAlert) constraintAlert.classList.add('hidden');
+          updateStepper(isLostReport);
         } else {
           if (titleEl) titleEl.textContent = hasChallenge ? 'Real-Time Verification Engine' : 'Manual Review Engine';
           if (bannerIconEl) {
@@ -851,7 +869,7 @@
             return;
           }
 
-          if (lastEvaluatedAnswer === JSON.stringify(payload) && currentScore >= threshold) {
+          if (lastEvaluatedAnswer === JSON.stringify(payload) && (isLostReport || currentScore >= threshold)) {
             return;
           }
 
@@ -859,7 +877,7 @@
           clearTimeout(debounceTimer);
 
           const evaluatedScore = await evaluateMatchOnServer(payload);
-          if (evaluatedScore === null || evaluatedScore >= threshold) {
+          if (isLostReport || evaluatedScore === null || evaluatedScore >= threshold) {
             isSubmittingVerified = true;
             claimForm.submit();
             return;

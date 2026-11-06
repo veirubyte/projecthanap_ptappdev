@@ -450,9 +450,10 @@ const createClaim = async (req, res) => {
         }
         const item = itemRows[0];
 
-        if (item.report_type !== 'found' || item.status !== 'active') {
-            return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Only active found-item reports can receive claims.')}`);
+        if (item.status !== 'active') {
+            return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Claims can only be submitted for active item reports.')}`);
         }
+        const isLostReport = item.report_type === 'lost';
 
         if (item.user_id === req.session.user.id) {
             return res.redirect(`/items/${itemId}?error=${encodeURIComponent('You cannot submit a claim on your own report.')}`);
@@ -474,7 +475,7 @@ const createClaim = async (req, res) => {
             }
         } else {
             if (!claimantAnswers[0] || claimantAnswers[0].trim().length === 0) {
-                return res.redirect(`/items/${itemId}?error=${encodeURIComponent('Proof of ownership details are required.')}`);
+                return res.redirect(`/items/${itemId}?error=${encodeURIComponent(isLostReport ? 'Please provide details about where and how you found the item.' : 'Proof of ownership details are required.')}`);
             }
         }
 
@@ -484,7 +485,8 @@ const createClaim = async (req, res) => {
         }
 
         const matchResult = calculateMultiAnswerMatch(claimantAnswers, expectedAnswers);
-        if (matchResult.hasChallenge && !matchResult.meetsThreshold) {
+        // Strict threshold on Found items; Advisory score on Lost items so finders can still chat with the owner
+        if (!isLostReport && matchResult.hasChallenge && !matchResult.meetsThreshold) {
             req.session.answerMatchResult = { itemId, score: matchResult.score };
             return res.redirect(`/items/${itemId}?error=${encodeURIComponent(`Your answer scored ${matchResult.score}%. A match of at least ${ANSWER_MATCH_THRESHOLD}% is required to file this claim.`)}`);
         }
@@ -497,15 +499,25 @@ const createClaim = async (req, res) => {
             proofDetailsToSave = claimantAnswers[0] || '';
         }
 
+        if (matchResult.hasChallenge) {
+            proofDetailsToSave = `[Match Score: ${matchResult.score}%] ${proofDetailsToSave}`;
+        }
+
         // Insert into claims
         const [claimResult] = await claimModel.createClaimQuery2([itemId, req.session.user.id, proofDetailsToSave], []);
         const claimId = claimResult.insertId;
 
         // Automatically start the communication thread in claim_messages
-        await claimModel.createClaimQuery3([claimId, req.session.user.id, `Ownership Claim Filed:\n"${proofDetailsToSave}"`], []);
+        const claimHeading = isLostReport
+            ? `Found Item Claim Filed${matchResult.hasChallenge ? ` (Match Score: ${matchResult.score}%)` : ''}`
+            : `Ownership Claim Filed${matchResult.hasChallenge ? ` (Match Score: ${matchResult.score}%)` : ''}`;
+        await claimModel.createClaimQuery3([claimId, req.session.user.id, `${claimHeading}:\n"${proofDetailsToSave}"`], []);
 
         req.session.answerMatchResult = { itemId, score: matchResult.score };
-        return res.redirect(`/items/${itemId}?msg=${encodeURIComponent('Claim submitted. You can now communicate with the finder.')}`);
+        const successMsg = isLostReport
+            ? 'Found claim submitted. You can now chat with the owner to coordinate handover.'
+            : 'Claim submitted. You can now communicate with the finder.';
+        return res.redirect(`/items/${itemId}?msg=${encodeURIComponent(successMsg)}`);
     } catch (err) {
         console.error('Claim submission error:', err);
         return res.redirect(`/items/${itemId}?error=Failed to submit claim.`);
