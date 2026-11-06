@@ -373,7 +373,12 @@
         </label>
         <label class="flex flex-col gap-1.5 text-xs font-semibold text-on-surface-variant">
           Private answer (never shown to claimants)
-          <input class="h-10 px-3.5 text-xs font-normal bg-white/60 border border-white/80 rounded-xl text-on-surface placeholder:text-on-surface-variant/70 focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all" name="secret_answer" placeholder="Correct answer" maxlength="500" type="password" autocomplete="new-password"/>
+          <div class="relative flex items-center">
+            <input class="w-full h-10 pl-3.5 pr-10 text-xs font-normal bg-white/60 border border-white/80 rounded-xl text-on-surface placeholder:text-on-surface-variant/70 focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all" id="adminSecretAnswer" name="secret_answer" placeholder="Correct answer" maxlength="500" type="password" autocomplete="new-password"/>
+            <button type="button" onclick="const f = document.getElementById('adminSecretAnswer'); const ic = this.querySelector('span'); const isPw = f.type === 'password'; f.type = isPw ? 'text' : 'password'; ic.textContent = isPw ? 'visibility_off' : 'visibility';" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer p-1 rounded-md" aria-label="Toggle answer visibility">
+              <span class="material-symbols-outlined text-[18px] leading-none">visibility</span>
+            </button>
+          </div>
         </label>
         <div class="sm:col-span-2 lg:col-span-3 flex justify-end">
         <button class="w-full sm:w-auto h-10 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary-container hover:to-secondary-container text-white text-xs font-semibold rounded-xl shrink-0 shadow-sm shadow-primary/30 hover:shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer" type="submit">
