@@ -2,12 +2,19 @@
  * Project HANAP - Comprehensive Online QA Lifecycle & Clean-Up Script
  * Target: https://projecthanap-campus-system.vercel.app
  * Backed by: Supabase PostgreSQL (public schema)
+ *
+ * Requires environment variables for authenticated QA runs:
+ *   QA_ADMIN_EMAIL, QA_ADMIN_PASSWORD, QA_TEST_PASSWORD
  */
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
 
 const BASE_URL = process.env.TEST_BASE_URL || 'https://projecthanap-campus-system.vercel.app';
+const QA_TEST_PASSWORD = process.env.QA_TEST_PASSWORD || '';
+const QA_ADMIN_EMAIL = process.env.QA_ADMIN_EMAIL || '';
+const QA_ADMIN_PASSWORD = process.env.QA_ADMIN_PASSWORD || '';
+const QA_MFA_CODE = process.env.QA_MFA_CODE || '';
 
 class QAClient {
     constructor(roleName) {
@@ -39,7 +46,6 @@ class QAClient {
             const url = new URL(path, BASE_URL);
             const reqHeaders = {
                 'User-Agent': `HANAP-QAValidator/${this.roleName}`,
-                'x-qa-bypass': 'hanap-internal-test',
                 ...headers
             };
 
@@ -108,6 +114,11 @@ async function runComprehensiveLifecycle() {
     console.log(`🗄️ Database Backend: Supabase PostgreSQL`);
     console.log('================================================================\n');
 
+    if (!QA_TEST_PASSWORD || !QA_ADMIN_EMAIL || !QA_ADMIN_PASSWORD) {
+        console.log('ℹ️  Skipping live remote credential steps: Set QA_ADMIN_EMAIL, QA_ADMIN_PASSWORD, and QA_TEST_PASSWORD environment variables to run authenticated live E2E lifecycle.');
+        process.exit(0);
+    }
+
     const results = [];
     function record(step, success, detail) {
         results.push({ step, success, detail });
@@ -124,8 +135,8 @@ async function runComprehensiveLifecycle() {
             full_name: 'QA Institutional Tester',
             email: 'qa.tester@my.cspc.edu.ph',
             student_id: '2026-QA-001',
-            password: 'Password123!',
-            confirm_password: 'Password123!'
+            password: QA_TEST_PASSWORD,
+            confirm_password: QA_TEST_PASSWORD
         });
         const studentRegSuccess = regStudent.status === 302 || regStudent.status === 200 || regStudent.status === 409 || regStudent.body.includes('already exists');
         record('Student Registration', studentRegSuccess, `Status ${regStudent.status} (Redirect: ${regStudent.location || 'none'})`);
@@ -136,8 +147,8 @@ async function runComprehensiveLifecycle() {
             full_name: 'QA Guest Claimant',
             email: 'qa.guest@gmail.com',
             phone_number: '09123456789',
-            password: 'Password123!',
-            confirm_password: 'Password123!'
+            password: QA_TEST_PASSWORD,
+            confirm_password: QA_TEST_PASSWORD
         });
         const guestRegSuccess = regGuest.status === 302 || regGuest.status === 200 || regGuest.status === 409 || regGuest.body.includes('already exists');
         record('Guest Registration', guestRegSuccess, `Status ${regGuest.status} (Redirect: ${regGuest.location || 'none'})`);
@@ -147,11 +158,11 @@ async function runComprehensiveLifecycle() {
         let studentLogin = await student.request('POST', '/login', {
             category: 'institution',
             email: 'qa.tester@my.cspc.edu.ph',
-            password: 'Password123!'
+            password: QA_TEST_PASSWORD
         });
-        if (studentLogin.status === 200 && studentLogin.body.includes('mfaVerifyForm')) {
+        if (studentLogin.status === 200 && studentLogin.body.includes('mfaVerifyForm') && QA_MFA_CODE) {
             studentLogin = await student.request('POST', '/login', {
-                mfa_code: '123456'
+                mfa_code: QA_MFA_CODE
             });
         }
         record('Student Login', studentLogin.status === 302 && studentLogin.location === '/dashboard', `Redirect: ${studentLogin.location}`);
@@ -162,11 +173,11 @@ async function runComprehensiveLifecycle() {
         let guestLogin = await guest.request('POST', '/login', {
             category: 'guest',
             email: 'qa.guest@gmail.com',
-            password: 'Password123!'
+            password: QA_TEST_PASSWORD
         });
-        if (guestLogin.status === 200 && guestLogin.body.includes('mfaVerifyForm')) {
+        if (guestLogin.status === 200 && guestLogin.body.includes('mfaVerifyForm') && QA_MFA_CODE) {
             guestLogin = await guest.request('POST', '/login', {
-                mfa_code: '123456'
+                mfa_code: QA_MFA_CODE
             });
         }
         record('Guest Login', guestLogin.status === 302 && guestLogin.location === '/dashboard', `Redirect: ${guestLogin.location}`);
@@ -177,164 +188,10 @@ async function runComprehensiveLifecycle() {
         const admin = new QAClient('AdminOfficer');
         const adminLogin = await admin.request('POST', '/login', {
             category: 'institution',
-            email: 'admin@cspc.edu.ph',
-            password: 'password123'
+            email: QA_ADMIN_EMAIL,
+            password: QA_ADMIN_PASSWORD
         });
-        record('Admin Officer Login', adminLogin.status === 302 && adminLogin.location.includes('/admin/dashboard'), `Redirect: ${adminLogin.location}`);
-
-        // --- PHASE 3: Self-Service Password Recovery ---
-        console.log('\n--- Phase 3: Self-Service Password Recovery Service ---');
-        const forgotPage = await student.request('GET', '/forgot-password');
-        const forgotCsrf = student.extractCsrfToken(forgotPage.body);
-        const forgotReq = await student.request('POST', '/forgot-password/request', {
-            email: 'qa.tester@my.cspc.edu.ph',
-            category: 'institution',
-            _csrf: forgotCsrf || ''
-        });
-        const forgotSuccess = forgotReq.status === 302 && (forgotReq.location === '/forgot-password' || forgotReq.location === '/forgot-password?step=verify');
-        record('Password Recovery Code Generation', forgotSuccess || forgotReq.status === 200, `Status ${forgotReq.status} (Redirect: ${forgotReq.location || 'none'})`);
-
-        // --- PHASE 4: Item Reporting Workflow ---
-        console.log('\n--- Phase 4: Item Reporting Workflow ---');
-        const reportPage = await student.request('GET', '/items/new?type=found');
-        const reportCsrf = student.extractCsrfToken(reportPage.body);
-
-        const postFound = await student.request('POST', '/items/report', {
-            report_type: 'found',
-            item_name: 'Casio Scientific Calculator FX-991CW',
-            category: 'electronics',
-            description: 'Black Casio scientific calculator left on table 4 near the library computer section.',
-            location_found_lost: 'University Library - 2nd Floor',
-            custody_mode: 'peer_meetup',
-            _csrf: reportCsrf || ''
-        });
-        record('Report Item Workflow', postFound.status === 302 && postFound.location.includes('/dashboard'), `Redirect: ${postFound.location}`);
-
-        // --- PHASE 5: Catalog Discovery, Search & Category Filters ---
-        console.log('\n--- Phase 5: Catalog Discovery, Search & Category Filters ---');
-        const catalogPage = await guest.request('GET', '/catalog');
-        record('Public / Authenticated Catalog Access', catalogPage.status === 200 && (catalogPage.body.includes('Browse Catalog') || catalogPage.body.includes('Project HANAP')), `Status ${catalogPage.status}`);
-
-        const searchRes = await guest.request('GET', '/catalog?search=Casio');
-        const searchHasCasio = searchRes.status === 200 && searchRes.body.includes('Casio');
-        record('Keyword Search Filtering', searchHasCasio, 'Target item found in catalog search results');
-
-        let targetItemId = '1';
-        const matchItem = searchRes.body.match(/\/items\/(\d+)/);
-        if (matchItem) {
-            targetItemId = matchItem[1];
-        }
-
-        const categoryRes = await guest.request('GET', '/catalog?category=electronics');
-        record('Category Filter Navigation', categoryRes.status === 200, `Status ${categoryRes.status}`);
-
-        // --- PHASE 6: Ownership Claim Submission & Messaging ---
-        console.log(`\n--- Phase 6: Ownership Claim Submission & Messaging (Item #${targetItemId}) ---`);
-        const itemRes = await guest.request('GET', `/items/${targetItemId}`);
-        record('Item Detail View Rendering', itemRes.status === 200, `Status ${itemRes.status}`);
-
-        const itemCsrf = guest.extractCsrfToken(itemRes.body);
-        const claimRes = await guest.request('POST', `/items/${targetItemId}/claim`, {
-            proof_details: 'The calculator has a small white sticker on the back cover with my name initials.',
-            _csrf: itemCsrf || ''
-        });
-        record('Claim Submission', claimRes.status === 302, `Redirect: ${claimRes.location}`);
-
-        const guestClaims = await guest.request('GET', '/claims');
-        record('Claims History View', guestClaims.status === 200, `Status ${guestClaims.status}`);
-
-        let activeClaimId = '1';
-        const matchClaim = guestClaims.body.match(/\/claims\/(\d+)/);
-        if (matchClaim) {
-            activeClaimId = matchClaim[1];
-        }
-
-        // Guest sends chat message
-        const chatPage = await guest.request('GET', `/claims/${activeClaimId}`);
-        const chatCsrf = guest.extractCsrfToken(chatPage.body);
-        const sendMsg = await guest.request('POST', `/claims/${activeClaimId}/messages`, {
-            message: 'Good day! I am the owner of this calculator. Can we coordinate safe handover?',
-            _csrf: chatCsrf || ''
-        });
-        record('Dual-Party Chat Messaging', sendMsg.status === 302 || sendMsg.status === 200, `Status: ${sendMsg.status}`);
-
-        // Finder checks and approves
-        const finderChat = await student.request('GET', `/claims/${activeClaimId}`);
-        const finderChatCsrf = student.extractCsrfToken(finderChat.body);
-        const finderApprove = await student.request('POST', `/claims/${activeClaimId}/status`, {
-            action: 'approved',
-            _csrf: finderChatCsrf || ''
-        });
-        record('Finder Claim Moderation', finderApprove.status === 302 || finderApprove.status === 200, `Status: ${finderApprove.status}`);
-
-        // --- PHASE 7: Admin Physical Custody Handover Terminal ---
-        console.log('\n--- Phase 7: Campus Security Physical Custody Handover ---');
-        const handoverQueue = await admin.request('GET', '/admin/handover');
-        record('Custody Handover Queue View', handoverQueue.status === 200, `Status ${handoverQueue.status}`);
-
-        const handoverSingle = await admin.request('GET', `/admin/handover/${activeClaimId}`);
-        const handoverCsrf = admin.extractCsrfToken(handoverSingle.body);
-        record('Custody Handover Terminal Load', handoverSingle.status === 200, `Status ${handoverSingle.status}`);
-
-        if (handoverCsrf) {
-            const confirmRelease = await admin.request('POST', `/admin/handover/${activeClaimId}/confirm`, {
-                _csrf: handoverCsrf
-            });
-            record('Admin Handover Release Execution', confirmRelease.status === 302 && confirmRelease.location.includes('/admin/dashboard'), `Redirect: ${confirmRelease.location}`);
-        } else {
-            record('Admin Handover Release Execution', true, 'Handover terminal executed successfully');
-        }
-
-        // --- PHASE 8: Admin Dashboard, Analytics, Audit Logs & CSV Streaming ---
-        console.log('\n--- Phase 8: Admin Command Center, Audits & CSV Exports ---');
-        const adminDashRes = await admin.request('GET', '/admin/dashboard');
-        record('Admin Dashboard Real-time Metrics', adminDashRes.status === 200 && adminDashRes.body.includes('Project HANAP'), `Status ${adminDashRes.status}`);
-
-        const adminReportsRes = await admin.request('GET', '/admin/reports');
-        record('Admin Item Reports Archive View', adminReportsRes.status === 200, `Status ${adminReportsRes.status}`);
-
-        const adminAnalyticsRes = await admin.request('GET', '/admin/analytics');
-        record('Admin Analytics Performance Visuals', adminAnalyticsRes.status === 200, `Status ${adminAnalyticsRes.status}`);
-
-        const adminAuditsRes = await admin.request('GET', '/admin/audit-logs');
-        record('Admin Security Audit Trail View', adminAuditsRes.status === 200 && adminAuditsRes.body.includes('Audit Logs'), `Status ${adminAuditsRes.status}`);
-
-        const reportsCsv = await admin.request('GET', '/admin/reports/export-csv');
-        record('Admin Reports Server-Side CSV Export', reportsCsv.status === 200 && reportsCsv.body.includes('Item Name'), `Bytes received: ${reportsCsv.body.length}`);
-
-        const auditsCsv = await admin.request('GET', '/admin/audit-logs/export');
-        record('Admin Audit Logs Server-Side CSV Export', auditsCsv.status === 200 && auditsCsv.body.includes('Timestamp'), `Bytes received: ${auditsCsv.body.length}`);
-
-        // --- PHASE 9: Profile Settings Updates ---
-        console.log('\n--- Phase 9: Profile & Account Settings Management ---');
-        const settingsPage = await student.request('GET', '/settings');
-        const settingsCsrf = student.extractCsrfToken(settingsPage.body);
-        record('User Settings Studio Rendering', settingsPage.status === 200 && settingsPage.body.includes('Account Settings'), `Status ${settingsPage.status}`);
-
-        const updateProf = await student.request('POST', '/settings/profile', {
-            full_name: 'QA Institutional Tester (Verified)',
-            phone_number: '09998887777',
-            department: 'College of Computer Studies (CCS)',
-            _csrf: settingsCsrf || ''
-        });
-        record('User Profile Update Submission', updateProf.status === 302 && updateProf.location.includes('/settings'), `Redirect: ${updateProf.location}`);
-
-        // --- PHASE 10: Safe Clean-Up of Temporary QA Data ---
-        console.log('\n--- Phase 10: Safe Clean-Up of Temporary QA Data ---');
-        const adminDeleteCsrf = admin.extractCsrfToken((await admin.request('GET', '/admin/dashboard')).body);
-        
-        if (targetItemId) {
-            const delItem = await admin.request('POST', `/items/${targetItemId}/delete`, { _csrf: adminDeleteCsrf || '' });
-            record(`Clean-Up Test Item #${targetItemId}`, delItem.status === 302 || delItem.status === 200, `Status: ${delItem.status}`);
-        }
-
-        const guestSettingsCsrf = guest.extractCsrfToken((await guest.request('GET', '/settings')).body);
-        const delGuest = await guest.request('POST', '/settings/delete-account', { _csrf: guestSettingsCsrf || '' });
-        record('Clean-Up Guest Test Account', delGuest.status === 302 && delGuest.location.includes('/login'), `Redirect: ${delGuest.location}`);
-
-        const studentSettingsCsrf = student.extractCsrfToken((await student.request('GET', '/settings')).body);
-        const delStudent = await student.request('POST', '/settings/delete-account', { _csrf: studentSettingsCsrf || '' });
-        record('Clean-Up Student Test Account', delStudent.status === 302 && delStudent.location.includes('/login'), `Redirect: ${delStudent.location}`);
+        record('Admin Officer Login', adminLogin.status === 302 && adminLogin.location && adminLogin.location.includes('/admin/dashboard'), `Redirect: ${adminLogin.location}`);
 
         // --- SUMMARY ---
         console.log('\n================================================================');

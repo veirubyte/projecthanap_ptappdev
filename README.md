@@ -17,15 +17,6 @@
 **Database Backend:** Supabase Managed PostgreSQL (`ap-southeast-1` Singapore) with SSL Connection Pooling  
 **Hosting Architecture:** Vercel Serverless Express 5 Runtime + Persistent Database Sessions & Cloud Image Storage
 
-### Quick Test Credentials
-
-| Account Role | Email Address | Password | Login Portal Tab | Capabilities & Scope |
-| :--- | :--- | :--- | :---: | :--- |
-| **System Administrator** | `admin@cspc.edu.ph` | `password123` | **Institution** | Full access to Admin Dashboard, Custody Handover, 60-Day Archive Disposition Queue, User Management, Analytics, and Security Audit Logs. |
-| **Faculty / Staff Member** | `maria@my.cspc.edu.ph` | `password123` | **Institution** | Campus catalog reporting, active claim coordination, and department-level moderation. |
-| **Student (Institutional)** | `juan@my.cspc.edu.ph` | `password123` | **Institution** | Found item reporting with private challenges, match engine verification, and peer meetup coordination. |
-| **Parent / Campus Guest** | `parent@gmail.com` | `password123` | **Guest / Parent** | External guest portal access, student connection requests, and guided Security Desk claim routing. |
-
 ---
 
 ## Table of Contents
@@ -41,7 +32,7 @@
 9. [How to Run](#9-how-to-run)
 10. [Automated Testing & QA Verification](#10-automated-testing--qa-verification)
 11. [Cloud Deployment (Vercel & Supabase)](#11-cloud-deployment-vercel--supabase)
-12. [User Accounts](#12-user-accounts)
+12. [User Roles & Access Tiers](#12-user-roles--access-tiers)
 13. [Project Structure](#13-project-structure)
 14. [Design System & Theme Reference](#14-design-system--theme-reference)
 15. [Known Limitations](#15-known-limitations)
@@ -120,29 +111,29 @@ The full System Requirements Specification is maintained in [`docs/REQUIREMENTS.
 ### 1. Smart Campus Match Engine & Verification Stepper
 - **Algorithmic Confidence Scoring:** Evaluates claimant ownership proofs against secret challenge answers using Unicode NFKC normalization, token-based Jaccard overlap, and space-optimized Levenshtein edit distance (`services/answerMatch.js`).
 - **Dynamic Radial SVG Progression Gauge:** Displays real-time match confidence ($0\%$ to $100\%$) on the item detail page via `POST /items/:id/match-preview`, advancing claimants through a visual two-step verification workflow.
-- **Anti-Fraud Security Constraints:** Requires claimants to meet or exceed an **$80\%$ minimum threshold** before filing claims on private-challenge items, preventing guessing and social engineering.
+- **Anti-Fraud Security Constraints:** Requires claimants to meet or exceed a **$75\%$ minimum threshold** before filing claims on private-challenge found items, preventing guessing and social engineering, while supporting advisory match scoring on lost-item reports.
 - **Private Answer Protection:** Private verification challenge answers are masked by default on report edit forms with toggleable visibility to prevent shoulder-surfing.
 
 ### 2. Dual Handover Architecture: P2P Chat vs. Security Custody
 - **Direct P2P Chat Thread:** Enables secure communication between finders and claimants with real-time status management (`pending`, `approved`, `escalated`, `returned`, `rejected`).
 - **In-Chat Contact Masking:** Automatically redacts raw phone numbers (`09**-***-**09`) to protect student privacy until mutual identity is verified.
 - **One-Click Security Escalation:** Allows any party to escalate disputes or high-value items directly to the Campus Security Office for arbitration.
-- **Physical Custody Intake & Handover Terminal:** Equips security personnel with dedicated terminals (`/admin/handover` and `/admin/items/:id/accept-custody`) to log physical item receipt (`custody_received_at`, `custody_received_by`), verify student IDs, and sign off on physical release ledgers.
+- **Physical Custody Intake & Handover Terminal:** Equips authorized security personnel with role-restricted terminals to log physical item receipt (`custody_received_at`, `custody_received_by`), verify student IDs, and sign off on physical release ledgers.
 - **Claims Hub with Direct Withdrawal:** Users can inspect all claims they have filed or received, with direct one-click withdrawal for pending claims.
 
 ### 3. Institutional Identity & Account Security
 - **Domain-Enforced RBAC:** Restricts institutional registration to verified `@my.cspc.edu.ph` (students) and `@cspc.edu.ph` (faculty and staff) domains, with dedicated Guest and Parent routing.
 - **Parent/Guardian Student Linkage:** Allows external parents and guardians to link accounts to verified student profiles subject to student approval in Account Settings (`guardian_student_links`).
 - **Email Multi-Factor Authentication (MFA):** Supports single-use, 6-digit TOTP verification codes (10-minute expiry, 5-attempt lockout, 60-second cooldown) with in-card verification stepper, live countdown timer, and cancel/reset navigation.
-- **Self-Service Password Recovery:** 4-step recovery workflow (`/forgot-password`) supporting request, resend, code verification, and secure password reset.
+- **Self-Service Password Recovery:** 4-step recovery workflow (`/forgot-password`) supporting request, resend, code verification, and secure password reset for standard accounts (administrative accounts are protected against public self-service resets).
 - **Unified Profile Management:** Both standard users and administrators can view and update their personal details (full name and contact phone number) in Account Settings.
 
 ### 4. 60-Day Lifecycle Automation & Administrative Governance
 - **Automated Stale Item Archiving:** Daily background scheduler (`services/lifecycle.js`) flags and transitions unclaimed active items older than 60 days into the administrative disposition queue.
-- **Batch Disposition Approval:** Administrative batch approval (`POST /admin/reports/batch-approve`) and single-report disposition actions with audit tracking.
+- **Batch Disposition Approval:** Administrative batch approval and single-report disposition actions with immutable audit tracking.
 - **Interactive Analytics Dashboard:** Real-time metrics comparing P2P resolution efficiency vs. centralized office turn-ins, category breakdown distributions, and average turnaround times.
 - **Multi-Photo Upload & Cloud Base64 Storage:** Supports up to 6 item report images per post with MIME-type validation, disk caching, and serverless database-backed Base64 fallback.
-- **Data Export:** Instant CSV ledger downloads of campus reports (`/admin/reports/export-csv`) and security audit logs (`/admin/audit-logs/export`).
+- **Data Export:** Authorized CSV ledger downloads of campus reports and security audit logs with formula-injection sanitization.
 
 ### 5. Embedded HANAP AI Assistant
 - **Contextual Support Widget:** Floating AI assistant launcher (`views/partials/assistantWidget.ejs`) available to authenticated users across the portal.
@@ -182,17 +173,17 @@ flowchart TD
     C --> D["Report Appears in Campus Catalog"]
     E["Owner Browses /catalog or Search Feed"] --> F["Open Item Detail (/items/:id)"]
     F --> G["Campus Match Engine: Enter Ownership Proof"]
-    G --> H{"Match Score >= 80%?"}
-    H -- "No (< 80%)" --> I["Guidance Banner & Refinement Prompt"]
+    G --> H{"Match Score >= 75%?"}
+    H -- "No (< 75%)" --> I["Guidance Banner & Refinement Prompt"]
     I --> G
-    H -- "Yes (>= 80%)" --> J["Step 2: Submit Claim"]
+    H -- "Yes (>= 75%)" --> J["Step 2: Submit Claim"]
     J --> K["Open Direct Claim Chat (/claims/:id)"]
     K --> L["Finder Reviews Statement & Chat Coordinates"]
     L --> M{"Resolution Path"}
     M -- "Safe Peer Handover" --> N["Finder Clicks 'Mark Returned'"]
     M -- "Security Arbitration" --> O["Click 'Escalate to Security'"]
     M -- "Invalid Claim" --> P["Click 'Reject Claim'"]
-    O --> Q["Security Custody Terminal (/admin/handover)"]
+    O --> Q["Campus Security Custody Terminal"]
     Q --> R["Officer Verifies ID & Confirms Release"]
     N --> S["Case Closed: Item Marked Returned"]
     R --> S
@@ -382,17 +373,16 @@ Project HANAP is architected for zero-downtime serverless deployment:
 
 ---
 
-## 12. User Accounts
+## 12. User Roles & Access Tiers
 
-The seed database (`project_hanap (4).sql` and `supabase_schema.sql`) includes pre-configured user accounts for testing:
+Project HANAP enforces strict role-based access control (`account_roles`) across four primary user classifications. Public registration is restricted to Institutional (`student`, `staff`) and External (`guest`) roles; administrative accounts cannot be self-registered and are centrally provisioned by the institution.
 
-| Role | Full Name | Email Address | Password | Login Tab | Scope & Testing Capabilities |
-| :--- | :--- | :--- | :--- | :---: | :--- |
-| **Administrator** (`admin`) | Admin User | `admin@cspc.edu.ph` | `password123` | Institution | Full access to `/admin/dashboard`, Custody Handover (`/admin/handover`), 60-Day Archive (`/admin/reports`), User Management (`/admin/users`), Analytics, and Audit Logs. |
-| **Staff / Faculty** (`staff`) | Maria Santos | `maria@my.cspc.edu.ph` | `password123` | Institution | Reporter of Lost Item #2 and active claimant on Item #1. |
-| **Student / Institutional** | Juan Dela Cruz | `juan@my.cspc.edu.ph` | `password123` | Institution | Finder/Reporter of Found Item #1 (`challenge answer: College of Computer Studies`) and Item #4. |
-| **Student** (`student`) | Marta | `marta@my.cspc.edu.ph` | `password123` | Institution | Student account (`ID: 2410979`) with photo report and active claim testing capability. |
-| **Parent / Guest** (`guest`) | Parent Guest | `parent@gmail.com` | `password123` | Guest / Parent | External guest portal access, parent-to-student guardian linkage requests, and Security Desk claim routing. |
+| Role Tier | Role Code | Domain Policy | Login Portal Tab | Scope & Access Capabilities |
+| :--- | :--- | :--- | :---: | :--- |
+| **System Administrator** | `admin` | `@cspc.edu.ph` (Centrally Provisioned) | **Institution** | Restricted to authorized Campus Security & MIS personnel. Manages physical custody handovers, 60-day disposition queues, user directory roles, analytics, and security audit logs. |
+| **Faculty / Staff Member** | `staff` | `@cspc.edu.ph` / `@my.cspc.edu.ph` | **Institution** | Campus catalog reporting, lost/found item logging, active claim coordination, and department-level handover verification. |
+| **Student (Institutional)** | `student` | `@my.cspc.edu.ph` | **Institution** | Lost and found item reporting with multi-question verification challenges, Campus Match Engine verification, peer meetup coordination, and guardian link approval. |
+| **Parent / Campus Guest** | `guest` / `parent` | External Email Domains | **Guest / Parent** | Public catalog browsing, lost item reporting, student guardian linkage requests, and guided Security Desk claim routing. |
 
 ---
 
@@ -523,7 +513,7 @@ projectHanap/
 | `POST` | `/items/report` | `itemController.createItemReport` | Non-Admin | Validates input, processes Multer photo uploads, and saves report |
 | `GET` | `/items/:id` | `itemController.showItemDetails` | Public | Item detail view with Campus Match Engine & radial verification stepper |
 | `POST` | `/items/:id/match-preview` | `itemController.previewOwnershipMatch` | Non-Admin | Live AJAX endpoint returning real-time confidence score ($0\text{–}100\%$) |
-| `POST` | `/items/:id/claim` | `itemController.createClaim` | Non-Admin | Enforces $\ge 80\%$ match threshold and creates ownership claim |
+| `POST` | `/items/:id/claim` | `itemController.createClaim` | Non-Admin | Enforces $\ge 75\%$ match threshold on found items (advisory scoring on lost items) and creates claim |
 | `GET` | `/claims/guest-claim` | `itemController.showGuestClaimGuide` | Public | Security Desk claim protocol guide for parents and visitors |
 
 #### 3. Claims Coordination, P2P Chat & My Reports (`routes/itemRoutes.js`)
@@ -555,28 +545,7 @@ projectHanap/
 | `POST` | `/api/assistant/chat` | `assistantController.chat` | Authenticated | Queries Google Gemini with local rule-based fallback guide |
 
 #### 5. Administrative Platform Governance (`routes/itemRoutes.js`)
-| Method | Route | Controller Handler | Access Scope | Description |
-| :---: | :--- | :--- | :---: | :--- |
-| `GET` | `/admin` | Inline Redirect | Administrator | Cleanly redirects `/admin` to `/admin/dashboard` |
-| `GET` | `/admin/dashboard` | `itemController.showAdminDashboard` | Administrator | Central admin command center, pending custody intake & metrics |
-| `POST` | `/admin/items/:id/accept-custody` | `itemController.acceptItemCustody` | Administrator | Records official physical receipt of a Security Desk item |
-| `GET` | `/admin/handover` | `itemController.listHandoverClaims` | Administrator | Physical Custody Handover queue for Campus Security |
-| `GET` | `/admin/handover/:claimId` | `itemController.showHandoverClaim` | Administrator | Single claim physical handover verification terminal |
-| `POST` | `/admin/handover/:claimId/confirm`| `itemController.confirmHandover` | Administrator | Confirms physical property release and marks item returned |
-| `POST` | `/admin/handover/:claimId/reject` | `itemController.rejectHandover` | Administrator | Rejects handover release and logs audit entry |
-| `GET` | `/admin/users` | `itemController.listAdminUsers` | Administrator | User directory with search, role management & quota controls |
-| `POST` | `/admin/users/add` | `itemController.createAdminUser` | Administrator | Creates a new institutional user account |
-| `POST` | `/admin/users/:id/role` | `itemController.updateUserRole` | Administrator | Updates a user's system role and logs to `audit_logs` |
-| `POST` | `/admin/users/:id/quota-reset` | `itemController.resetUserQuota` | Administrator | Resets a user's active report quota |
-| `GET` | `/admin/reports` | `itemController.listAdminReports` | Administrator | All reports registry, 60-day disposition queue & CSV export |
-| `GET` | `/admin/reports/export-csv` | `itemController.exportReportsCsv` | Administrator | Exports all campus item reports as a formatted CSV ledger |
-| `POST` | `/admin/reports/:id/archive-approve`| `itemController.approveReportArchive` | Administrator | Approves single overdue report for archive disposition |
-| `POST` | `/admin/reports/batch-approve` | `itemController.batchApproveReportArchive` | Administrator | Batch-approves all eligible 60-day stale reports |
-| `GET` | `/admin/analytics` | `itemController.showAdminAnalytics` | Administrator | Statistical dashboard comparing P2P vs. Security Desk handovers |
-| `GET` | `/admin/audit-logs` | `itemController.listAuditLogs` | Administrator | Immutable chronological security audit log viewer |
-| `GET` | `/admin/audit-logs/export` | `itemController.exportAuditLogsCsv` | Administrator | Exports administrative security audit logs as a CSV file |
-| `POST` | `/admin/items/log` | `itemController.createAdminItemReport`| Administrator | Directly logs an office turn-in item report at security desk |
-| `GET` | `/admin/test-403` | `itemController.showForbiddenPage` | Administrator | Diagnostic route to preview the 403 Forbidden security screen |
+> **Security Isolation Note:** Administrative endpoints (Custody Intake & Handover Verification, 60-Day Disposition Queue, User & Role Management, Statistical Analytics, and Security Audit Logs) are strictly gated behind server-side `requireAdmin` middleware, institutional role verification, cryptographic CSRF protection, and chronological security audit logging (`audit_logs`). Direct unauthenticated or non-admin requests are immediately rejected with `403 Forbidden`.
 
 ---
 

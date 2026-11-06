@@ -57,6 +57,15 @@ async function autoMigrate() {
           ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
 
+          -- Revoke direct PostgREST anon/authenticated access so private columns (e.g. secret_answer) are never exposed
+          REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+          REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+          REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+          DROP POLICY IF EXISTS "Allow public read-only active items" ON public.item_reports;
+          DROP POLICY IF EXISTS "Allow public read-only active item images" ON public.item_report_images;
+          DROP POLICY IF EXISTS "Allow public read-only account_roles" ON public.account_roles;
+          DROP POLICY IF EXISTS "Allow public read-only departments" ON public.departments;
+
           -- Ensure backend full access policy exists for postgres and service_role
           DO $$
           DECLARE

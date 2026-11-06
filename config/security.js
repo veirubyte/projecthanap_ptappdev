@@ -16,7 +16,7 @@ function rateLimiter(options = {}) {
     interval.unref();
 
     return (req, res, next) => {
-        if (req.headers['x-qa-bypass'] === 'hanap-internal-test' || process.env.NODE_ENV === 'test') {
+        if (process.env.NODE_ENV === 'test') {
             return next();
         }
         const ip = req.ip || req.socket.remoteAddress || 'unknown';

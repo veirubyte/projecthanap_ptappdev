@@ -171,13 +171,11 @@ const login = async (req, res) => {
                     mfaEmail: maskEmail(pendingUser.email),
                     mfaCooldownSeconds: result.retryAfterSeconds,
                     mfaAttemptsRemaining: result.attemptsRemaining,
-                    msg: !process.env.SMTP_HOST
-                        ? `[Demo Mode - SMTP not configured]: Use code ${result.code || '123456'} to sign in.`
-                        : (result.sent
-                            ? 'A new verification code was sent to your email.'
-                            : (result.codeAvailable
-                                ? `A recent code is still valid. Try again in ${result.retryAfterSeconds} seconds before requesting another.`
-                                : `Please wait ${result.retryAfterSeconds} seconds, then request a new code.`))
+                    msg: result.sent
+                        ? 'A new verification code was sent to your email.'
+                        : (result.codeAvailable
+                            ? `A recent code is still valid. Try again in ${result.retryAfterSeconds} seconds before requesting another.`
+                            : `Please wait ${result.retryAfterSeconds} seconds, then request a new code.`)
                 });
             }
 
@@ -201,9 +199,7 @@ const login = async (req, res) => {
                     mfaEmail: maskEmail(pendingUser.email),
                     mfaCooldownSeconds: reissue.retryAfterSeconds || 30,
                     mfaAttemptsRemaining: reissue.attemptsRemaining,
-                    msg: !process.env.SMTP_HOST
-                        ? `[Demo Mode - SMTP not configured]: Use code ${reissue.code || '123456'} to sign in.`
-                        : 'Your previous code was no longer active. A fresh verification code has been sent to your email.'
+                    msg: 'Your previous code was no longer active. A fresh verification code has been sent to your email.'
                 });
             }
 
@@ -437,13 +433,11 @@ const login = async (req, res) => {
                 mfaEmail: maskEmail(sessionUser.email),
                 mfaCooldownSeconds: result.retryAfterSeconds,
                 mfaAttemptsRemaining: result.attemptsRemaining,
-                msg: !process.env.SMTP_HOST
-                    ? `[Demo Mode - SMTP not configured]: Use code ${result.code || '123456'} to sign in.`
-                    : (result.sent
-                        ? 'A six-digit verification code was sent to your email.'
-                        : result.codeAvailable
-                            ? 'A recent verification code is still valid. Check your email.'
-                            : `Please wait ${result.retryAfterSeconds} seconds before requesting a new code.`)
+                msg: result.sent
+                    ? 'A six-digit verification code was sent to your email.'
+                    : result.codeAvailable
+                        ? 'A recent verification code is still valid. Check your email.'
+                        : `Please wait ${result.retryAfterSeconds} seconds before requesting a new code.`
             });
             } else {
                 touchDeviceLogin(req, res, sessionUser.id);
@@ -821,6 +815,17 @@ const requestPasswordReset = async (req, res) => {
         }
 
         const user = rows[0];
+        if (isAdmin(user)) {
+            return renderForgotPassword(res, {
+                step: 'request',
+                tab: 'institutional_info',
+                category: 'institution',
+                email: rawEmail,
+                errorTitle: 'Administrator account protected',
+                errorMessage: 'For security reasons, administrator passwords cannot be reset via public self-service. Please contact the CSPC MIS / ICT Office directly.',
+                status: 403
+            });
+        }
         const issueResult = await issuePasswordResetCode(user.id, user.email);
 
         req.session.pwdReset = {
@@ -857,7 +862,8 @@ const requestPasswordReset = async (req, res) => {
 // POST /forgot-password/resend
 const resendPasswordResetCode = async (req, res) => {
     const resetState = req.session.pwdReset;
-    if (!resetState || !resetState.userId) {
+    if (!resetState || !resetState.userId || isAdmin(resetState)) {
+        delete req.session.pwdReset;
         return res.redirect('/forgot-password');
     }
 
@@ -894,7 +900,8 @@ const resendPasswordResetCode = async (req, res) => {
 // POST /forgot-password/verify
 const verifyPasswordResetCode = async (req, res) => {
     const resetState = req.session.pwdReset;
-    if (!resetState || !resetState.userId) {
+    if (!resetState || !resetState.userId || isAdmin(resetState)) {
+        delete req.session.pwdReset;
         return res.redirect('/forgot-password');
     }
 
@@ -984,7 +991,8 @@ const verifyPasswordResetCode = async (req, res) => {
 // POST /forgot-password/reset
 const completePasswordReset = async (req, res) => {
     const resetState = req.session.pwdReset;
-    if (!resetState || !resetState.userId || !resetState.verified || !resetState.resetToken) {
+    if (!resetState || !resetState.userId || !resetState.verified || !resetState.resetToken || isAdmin(resetState)) {
+        delete req.session.pwdReset;
         return res.redirect('/forgot-password');
     }
 

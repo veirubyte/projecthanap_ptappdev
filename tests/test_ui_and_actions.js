@@ -14,8 +14,8 @@ console.log('--- Test 1: Settings Page Admin vs Non-Admin Panels ---');
 const settingsEjs = fs.readFileSync(path.join(viewsDir, 'settings.ejs'), 'utf8');
 
 const adminRendered = ejs.render(settingsEjs, {
-    user: { id: 1, full_name: 'Security Admin', email: 'admin@cspc.edu.ph', role: 'admin' },
-    profileUser: { id: 1, full_name: 'Security Admin', email: 'admin@cspc.edu.ph', role: 'admin', phone_number: '09123456789' },
+    user: { id: 1, full_name: 'Security Admin', email: 'security.officer@cspc.edu.ph', role: 'admin' },
+    profileUser: { id: 1, full_name: 'Security Admin', email: 'security.officer@cspc.edu.ph', role: 'admin', phone_number: '09123456789' },
     isAdmin: true,
     mfaEnabledForView: true,
     guardianRequests: [],
@@ -122,9 +122,9 @@ console.log('✅ PASS: Edit Report masks private answer and shows custody status
 console.log('\n--- Test 4: Admin Users Filter Pills shrink-0 Retention ---');
 const adminUsersEjs = fs.readFileSync(path.join(viewsDir, 'adminUsers.ejs'), 'utf8');
 const adminUsersRendered = ejs.render(adminUsersEjs, {
-    user: { id: 1, full_name: 'Security Admin', email: 'admin@cspc.edu.ph', role: 'admin' },
+    user: { id: 1, full_name: 'Security Admin', email: 'security.officer@cspc.edu.ph', role: 'admin' },
     users: [
-        { id: 1, full_name: 'Admin One', email: 'admin@cspc.edu.ph', role: 'admin', claim_count: 0 },
+        { id: 1, full_name: 'Admin One', email: 'security.officer@cspc.edu.ph', role: 'admin', claim_count: 0 },
         { id: 2, full_name: 'Student One', email: 'student@my.cspc.edu.ph', role: 'student', claim_count: 1 }
     ],
     roleCounts: { student: 1, staff: 0, parent: 0, guest: 0, admin: 1, legacy_institutional: 0 },
