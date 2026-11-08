@@ -423,16 +423,10 @@
                                     <p class="text-xs text-rose-700">Deleting your account removes all active sessions
                                       and personal configurations.</p>
                                   </div>
-                                  <form action="/settings/delete-account" method="POST"
-                                    onsubmit="return confirm('WARNING: Are you absolutely sure you want to permanently delete your account? This action cannot be undone.');">
-                                    <% if (typeof csrfToken !=='undefined' && csrfToken) { %>
-                                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                                      <% } %>
-                                        <button type="submit"
-                                          class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs cursor-pointer whitespace-nowrap">
-                                          Delete Account
-                                        </button>
-                                  </form>
+                                  <button type="button" id="openDeleteAccountDialog"
+                                    class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs cursor-pointer whitespace-nowrap">
+                                    Delete Account
+                                  </button>
                                 </div>
                               </div>
                               <% } %>
@@ -942,6 +936,67 @@
         </div>
       </footer>
 
+      <% if (!isAdmin) { %>
+        <div id="deleteAccountDialog" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/60 p-4"
+          role="dialog" aria-modal="true" aria-labelledby="deleteAccountDialogTitle"
+          aria-describedby="deleteAccountDialogDescription">
+          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 id="deleteAccountDialogTitle" class="text-lg font-bold text-slate-900">Are you sure you want to delete your account?</h2>
+            <p id="deleteAccountDialogDescription" class="mt-2 text-sm text-slate-600">
+              This starts a permanent account deletion. You will need to confirm your password before continuing.
+            </p>
+
+            <div id="deleteAccountPasswordStep" class="mt-5 hidden">
+              <label for="deleteAccountPassword" class="block text-sm font-semibold text-slate-700">Enter your current password</label>
+              <input id="deleteAccountPassword" type="password" autocomplete="current-password" required
+                class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-[#09436B] focus:ring-[#09436B]" />
+              <p id="deleteAccountPasswordError" class="mt-2 hidden text-sm text-rose-700" role="alert"></p>
+            </div>
+
+            <div id="deleteAccountFinalStep" class="mt-5 hidden">
+              <p class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800">
+                Your account and associated data will be permanently deleted. You cannot recover or redeem this data after deletion.
+              </p>
+            </div>
+
+            <form id="deleteAccountFinalForm" action="/settings/delete-account" method="POST" class="hidden">
+              <% if (typeof csrfToken !=='undefined' && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <% } %>
+              <input type="hidden" name="confirmation" value="proceed" />
+              <input type="hidden" name="confirmation_token" id="deleteAccountConfirmationToken" />
+            </form>
+
+            <div class="mt-6 flex flex-wrap justify-end gap-3">
+              <button type="button" id="cancelDeleteAccountDialog"
+                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                No
+              </button>
+              <button type="button" id="continueDeleteAccount"
+                class="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">
+                Yes, continue
+              </button>
+              <button type="button" id="backFromDeleteAccountPassword"
+                class="hidden rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                Back
+              </button>
+              <button type="button" id="verifyDeleteAccountPassword"
+                class="hidden rounded-xl bg-[#09436B] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110">
+                Verify password
+              </button>
+              <button type="button" id="backFromDeleteAccountFinal"
+                class="hidden rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                Go back
+              </button>
+              <button type="submit" form="deleteAccountFinalForm" id="proceedDeleteAccount"
+                class="hidden rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">
+                Proceed with deletion
+              </button>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
       <script>
         // Tab Switching Logic
         (function () {
@@ -976,6 +1031,126 @@
           if (hash && document.getElementById(`panel-${hash}`)) {
             switchTab(hash);
           }
+        })();
+
+        (function () {
+          const openButton = document.getElementById('openDeleteAccountDialog');
+          const dialog = document.getElementById('deleteAccountDialog');
+          if (!openButton || !dialog) return;
+
+          const passwordStep = document.getElementById('deleteAccountPasswordStep');
+          const finalStep = document.getElementById('deleteAccountFinalStep');
+          const passwordInput = document.getElementById('deleteAccountPassword');
+          const passwordError = document.getElementById('deleteAccountPasswordError');
+          const confirmationToken = document.getElementById('deleteAccountConfirmationToken');
+          const buttons = {
+            cancel: document.getElementById('cancelDeleteAccountDialog'),
+            continue: document.getElementById('continueDeleteAccount'),
+            backPassword: document.getElementById('backFromDeleteAccountPassword'),
+            verify: document.getElementById('verifyDeleteAccountPassword'),
+            backFinal: document.getElementById('backFromDeleteAccountFinal'),
+            proceed: document.getElementById('proceedDeleteAccount')
+          };
+
+          const showStep = (step) => {
+            passwordStep.classList.toggle('hidden', step !== 'password');
+            finalStep.classList.toggle('hidden', step !== 'final');
+            buttons.continue.classList.toggle('hidden', step !== 'confirm');
+            buttons.backPassword.classList.toggle('hidden', step !== 'password');
+            buttons.verify.classList.toggle('hidden', step !== 'password');
+            buttons.backFinal.classList.toggle('hidden', step !== 'final');
+            buttons.proceed.classList.toggle('hidden', step !== 'final');
+            buttons.cancel.classList.toggle('hidden', step !== 'confirm');
+            passwordError.classList.add('hidden');
+            passwordError.textContent = '';
+          };
+
+          const cancelVerification = () => {
+            if (confirmationToken.value) {
+              const csrf = document.querySelector('#deleteAccountFinalForm [name="_csrf"]')?.value || '';
+              fetch('/settings/delete-account/cancel', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrf }
+              }).catch((error) => console.error('Could not cancel account deletion confirmation:', error));
+            }
+            confirmationToken.value = '';
+          };
+
+          const closeDialog = () => {
+            cancelVerification();
+            dialog.classList.add('hidden');
+            dialog.classList.remove('flex');
+            passwordInput.value = '';
+            showStep('confirm');
+            openButton.focus();
+          };
+
+          openButton.addEventListener('click', () => {
+            showStep('confirm');
+            dialog.classList.remove('hidden');
+            dialog.classList.add('flex');
+            buttons.continue.focus();
+          });
+          buttons.cancel.addEventListener('click', closeDialog);
+          buttons.backPassword.addEventListener('click', () => {
+            passwordInput.value = '';
+            showStep('confirm');
+            buttons.continue.focus();
+          });
+          buttons.backFinal.addEventListener('click', () => {
+            cancelVerification();
+            showStep('confirm');
+            buttons.continue.focus();
+          });
+          buttons.continue.addEventListener('click', () => {
+            showStep('password');
+            passwordInput.focus();
+          });
+          buttons.verify.addEventListener('click', async () => {
+            buttons.verify.disabled = true;
+            buttons.verify.textContent = 'Verifying...';
+            passwordError.classList.add('hidden');
+            try {
+              const csrf = document.querySelector('#deleteAccountFinalForm [name="_csrf"]')?.value || '';
+              const response = await fetch('/settings/delete-account/verify', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Accept': 'application/json',
+                  'X-CSRF-Token': csrf
+                },
+                body: new URLSearchParams({ current_password: passwordInput.value })
+              });
+              const result = await response.json();
+              if (!response.ok) throw new Error(result.error || 'Could not verify your password.');
+              confirmationToken.value = result.token;
+              passwordInput.value = '';
+              showStep('final');
+              buttons.proceed.focus();
+            } catch (error) {
+              passwordError.textContent = error.message || 'Could not verify your password. Please try again.';
+              passwordError.classList.remove('hidden');
+              passwordInput.focus();
+            } finally {
+              buttons.verify.disabled = false;
+              buttons.verify.textContent = 'Verify password';
+            }
+          });
+          passwordInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              buttons.verify.click();
+            }
+          });
+          dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) closeDialog();
+          });
+          document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !dialog.classList.contains('hidden')) closeDialog();
+          });
+          document.getElementById('deleteAccountFinalForm').addEventListener('submit', (event) => {
+            if (!confirmationToken.value) event.preventDefault();
+          });
         })();
 
         (function () {

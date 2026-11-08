@@ -101,7 +101,7 @@ In accordance with the PTAppDev Midterm Project guidelines, our team followed a 
 The full System Requirements Specification is maintained in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). Below is an executive summary:
 
 - **Stakeholders:** CSPC Student Body, Campus Security & Public Safety Office, Office of Student Affairs (OSA), University Library & Laboratory Custodians, and MIS/IT Infrastructure Team.
-- **Core Functional Requirements (`FR-01` – `FR-10`):** Institutional & guest registration, session-based login/logout with Email MFA, self-service password reset with one-time verification codes, strict Role-Based Access Control (`requireAuth`, `requireNonAdminAuth`, `requireAdmin`), server-side form validation, lost/found report creation with photo uploads, physical custody intake logging, Campus Match Engine claim verification, direct claim withdrawal, multi-filter catalog search, and normalized MySQL/PostgreSQL persistence.
+- **Core Functional Requirements (`FR-01` – `FR-10`):** Institutional & guest registration, session-based login/logout with Email MFA, self-service password reset with one-time verification codes, strict Role-Based Access Control (`requireAuth`, `requireNonAdminAuth`, `requireAdmin`), server-side form validation, lost/found report creation requiring at least one JPEG, PNG, or WebP photo (up to six photos, 5 MB each), AI comparison of active same-category Lost and Found report photos and campus locations, shared match notices on both report owners’ dashboards, physical custody intake logging, Campus Match Engine claim verification, direct claim withdrawal, multi-filter catalog search, and normalized MySQL/PostgreSQL persistence.
 - **Core Non-Functional Requirements (`NFR-01` – `NFR-05`):** `bcrypt` password hashing (10 salt rounds), `.env` secret isolation, low-latency parameterized queries, ACID transactional durability across restarts, persistent session storage in `user_sessions`, and mobile-first responsive UI.
 
 ---
@@ -127,6 +127,7 @@ The full System Requirements Specification is maintained in [`docs/REQUIREMENTS.
 - **Email Multi-Factor Authentication (MFA):** Supports single-use, 6-digit TOTP verification codes (10-minute expiry, 5-attempt lockout, 60-second cooldown) with in-card verification stepper, live countdown timer, and cancel/reset navigation.
 - **Self-Service Password Recovery:** 4-step recovery workflow (`/forgot-password`) supporting request, resend, code verification, and secure password reset for standard accounts (administrative accounts are protected against public self-service resets).
 - **Unified Profile Management:** Both standard users and administrators can view and update their personal details (full name and contact phone number) in Account Settings.
+- **Protected Account Deletion:** Non-admin users must confirm their intent, re-enter their current password, and explicitly approve the irreversible deletion. The server verifies the password and requires a short-lived, session-bound confirmation before removing the account.
 
 ### 4. 60-Day Lifecycle Automation & Administrative Governance
 - **Automated Stale Item Archiving:** Daily background scheduler (`services/lifecycle.js`) flags and transitions unclaimed active items older than 60 days into the administrative disposition queue.
@@ -216,7 +217,7 @@ flowchart TD
 ### Prerequisites
 - **Node.js:** Version `18.x`, `20.x`, or `24.x` LTS ([Download Node.js](https://nodejs.org/))
 - **Database Engine:**
-  - **Local Development:** MySQL Version `8.0+` (via XAMPP, MySQL Workbench, Laragon, or native service)
+  - **Local Development:** MySQL `8.0+` or the MariaDB version bundled with XAMPP (the included database dump was exported from MariaDB `10.4.32`)
   - **Cloud Production:** Supabase Managed PostgreSQL project
 - **Git:** Version `2.x+` ([Download Git](https://git-scm.com/))
 
@@ -261,6 +262,7 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.6-flash
 NODE_ENV=development
 ```
+For local development, keep `DATABASE_URL`, `SUPABASE_DB_URL`, `POSTGRES_URL`, `SUPABASE_DATABASE_URL`, and `DB_CLIENT` unset. If any PostgreSQL URL is set, the app selects PostgreSQL instead of the XAMPP MySQL settings. Check the MySQL port in the XAMPP Control Panel and update `DB_PORT` if it is not `3306`.
 
 ### Cloud Supabase PostgreSQL Configuration (`.env`)
 ```env
@@ -278,17 +280,20 @@ NODE_ENV=production
 ## 8. Database Setup
 
 ### Option A: Local MySQL Setup
-1. Start your **MySQL** service (e.g., click **Start** next to MySQL in XAMPP).
-2. Import `project_hanap (4).sql` using phpMyAdmin or the MySQL CLI:
+1. Start **MySQL** in the XAMPP Control Panel. XAMPP's MySQL service may run MariaDB; the project connects to it through the MySQL protocol.
+2. In phpMyAdmin, create a database named `project_hanap` with the `utf8mb4` character set, select it, then import `project_hanap (4).sql`.
+3. Alternatively, create and import the database using the MySQL CLI:
    ```bash
    mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS project_hanap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    mysql -u root -p project_hanap < "project_hanap (4).sql"
    ```
+4. From the project folder, run `npm install` once and then `npm run dev`. Open **`http://localhost:3000`**. XAMPP Apache is not required to serve this Node.js/Express app; XAMPP provides its local database service.
 
 ### Option B: Cloud Supabase PostgreSQL Setup
 1. Open your project in the [Supabase Dashboard](https://supabase.com/dashboard) &rarr; **SQL Editor**.
 2. Open [`supabase_schema.sql`](supabase_schema.sql), copy its contents, and click **Run**.
 3. Retrieve your Transaction Pooler URI from **Project Settings** &rarr; **Database** and set `DATABASE_URL` in `.env`.
+4. For an existing Supabase database, run [`migrations/add_report_matches_postgres.sql`](migrations/add_report_matches_postgres.sql) once in the SQL Editor before deploying the matching feature. This adds only the new `report_matches` table and its backend-only permissions; existing tables and connection settings are unchanged.
 
 ---
 
@@ -360,6 +365,7 @@ Project HANAP is architected for zero-downtime serverless deployment:
 - **Database Host:** [Supabase](https://supabase.com/) (Managed PostgreSQL with connection pooling on Port 6543)
 - **Session Persistence:** Persistent Express sessions stored in Supabase `public.user_sessions` table
 - **Image Persistence:** Dynamic Base64 fallback in `app.js` serving images stored in `item_report_images.file_data`
+- **AI Report Matching:** Gemini compares new active reports against up to five recent active opposite-type reports in the same category, using their primary photos and campus locations. Matches with at least 80% model confidence are persisted in `report_matches` and shown to both report owners while both reports remain active. AI matching requires `GEMINI_API_KEY`.
 
 ### Production Environment Variables on Vercel
 | Variable Name | Value / Description |
@@ -414,13 +420,14 @@ projectHanap/
 │   ├── security.js                    # Security middleware exports
 │   └── viewLocals.js                  # Injects user session, admin flags & notification counts into EJS
 ├── migrations/
-│   └── add_custody_receipt_columns.sql # Incremental migration for custody receipt tracking columns
+│   ├── add_custody_receipt_columns.sql # Incremental MySQL migration for custody receipt tracking columns
+│   └── add_report_matches_postgres.sql # Additive Supabase migration for AI report matches
 ├── models/
 │   ├── auditLogModel.js               # Admin security audit trail queries
 │   ├── claimModel.js                  # P2P claims, messages, handover queues & analytics metrics
 │   ├── connectionModel.js             # Database connection pool transaction helper
 │   ├── guardianLinkModel.js           # Parent/Guardian student linkage queries
-│   ├── itemReportModel.js             # Item CRUD, catalog search/filtering, stats & 60-day disposition
+│   ├── itemReportModel.js             # Item CRUD, catalog, AI matches & 60-day disposition
 │   ├── mfaModel.js                    # TOTP verification codes, attempt counters & expiry queries
 │   └── userModel.js                   # User authentication, role lookups, quota & profile queries
 ├── public/
@@ -443,7 +450,10 @@ projectHanap/
 │   ├── geminiAssistant.js             # Google GenAI SDK wrapper for HANAP AI Assistant
 │   ├── hanapFallback.js               # Rule-based help responses when Gemini is unavailable
 │   ├── lifecycle.js                   # 60-day automated stale report background archiver
-│   └── mfa.js                         # 6-digit TOTP code generation & bcrypt hash verification
+│   ├── mfa.js                         # 6-digit TOTP code generation & bcrypt hash verification
+│   ├── reportMatching.js              # Gemini photo/category/location comparison for active Lost/Found posts
+│   ├── reportMatchResult.js           # Validates match IDs, explanations & confidence threshold
+│   └── reportPhoto.js                 # Validates required report photos
 ├── tests/
 │   ├── e2e_live_audit.js              # 31-step comprehensive live cloud integration regression suite
 │   ├── test_all_views.js              # Defensive view compiler verifying all 20 EJS templates
@@ -510,7 +520,7 @@ projectHanap/
 | `GET` | `/catalog` | `itemController.showDashboard` | Public | Searchable campus catalog with keyword, type, category & date filters |
 | `GET` | `/dashboard` | `itemController.showDashboard` | Non-Admin | User dashboard with personal stats, active trackers, and catalog feed |
 | `GET` | `/items/new` | `itemController.showNewReportForm` | Non-Admin | Multi-step form to report a lost or found item |
-| `POST` | `/items/report` | `itemController.createItemReport` | Non-Admin | Validates input, processes Multer photo uploads, and saves report |
+| `POST` | `/items/report` | `itemController.createItemReport` | Non-Admin | Requires at least one photo, validates input, processes Multer uploads, and saves report |
 | `GET` | `/items/:id` | `itemController.showItemDetails` | Public | Item detail view with Campus Match Engine & radial verification stepper |
 | `POST` | `/items/:id/match-preview` | `itemController.previewOwnershipMatch` | Non-Admin | Live AJAX endpoint returning real-time confidence score ($0\text{–}100\%$) |
 | `POST` | `/items/:id/claim` | `itemController.createClaim` | Non-Admin | Enforces $\ge 75\%$ match threshold on found items (advisory scoring on lost items) and creates claim |

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const ejs = require('ejs');
+const assert = require('assert');
 
 const viewsDir = path.join(__dirname, '../views');
 const pagesDir = path.join(viewsDir, 'pages');
@@ -73,6 +74,18 @@ const defaultLocals = {
     successfulHandovers: [],
     categoryCounts: {},
     isCatalog: false,
+    smartMatches: [{
+        own_report_id: 1,
+        own_item_name: 'Lost Blue Backpack',
+        matched_report_id: 2,
+        matched_item_name: 'Blue Backpack Found',
+        matched_category: 'Bags & Wallets',
+        matched_location: 'Main Library',
+        matched_image_path: '/images/logo-icon.png',
+        confidence: 91,
+        explanation: 'The image and reported details appear consistent.',
+        created_at: new Date()
+    }],
     initialType: 'lost',
     handoverClaims: [],
     handoverItem: null,
@@ -101,7 +114,12 @@ pages.forEach(p => {
         });
         
         // Render as student
-        renderFunc(defaultLocals);
+        const studentOutput = renderFunc(defaultLocals);
+        if (p === 'dashboard.ejs') {
+            assert(studentOutput.includes('AI Smart Matches'), 'Dashboard should display confirmed AI matches.');
+            assert(studentOutput.includes('Blue Backpack Found'), 'Dashboard should show the other matched report.');
+            assert(studentOutput.includes('91%'), 'Dashboard should show the stored match confidence.');
+        }
         
         // Render as admin
         renderFunc({

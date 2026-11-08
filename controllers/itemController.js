@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const auditLogModel = require('../models/auditLogModel');
 const itemReportModel = require('../models/itemReportModel');
@@ -12,6 +13,8 @@ const { isAdmin, isGuest, isInstitutionalEmail, validatePasswordStrength, isVali
 const { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch, parseChallenges, calculateMultiAnswerMatch } = require('../services/answerMatch');
 const { issueCode, verifyCode } = require('../services/mfa');
 const { sendMfaEnabledNotice, verifyEmailTransport } = require('../services/email');
+const { redirectIfNoReportPhoto } = require('../services/reportPhoto');
+const { findAndSaveReportMatches } = require('../services/reportMatching');
 
 
 function extractVerificationPairs(body) {
@@ -76,6 +79,31 @@ async function logAudit(adminId, actionDescription, ip) {
     }
 }
 
+async function analyzeReportMatches(reportId) {
+    try {
+        return await findAndSaveReportMatches(reportId);
+    } catch (error) {
+        const apiKey = process.env.GEMINI_API_KEY || '';
+        const errorMessage = String(error.message || error);
+        console.error('[Report Matching] AI matching failed:', {
+            reportId,
+            code: error.code || 'REPORT_MATCHING_ERROR',
+            message: apiKey ? errorMessage.split(apiKey).join('[REDACTED]') : errorMessage
+        });
+        return { status: 'unavailable' };
+    }
+}
+
+function reportMatchingMessage(result, summary = 'Report saved.') {
+    if (result.status === 'unavailable') {
+        return `${summary} AI matching is unavailable; please contact the system administrator.`;
+    }
+    if (result.matches && result.matches.length > 0) {
+        return `${summary} AI found ${result.matches.length} possible active match${result.matches.length === 1 ? '' : 'es'}; check your dashboard.`;
+    }
+    return `${summary} No likely active matches were found yet; check your dashboard again later.`;
+}
+
 // Standard Categories
 const CATEGORIES = [
     'Electronics',
@@ -129,11 +157,11 @@ const showDashboard = async (req, res) => {
             ])
             : Promise.resolve(null);
 
-        const userPromise = user
+        const userPromise = user && !isCatalog
             ? Promise.all([
-                itemReportModel.showDashboardQuery4([user.id], []),
                 itemReportModel.showDashboardQuery5([user.id], []),
-                claimModel.showDashboardQuery2([user.id, user.id], [])
+                claimModel.showDashboardQuery2([user.id, user.id], []),
+                itemReportModel.findUserReportMatches([user.id], [])
             ])
             : Promise.resolve(null);
 
@@ -175,21 +203,11 @@ const showDashboard = async (req, res) => {
         let recentClaim = null;
 
         if (userResult) {
-            const [[myActiveReports], [userReportsList], [latestClaims]] = userResult;
+            const [[userReportsList], [latestClaims], [storedMatches]] = userResult;
             myReports = userReportsList;
+            smartMatches = storedMatches;
             if (latestClaims.length > 0) {
                 recentClaim = latestClaims[0];
-            }
-
-            if (myActiveReports.length > 0) {
-                const oppositeType = myActiveReports[0].report_type === 'lost' ? 'found' : 'lost';
-                const userCategories = [...new Set(myActiveReports.map((r) => r.category))];
-                const placeholders = userCategories.map(() => '?').join(',');
-
-                if (userCategories.length > 0) {
-                    const [matches] = await itemReportModel.showDashboardQuery6([user.id, oppositeType, ...userCategories], [placeholders]);
-                    smartMatches = matches;
-                }
             }
         }
 
@@ -248,6 +266,14 @@ const createItemReport = async (req, res) => {
         await removeUploadedFiles(uploadedFiles);
         return res.redirect(`/items/new?type=lost&error=${encodeURIComponent('Choose whether you lost or found the item, then try again.')}`);
     }
+    if (redirectIfNoReportPhoto(
+        uploadedFiles,
+        res,
+        reportFormUrl,
+        'Add at least one photo before submitting your report.'
+    )) {
+        return;
+    }
 
     const itemName = typeof req.body.item_name === 'string' ? req.body.item_name.trim() : '';
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
@@ -292,9 +318,10 @@ const createItemReport = async (req, res) => {
     }));
 
     try {
-        await itemReportModel.createItemReport([req.session.user.id, reportType, itemName, category, description, location, secretChallenge, secretAnswer, custodyMode], imagePaths);
-
-        return res.redirect(`/dashboard?msg=${encodeURIComponent(`Successfully reported ${reportType} item: "${itemName}"`)}`);
+        const [result] = await itemReportModel.createItemReport([req.session.user.id, reportType, itemName, category, description, location, secretChallenge, secretAnswer, custodyMode], imagePaths);
+        const matchResult = await analyzeReportMatches(result.insertId);
+        const summary = `Successfully reported ${reportType} item: "${itemName}".`;
+        return res.redirect(`/dashboard?msg=${encodeURIComponent(reportMatchingMessage(matchResult, summary))}`);
     } catch (err) {
         console.error('Failed to report item:', err);
         await removeUploadedFiles(uploadedFiles);
@@ -903,12 +930,18 @@ const updateItemReport = async (req, res) => {
             [itemName, category, description, finalStatus, location, secretChallenge, secretAnswer, itemId],
             imagePaths
         );
+        const matchResult = finalStatus === 'active'
+            ? await analyzeReportMatches(itemId)
+            : { status: 'not_active' };
 
         if (isAdmin(user)) {
             await logAudit(user.id, `Admin edited report #${itemId} ("${itemName}")`, req.ip);
         }
 
-        return res.redirect(`/items/${itemId}?msg=${encodeURIComponent('Report updated successfully.')}`);
+        const updateMessage = finalStatus === 'active'
+            ? reportMatchingMessage(matchResult, 'Report updated successfully.')
+            : 'Report updated successfully.';
+        return res.redirect(`/items/${itemId}?msg=${encodeURIComponent(updateMessage)}`);
     } catch (err) {
         console.error('Error updating report:', err);
         await removeUploadedFiles(uploadedFiles);
@@ -1221,17 +1254,92 @@ const updateNotificationSettings = (req, res) => {
     return res.redirect(`/settings?msg=${encodeURIComponent('Notification preferences saved successfully.')}#notifications`);
 };
 
+const verifyAccountDeletion = async (req, res) => {
+    const user = req.session.user;
+    const currentPassword = typeof req.body.current_password === 'string' ? req.body.current_password : '';
+    delete req.session.accountDeletionConfirmation;
+
+    if (!currentPassword) {
+        return res.status(400).json({ error: 'Enter your current password to continue.' });
+    }
+
+    try {
+        const [userRows] = await userModel.updateSecurity([user.id], []);
+        if (userRows.length === 0) {
+            return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+        }
+
+        const passwordMatches = await bcrypt.compare(currentPassword, userRows[0].password_hash);
+        if (!passwordMatches) {
+            return res.status(401).json({ error: 'The password is incorrect. Your account has not been deleted.' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        req.session.accountDeletionConfirmation = {
+            userId: user.id,
+            token,
+            expiresAt: Date.now() + 5 * 60 * 1000
+        };
+        await new Promise((resolve, reject) => {
+            req.session.save((error) => error ? reject(error) : resolve());
+        });
+        return res.json({ token });
+    } catch (error) {
+        console.error('Error verifying account deletion password:', error);
+        delete req.session.accountDeletionConfirmation;
+        return res.status(500).json({ error: 'Could not verify your password. Please try again.' });
+    }
+};
+
+const cancelAccountDeletion = (req, res) => {
+    delete req.session.accountDeletionConfirmation;
+    return res.sendStatus(204);
+};
+
 const deleteAccount = async (req, res) => {
     const user = req.session.user;
+    const confirmation = req.session.accountDeletionConfirmation;
+    const submittedToken = typeof req.body.confirmation_token === 'string' ? req.body.confirmation_token : '';
+    const expectedTokenBuffer = confirmation ? Buffer.from(confirmation.token) : Buffer.alloc(0);
+    const submittedTokenBuffer = Buffer.from(submittedToken);
+    const confirmationValid = confirmation
+        && confirmation.userId === user.id
+        && confirmation.expiresAt > Date.now()
+        && expectedTokenBuffer.length === submittedTokenBuffer.length
+        && crypto.timingSafeEqual(expectedTokenBuffer, submittedTokenBuffer);
+
+    if (req.body.confirmation !== 'proceed' || !confirmationValid) {
+        delete req.session.accountDeletionConfirmation;
+        return res.redirect(`/settings?error=${encodeURIComponent('Please confirm your password again before deleting your account.')}#personal`);
+    }
+
+    delete req.session.accountDeletionConfirmation;
+    let connection;
+    let transactionOpen = false;
     try {
-        await mfaModel.deleteAccount([user.id], []);
-        await userModel.deleteAccount([user.id], []);
-        req.session.destroy(() => {
-            res.redirect('/login?msg=' + encodeURIComponent('Your account has been deleted.'));
+        connection = await getConnection();
+        await connection.beginTransaction();
+        transactionOpen = true;
+        await mfaModel.deleteAccount([user.id], [], connection);
+        await userModel.deleteAccount([user.id], [], connection);
+        await connection.commit();
+        transactionOpen = false;
+        req.session.destroy((error) => {
+            if (error) console.error('Error ending session after account deletion:', error);
+            return res.redirect('/login?msg=' + encodeURIComponent('Your account has been deleted.'));
         });
-    } catch (err) {
-        console.error('Error deleting account:', err);
-        res.redirect(`/settings?error=${encodeURIComponent('Failed to delete account.')}#personal`);
+    } catch (error) {
+        if (transactionOpen) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Error rolling back account deletion:', rollbackError);
+            }
+        }
+        console.error('Error deleting account:', error);
+        return res.redirect(`/settings?error=${encodeURIComponent('Failed to delete account. Please try again.')}#personal`);
+    } finally {
+        if (connection) connection.release();
     }
 };
 
@@ -1702,6 +1810,14 @@ const listAuditLogs = async (req, res) => {
 const createAdminItemReport = async (req, res) => {
     const user = req.session.user;
     const uploadedFiles = req.files || [];
+    if (redirectIfNoReportPhoto(
+        uploadedFiles,
+        res,
+        '/admin/dashboard?tab=posted',
+        'Add at least one photo before logging this item.'
+    )) {
+        return;
+    }
     const itemName = typeof req.body.item_name === 'string' ? req.body.item_name.trim() : '';
     const category = typeof req.body.category === 'string' ? req.body.category.trim() : 'Other';
     const location = typeof req.body.location_found_lost === 'string' ? req.body.location_found_lost.trim() : '';
@@ -1743,13 +1859,14 @@ const createAdminItemReport = async (req, res) => {
             imagePaths
         );
 
+        const matchResult = await analyzeReportMatches(result.insertId);
         await logAudit(
             user.id,
             `Admin logged office turned-in item #${result.insertId} ("${itemName}")`,
             req.ip
         );
 
-        return res.redirect('/admin/dashboard?tab=posted&msg=Office item logged and broadcasted to campus.');
+        return res.redirect(`/admin/dashboard?tab=posted&msg=${encodeURIComponent(reportMatchingMessage(matchResult, 'Office item logged.'))}`);
     } catch (err) {
         console.error('Error logging office item:', err);
         await removeUploadedFiles(uploadedFiles);
@@ -1837,6 +1954,8 @@ module.exports = {
     enableMfa,
     disableMfa,
     updateNotificationSettings,
+    verifyAccountDeletion,
+    cancelAccountDeletion,
     deleteAccount,
     showAdminDashboard,
     acceptItemCustody,

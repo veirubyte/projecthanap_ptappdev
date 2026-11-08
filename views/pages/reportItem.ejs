@@ -195,7 +195,7 @@
                   <!-- Smart Photo Dropzone -->
                   <div class="flex flex-col gap-1.5">
                     <div class="flex items-center justify-between">
-                      <label class="text-xs font-bold text-slate-800 uppercase tracking-wider">Photos</label>
+                      <label class="text-xs font-bold text-slate-800 uppercase tracking-wider" for="photoInput">Photos *</label>
                       <span
                         class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20 text-[11px] font-semibold">
                         <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
@@ -212,11 +212,11 @@
                         <span
                           class="text-xs font-bold text-slate-600 group-hover:text-[#2B5B84] transition-colors text-center"
                           id="photoLabel">
-                          Click to attach photos (up to 6, JPEG, PNG, WebP)
+                          Add at least 1 photo (up to 6, JPEG, PNG, WebP)
                         </span>
                       </label>
                     </div>
-                    <p class="text-[11px] text-slate-500">Each image must be 5 MB or smaller. The first image will be
+                    <p class="text-[11px] text-slate-500">At least one photo is required. Each image must be 5 MB or smaller. The first image will be
                       used as the report cover.</p>
                     <p id="photoUploadError" class="hidden text-xs font-semibold text-rose-600" role="alert"></p>
                     <div id="photoPreviewGallery" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
@@ -489,6 +489,14 @@
       const itemReportFormEl = document.getElementById('itemReportForm');
       if (itemReportFormEl && questionsContainer) {
         itemReportFormEl.addEventListener('submit', (e) => {
+          if (!photoInput.files || photoInput.files.length === 0) {
+            e.preventDefault();
+            photoUploadError.textContent = 'Add at least one photo before submitting your report.';
+            photoUploadError.classList.remove('hidden');
+            photoInput.click();
+            return;
+          }
+
           const rows = questionsContainer.querySelectorAll('.question-row');
           for (const row of rows) {
             const q = row.querySelector('.ownership-challenge-input').value.trim();
@@ -547,7 +555,7 @@
         const files = Array.from(photoInput.files || []);
         photoLabel.textContent = files.length
           ? `${files.length} photo${files.length === 1 ? '' : 's'} selected`
-          : 'Click to attach photos (up to 6, JPEG, PNG, WebP)';
+          : 'Add at least 1 photo (up to 6, JPEG, PNG, WebP)';
         photoPreviewGallery.classList.toggle('hidden', files.length === 0);
 
         files.forEach((file, index) => {
