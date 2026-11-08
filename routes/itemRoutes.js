@@ -1,7 +1,9 @@
 const { requireAuth, denyAdmin, requireNonAdminAuth, requireAdmin } = require('../middleware/auth');
 const controller = require('../controllers/itemController');
+const { rateLimiter } = require('../config/security');
 
 const router = require('express').Router();
+const accountDeletionPasswordLimiter = rateLimiter({ max: 8, windowMs: 15 * 60 * 1000 });
 
 /* ==========================================================================
    PUBLIC & USER FEED / CATALOG
@@ -83,6 +85,8 @@ router.post('/settings/guardian-links/:id/:decision', requireNonAdminAuth, contr
 // POST /settings/profile - Update Personal Details
 router.post('/settings/profile', requireAuth, controller.updateProfile);
 
+router.post('/settings/delete-account/verify', requireAuth, requireNonAdminAuth, accountDeletionPasswordLimiter, controller.verifyAccountDeletion);
+router.post('/settings/delete-account/cancel', requireAuth, requireNonAdminAuth, controller.cancelAccountDeletion);
 router.post('/settings/delete-account', requireAuth, requireNonAdminAuth, controller.deleteAccount);
 
 // POST /settings/security - Update Password & Security Credentials

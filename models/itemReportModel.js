@@ -101,6 +101,111 @@ async function showDashboardQuery6(params, values = [], connection = db) {
                          ORDER BY r.date_reported DESC LIMIT 4`, params);
 }
 
+async function findReportForMatching(params, values = [], connection = db) {
+    return connection.execute(`
+        SELECT r.id, r.user_id, r.report_type, r.item_name, r.category,
+               r.description, r.location_found_lost,
+               (SELECT image.image_path
+                FROM item_report_images image
+                WHERE image.report_id = r.id
+                ORDER BY image.is_primary DESC, image.sort_order ASC, image.id ASC
+                LIMIT 1) AS image_path,
+               (SELECT image.file_data
+                FROM item_report_images image
+                WHERE image.report_id = r.id
+                ORDER BY image.is_primary DESC, image.sort_order ASC, image.id ASC
+                LIMIT 1) AS file_data
+        FROM item_reports r
+        WHERE r.id = ? AND r.status = 'active'
+    `, params);
+}
+
+async function findReportMatchCandidates(params, values = [], connection = db) {
+    return connection.execute(`
+        SELECT r.id, r.user_id, r.report_type, r.item_name, r.category,
+               r.description, r.location_found_lost,
+               (SELECT image.image_path
+                FROM item_report_images image
+                WHERE image.report_id = r.id
+                ORDER BY image.is_primary DESC, image.sort_order ASC, image.id ASC
+                LIMIT 1) AS image_path,
+               (SELECT image.file_data
+                FROM item_report_images image
+                WHERE image.report_id = r.id
+                ORDER BY image.is_primary DESC, image.sort_order ASC, image.id ASC
+                LIMIT 1) AS file_data
+        FROM item_reports r
+        WHERE r.report_type = ?
+          AND r.status = 'active'
+          AND r.category = ?
+          AND r.user_id <> ?
+          AND r.id <> ?
+        ORDER BY r.date_reported DESC
+        LIMIT 5
+    `, params);
+}
+
+async function saveReportMatches(params, values = [], connection = db) {
+    return connection.execute(`
+        INSERT INTO report_matches (lost_report_id, found_report_id, confidence, explanation)
+        SELECT lost.id, found.id, ?, ?
+        FROM item_reports lost
+        JOIN item_reports found ON found.id = ?
+        WHERE lost.id = ?
+          AND lost.report_type = 'lost'
+          AND found.report_type = 'found'
+          AND lost.status = 'active'
+          AND found.status = 'active'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM report_matches existing_match
+              WHERE existing_match.lost_report_id = lost.id
+                AND existing_match.found_report_id = found.id
+          )
+    `, params);
+}
+
+async function deleteReportMatches(params, values = [], connection = db) {
+    return connection.execute(
+        'DELETE FROM report_matches WHERE lost_report_id = ? OR found_report_id = ?',
+        params
+    );
+}
+
+async function findUserReportMatches(params, values = [], connection = db) {
+    const userId = params[0];
+    return connection.execute(`
+        SELECT match_record.id, match_record.lost_report_id, match_record.found_report_id,
+               match_record.confidence, match_record.explanation, match_record.created_at,
+               CASE WHEN lost.user_id = ? THEN lost.id ELSE found.id END AS own_report_id,
+               CASE WHEN lost.user_id = ? THEN found.item_name ELSE lost.item_name END AS own_item_name,
+               CASE WHEN lost.user_id = ? THEN found.id ELSE lost.id END AS matched_report_id,
+               CASE WHEN lost.user_id = ? THEN found.item_name ELSE lost.item_name END AS matched_item_name,
+               CASE WHEN lost.user_id = ? THEN found.category ELSE lost.category END AS matched_category,
+               CASE WHEN lost.user_id = ? THEN found.location_found_lost ELSE lost.location_found_lost END AS matched_location,
+               CASE WHEN lost.user_id = ?
+                    THEN (SELECT image.image_path
+                          FROM item_report_images image
+                          WHERE image.report_id = found.id
+                          ORDER BY image.is_primary DESC, image.sort_order ASC, image.id ASC
+                          LIMIT 1)
+                    ELSE (SELECT image.image_path
+                          FROM item_report_images image
+                          WHERE image.report_id = lost.id
+                          ORDER BY image.is_primary DESC, image.sort_order ASC, image.id ASC
+                          LIMIT 1)
+               END AS matched_image_path
+        FROM report_matches match_record
+        JOIN item_reports lost ON lost.id = match_record.lost_report_id
+        JOIN item_reports found ON found.id = match_record.found_report_id
+        WHERE (lost.user_id = ? OR found.user_id = ?)
+          AND lost.status = 'active'
+          AND found.status = 'active'
+        ORDER BY match_record.confidence DESC, match_record.created_at DESC
+        LIMIT 10
+    `, Array(9).fill(userId));
+}
+
 async function createItemReport(params, imagePaths = []) {
     const connection = await db.getConnection();
     let transactionOpen = false;
@@ -218,6 +323,7 @@ async function updateItemReportQuery2(params, imagePaths = []) {
         await connection.execute(`UPDATE item_reports
              SET item_name = ?, category = ?, description = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?
              WHERE id = ?`, params);
+        await deleteReportMatches([params[7], params[7]], [], connection);
 
         if (imagePaths.length > 0) {
             const [existingImages] = await connection.execute(
@@ -360,6 +466,7 @@ async function description(params, imagePaths = []) {
             await connection.execute(`INSERT INTO item_report_images (report_id, image_path, file_data, is_primary, sort_order)
                      VALUES (?, ?, ?, ?, ?)`, [result.insertId, imgPath, fileData, index === 0 ? 1 : 0, index]);
         }
+
         await connection.commit();
         transactionOpen = false;
         return [result, fields];
@@ -386,6 +493,11 @@ module.exports = {
     showDashboardQuery4,
     showDashboardQuery5,
     showDashboardQuery6,
+    findReportForMatching,
+    findReportMatchCandidates,
+    saveReportMatches,
+    deleteReportMatches,
+    findUserReportMatches,
     createItemReport,
     showItemDetails,
     showItemReportImages,

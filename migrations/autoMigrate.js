@@ -39,6 +39,17 @@ async function autoMigrate() {
             expires_at TIMESTAMPTZ NOT NULL
           );
           CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON public.user_sessions(expires_at);
+          CREATE TABLE IF NOT EXISTS public.report_matches (
+            id SERIAL PRIMARY KEY,
+            lost_report_id INT NOT NULL REFERENCES public.item_reports(id) ON DELETE CASCADE,
+            found_report_id INT NOT NULL REFERENCES public.item_reports(id) ON DELETE CASCADE,
+            confidence SMALLINT NOT NULL CHECK (confidence BETWEEN 80 AND 100),
+            explanation VARCHAR(500) NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (lost_report_id, found_report_id),
+            CHECK (lost_report_id <> found_report_id)
+          );
+          CREATE INDEX IF NOT EXISTS idx_report_matches_found_report ON public.report_matches(found_report_id);
           ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT;
           ALTER TABLE public.item_reports ALTER COLUMN secret_challenge TYPE TEXT;
           ALTER TABLE public.item_reports ALTER COLUMN secret_answer TYPE TEXT;
@@ -56,11 +67,14 @@ async function autoMigrate() {
           ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.report_matches ENABLE ROW LEVEL SECURITY;
 
           -- Revoke direct PostgREST anon/authenticated access so private columns (e.g. secret_answer) are never exposed
           REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated, PUBLIC;
           REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated, PUBLIC;
           REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated, PUBLIC;
+          GRANT ALL ON public.report_matches TO postgres, service_role;
+          GRANT USAGE, SELECT ON SEQUENCE public.report_matches_id_seq TO postgres, service_role;
           DROP POLICY IF EXISTS "Allow public read-only active items" ON public.item_reports;
           DROP POLICY IF EXISTS "Allow public read-only active item images" ON public.item_report_images;
           DROP POLICY IF EXISTS "Allow public read-only account_roles" ON public.account_roles;
@@ -179,7 +193,27 @@ async function autoMigrate() {
         ) ENGINE=InnoDB DEFAULT CHARSET=${charset} COLLATE=${collation}
       `);
 
-      // 6. Ensure file_data column exists in item_report_images
+      // 6. Persist AI-confirmed active lost/found report matches
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS report_matches (
+          id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          lost_report_id INT NOT NULL,
+          found_report_id INT NOT NULL,
+          confidence SMALLINT UNSIGNED NOT NULL,
+          explanation VARCHAR(500) NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY uq_report_matches_pair (lost_report_id, found_report_id),
+          KEY idx_report_matches_found_report (found_report_id),
+          CONSTRAINT fk_report_matches_lost_report
+            FOREIGN KEY (lost_report_id) REFERENCES item_reports(id) ON DELETE CASCADE,
+          CONSTRAINT fk_report_matches_found_report
+            FOREIGN KEY (found_report_id) REFERENCES item_reports(id) ON DELETE CASCADE,
+          CONSTRAINT chk_report_matches_confidence CHECK (confidence BETWEEN 80 AND 100),
+          CONSTRAINT chk_report_matches_distinct_reports CHECK (lost_report_id <> found_report_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=${charset} COLLATE=${collation}
+      `);
+
+      // 7. Ensure file_data column exists in item_report_images
       const [imgCols] = await connection.query('DESCRIBE item_report_images');
       const imgColNames = imgCols.map(c => c.Field);
       if (!imgColNames.includes('file_data')) {

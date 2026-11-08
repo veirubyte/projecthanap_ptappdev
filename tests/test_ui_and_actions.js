@@ -50,7 +50,13 @@ const studentRendered = ejs.render(settingsEjs, {
 assert(studentRendered.includes('data-tab="personal"'), 'Student should have Personal Details tab');
 assert(studentRendered.includes('id="panel-personal"'), 'Student should have panel-personal rendered');
 assert(studentRendered.includes('action="/settings/delete-account"'), 'Student should have account deletion Danger Zone');
+assert(studentRendered.includes('Are you sure you want to delete your account?'), 'Account deletion should start with an explicit Yes/No confirmation dialog');
+assert(studentRendered.includes("fetch('/settings/delete-account/verify'"), 'Account deletion password must be verified before the final confirmation');
+assert(studentRendered.includes('Your account and associated data will be permanently deleted.'), 'The final confirmation should explain that deletion cannot be recovered');
+assert(studentRendered.includes('Proceed with deletion'), 'The final confirmation should require an explicit proceed action');
+assert(!studentRendered.includes('onsubmit="return confirm('), 'Account deletion should use the staged confirmation dialog instead of a browser alert');
 console.log('✅ PASS: Student Settings renders Personal Details AND Danger Zone correctly.');
+console.log('✅ PASS: Account deletion requires staged confirmation, password verification, and explicit final consent.');
 
 // Test 2: Claims Page Withdraw Button for Pending Claims
 console.log('\n--- Test 2: Claims Page Pending Claim Withdraw Action ---');
@@ -168,4 +174,3 @@ console.log('✅ PASS: Chat view renders flawlessly across claimant, reporter, a
 console.log('\n================================================================');
 console.log('🏆 ALL UI ACTIONS & HEADLESS INTEGRITY CHECKS PASSED');
 console.log('================================================================');
-

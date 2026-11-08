@@ -12,9 +12,17 @@ const HELP_TOPICS = [
         reply: 'HANAP can use email multi-factor authentication (MFA). Manage MFA in Settings; enabling or disabling it requires your password. If a code is not arriving, check your registered email and contact the system administrator.'
     },
     {
+        matches: /\b(ai|smart|possible|automatic|automated).{0,30}\b(match|matching|lost|found)\b|\b(match|matching)\b.{0,30}\b(lost|found|report|item|dashboard)\b/i,
+        reply: 'HANAP compares active Lost and Found reports using their photos, category, and campus location. High-confidence possible matches appear on both report owners’ dashboards. A match is only a suggestion; review the report and use the normal ownership claim and verification process.'
+    },
+    {
+        matches: /\b(post|report|submit|upload|add|attach).{0,45}\b(without|no|image|photo|picture)\b|\b(without|no)\b.{0,30}\b(image|photo|picture)\b/i,
+        reply: 'A photo is required to submit a new item report. Upload at least one JPEG, PNG, or WebP image (up to 6 photos, 5 MB each).'
+    },
+    {
         matches: /\b(report|post|list|submit|add|upload).{0,35}\b(lost|found|item|belonging)\b|\b(lost|found)\b|\b(item|belonging).{0,25}\b(lost|found)\b/i,
         excludes: /\b(claim|ownership)\b/i,
-        reply: 'Sign in and open Report an Item (/items/new). Choose Lost or Found, enter the item name, category, location, and description, then optionally add photos and submit. Guests cannot post found-item reports; please surrender found property to Campus Security.'
+        reply: 'Sign in and open Report an Item (/items/new). Choose Lost or Found, enter the item name, category, location, and description, and attach at least one JPEG, PNG, or WebP photo before submitting (up to 6 photos, 5 MB each). Guests cannot post found-item reports; please surrender found property to Campus Security.'
     },
     {
         matches: /\b(claim|ownership|prove.*own|match engine|match score|verification question|80\s?%)\b/i,
