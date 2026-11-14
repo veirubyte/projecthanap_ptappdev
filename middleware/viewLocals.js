@@ -33,17 +33,42 @@ async function getUnreadNotificationCount(userId, adminFlag = false) {
     }
 }
 
+function invalidateUnreadCache(userIds = [], { includeAdmins = false } = {}) {
+    const ids = Array.isArray(userIds) ? userIds : [userIds];
+    for (const id of ids) {
+        if (id !== null && id !== undefined && id !== '') {
+            unreadCache.delete(`user:${id}`);
+            unreadCache.delete(`admin:${id}`);
+        }
+    }
+    if (includeAdmins) {
+        for (const key of unreadCache.keys()) {
+            if (key.startsWith('admin:')) {
+                unreadCache.delete(key);
+            }
+        }
+    }
+}
+
+function invalidateAllUnreadCache() {
+    unreadCache.clear();
+}
+
 async function viewLocals(req, res, next) {
-    const adminFlag = isAdmin(req.session.user);
-    res.locals.user = req.session.user || null;
+    const sessionUser = req.session?.user || null;
+    const adminFlag = isAdmin(sessionUser);
+    res.locals.user = sessionUser;
     res.locals.isAdmin = adminFlag;
     res.locals.unreadNotificationCount = 0;
 
-    if (req.session.user && req.session.user.id) {
-        res.locals.unreadNotificationCount = await getUnreadNotificationCount(req.session.user.id, adminFlag);
+    if (sessionUser && sessionUser.id) {
+        res.locals.unreadNotificationCount = await getUnreadNotificationCount(sessionUser.id, adminFlag);
     }
 
     next();
 }
+
+viewLocals.invalidateUnreadCache = invalidateUnreadCache;
+viewLocals.invalidateAllUnreadCache = invalidateAllUnreadCache;
 
 module.exports = viewLocals;

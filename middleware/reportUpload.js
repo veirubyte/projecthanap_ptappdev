@@ -180,7 +180,7 @@ function reportUploadBeforeCsrf(req, res, next) {
     const isItemEdit = /^\/items\/\d+\/edit$/.test(req.path);
     const isAdminIntake = req.path === '/admin/items/log';
     if (!isUserReport && !isItemEdit && !isAdminIntake) return next();
-    if (!req.session.user) {
+    if (!req.session?.user) {
         return res.redirect(`/login?msg=${encodeURIComponent('Please sign in to access this feature.')}`);
     }
     if (isAdminIntake && !isAdmin(req.session.user)) return next();

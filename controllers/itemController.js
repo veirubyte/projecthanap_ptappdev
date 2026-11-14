@@ -13,6 +13,14 @@ const { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch, parseChallenges, calculate
 const { issueCode, verifyCode } = require('../services/mfa');
 const { sendMfaEnabledNotice, verifyEmailTransport } = require('../services/email');
 const { flagStaleItems } = require('../services/lifecycle');
+const { invalidateUnreadCache, invalidateAllUnreadCache } = require('../middleware/viewLocals');
+
+async function saveSession(req) {
+    if (!req.session || typeof req.session.save !== 'function') return;
+    await new Promise((resolve) => {
+        req.session.save(() => resolve());
+    });
+}
 
 const STALE_SWEEP_INTERVAL_MS = 15 * 60 * 1000;
 let lastStaleSweepAt = 0;
@@ -644,6 +652,7 @@ const createClaim = async (req, res) => {
         // Strict threshold on Found items; Advisory score on Lost items so finders can still chat with the owner
         if (!isLostReport && matchResult.hasChallenge && !matchResult.meetsThreshold) {
             req.session.answerMatchResult = { itemId, score: matchResult.score };
+            await saveSession(req);
             return res.redirect(`/items/${itemId}?error=${encodeURIComponent(`Your answer scored ${matchResult.score}%. A match of at least ${ANSWER_MATCH_THRESHOLD}% is required to file this claim.`)}`);
         }
 
@@ -670,6 +679,8 @@ const createClaim = async (req, res) => {
         await claimModel.createClaimQuery3([claimId, req.session.user.id, `${claimHeading}:\n"${proofDetailsToSave}"`], []);
 
         req.session.answerMatchResult = { itemId, score: matchResult.score };
+        invalidateUnreadCache([item.user_id, req.session.user.id], { includeAdmins: true });
+        await saveSession(req);
         const successMsg = isLostReport
             ? 'Found claim submitted. You can now chat with the owner to coordinate handover.'
             : 'Claim submitted. You can now communicate with the finder.';
@@ -689,6 +700,7 @@ const cancelClaim = async (req, res) => {
     const redirectBase = itemId ? `/items/${itemId}` : '/claims';
     try {
         await claimModel.cancelClaim([claimId, req.session.user.id], []);
+        invalidateAllUnreadCache();
         return res.redirect(`${redirectBase}?msg=${encodeURIComponent('Your pending claim has been withdrawn.')}`);
     } catch (err) {
         console.error('Error withdrawing claim:', err);
@@ -819,6 +831,14 @@ const updateClaimStatus = async (req, res) => {
         if (claimRows.length === 0) return res.redirect('/claims');
         const claim = claimRows[0];
 
+        if (['rejected', 'returned'].includes(claim.status)) {
+            return res.redirect(`/claims/${claimId}?error=${encodeURIComponent(`Closed claims (${claim.status}) cannot be modified.`)}`);
+        }
+
+        if (action === 'escalated' && !['pending', 'approved'].includes(claim.status)) {
+            return res.redirect(`/claims/${claimId}?error=${encodeURIComponent('This claim cannot be escalated from its current status.')}`);
+        }
+
         const user = req.session.user;
         const userIsAdmin = isAdmin(user);
         const userIsReporter = claim.reporter_id === user.id;
@@ -851,6 +871,8 @@ const updateClaimStatus = async (req, res) => {
         } else {
             await claimModel.updateClaimStatusQuery6([claimId, user.id, `[SYSTEM] Claim marked as REJECTED.`], []);
         }
+
+        invalidateAllUnreadCache();
 
         if (userIsAdmin) {
             await logAudit(
@@ -1193,6 +1215,7 @@ const updateProfile = async (req, res) => {
         req.session.user.full_name = fullName;
         req.session.user.email = email;
         req.session.user.role = role;
+        await saveSession(req);
 
         return res.redirect(`/settings?msg=${encodeURIComponent('Personal details updated successfully.')}#personal`);
     } catch (err) {
@@ -1484,6 +1507,7 @@ const resetUserQuota = async (req, res) => {
                 []
             )
         )));
+        invalidateAllUnreadCache();
         await logAudit(req.session.user.id, `Admin reset claim quota limit for user #${targetUserId}`, req.ip);
         return res.redirect('/admin/users?msg=User claim quota limit reset successfully.');
     } catch (err) {
@@ -1587,6 +1611,7 @@ const confirmHandover = async (req, res) => {
 
         await claimModel.confirmHandoverQuery3([claimId, user.id, `[SECURITY LOG] Officer ${user.full_name} confirmed physical custody release and handover.`], []);
         await closeCompetingClaimsForItem(claim.item_id, claimId, user.id, 'released by Campus Security');
+        invalidateAllUnreadCache();
 
         await logAudit(user.id, `Officer confirmed physical custody release for claim #${claimId}`, req.ip);
 
@@ -1606,6 +1631,7 @@ const rejectHandover = async (req, res) => {
     try {
         await claimModel.rejectHandover([claimId], []);
         await claimModel.rejectHandoverQuery2([claimId, user.id, `[SECURITY LOG] Officer ${user.full_name} rejected physical custody release.`], []);
+        invalidateAllUnreadCache();
         await logAudit(user.id, `Officer rejected custody release for claim #${claimId}`, req.ip);
 
         return res.redirect(`/admin/dashboard?msg=Claim #${claimId} rejected by security officer.`);

@@ -70,6 +70,7 @@ function recordSessionMfaCode(req, result) {
 }
 
 async function saveSession(req) {
+    if (!req.session || typeof req.session.save !== 'function') return;
     await new Promise((resolve) => {
         req.session.save(() => resolve());
     });
@@ -115,7 +116,7 @@ function renderRegister(res, options = {}) {
 // GET /login
 
 const showLogin = (req, res) => {
-    if (req.query.reset_mfa === '1' || req.query.cancel_mfa === '1') {
+    if (req.session && (req.query.reset_mfa === '1' || req.query.cancel_mfa === '1')) {
         delete req.session.pendingMfaUser;
         delete req.session.pendingMfaCategory;
         delete req.session.mfaCooldownUntil;
@@ -125,14 +126,14 @@ const showLogin = (req, res) => {
 
     // If already authenticated, redirect immediately based on authoritative database role
     const accessDenied = req.query.accessDenied === '1';
-    if (req.session.user && !accessDenied) {
+    if (req.session?.user && !accessDenied) {
         if (isAdmin(req.session.user)) {
             return res.redirect('/admin/dashboard');
         }
         return res.redirect('/dashboard');
     }
 
-    const category = req.session.pendingMfaCategory ||
+    const category = req.session?.pendingMfaCategory ||
         (req.query.category === 'guest' ? 'guest' : 'institution');
     const email = typeof req.query.registered_email === 'string' ? req.query.registered_email : (req.query.email || '');
     const msg = typeof req.query.msg === 'string' ? req.query.msg : null;
@@ -140,12 +141,12 @@ const showLogin = (req, res) => {
     return renderLogin(res, {
         category,
         email,
-        mfaPending: Boolean(req.session.pendingMfaUser),
-        mfaEmail: req.session.pendingMfaUser ? maskEmail(req.session.pendingMfaUser.email) : '',
-        mfaCooldownSeconds: req.session.mfaCooldownUntil
+        mfaPending: Boolean(req.session?.pendingMfaUser),
+        mfaEmail: req.session?.pendingMfaUser ? maskEmail(req.session.pendingMfaUser.email) : '',
+        mfaCooldownSeconds: req.session?.mfaCooldownUntil
             ? Math.max(0, Math.ceil((req.session.mfaCooldownUntil - Date.now()) / 1000))
             : 0,
-        mfaAttemptsRemaining: req.session.mfaAttemptsRemaining,
+        mfaAttemptsRemaining: req.session?.mfaAttemptsRemaining,
         msg: accessDenied ? null : msg,
         errorTitle: accessDenied ? 'Access denied' : null,
         errorMessage: accessDenied ? (msg || 'Your account is not authorized to access that page.') : null,
@@ -155,21 +156,23 @@ const showLogin = (req, res) => {
 
 const login = async (req, res) => {
     if (req.body.cancel_mfa === '1' || req.query.reset_mfa === '1' || req.query.cancel_mfa === '1') {
-        delete req.session.pendingMfaUser;
-        delete req.session.pendingMfaCategory;
-        delete req.session.mfaCooldownUntil;
-        delete req.session.mfaAttemptsRemaining;
-        delete req.session.validMfaCodeHashes;
-        await saveSession(req);
+        if (req.session) {
+            delete req.session.pendingMfaUser;
+            delete req.session.pendingMfaCategory;
+            delete req.session.mfaCooldownUntil;
+            delete req.session.mfaAttemptsRemaining;
+            delete req.session.validMfaCodeHashes;
+            await saveSession(req);
+        }
         return res.redirect('/login');
     }
 
     // If a duplicate/concurrent MFA verification POST arrives right after the first request already authenticated the session
-    if (req.session.user && !req.session.pendingMfaUser && req.body.mfa_code && !req.body.email) {
+    if (req.session?.user && !req.session?.pendingMfaUser && req.body.mfa_code && !req.body.email) {
         return res.redirect(isAdmin(req.session.user) ? '/admin/dashboard' : '/dashboard');
     }
 
-    if (req.session.pendingMfaUser) {
+    if (req.session?.pendingMfaUser) {
         const pendingUser = req.session.pendingMfaUser;
         const category = req.session.pendingMfaCategory || 'institution';
 
@@ -483,7 +486,7 @@ const login = async (req, res) => {
 };
 
 const showRegistration = (req, res) => {
-    if (req.session.user) {
+    if (req.session?.user) {
         if (isAdmin(req.session.user)) {
             return res.redirect('/admin/dashboard');
         }
@@ -724,17 +727,20 @@ function renderForgotPassword(res, options = {}) {
 }
 
 // GET /forgot-password
-const showForgotPassword = (req, res) => {
-    if (req.session.user) {
+const showForgotPassword = async (req, res) => {
+    if (req.session?.user) {
         return res.redirect(isAdmin(req.session.user) ? '/admin/dashboard' : '/dashboard');
     }
 
     if (req.query.reset === '1') {
-        delete req.session.pwdReset;
+        if (req.session) {
+            delete req.session.pwdReset;
+            await saveSession(req);
+        }
         return res.redirect('/forgot-password');
     }
 
-    const resetState = req.session.pwdReset;
+    const resetState = req.session?.pwdReset;
     const tab = req.query.tab === 'institutional' ? 'institutional_info' : 'self_service';
     const initialEmail = typeof req.query.email === 'string' ? req.query.email : '';
     const initialCategory = req.query.category === 'guest' || (!isInstitutionalEmail(initialEmail) && initialEmail.length > 0) ? 'guest' : 'institution';
@@ -767,6 +773,7 @@ const showForgotPassword = (req, res) => {
 // POST /forgot-password/request
 const requestPasswordReset = async (req, res) => {
     const rawEmail = typeof req.body.email === 'string' ? req.body.email.trim() : '';
+    const cleanEmail = rawEmail.toLowerCase();
     const category = req.body.category === 'guest' ? 'guest' : 'institution';
 
     if (!rawEmail || !isValidEmailSyntax(rawEmail)) {
@@ -783,7 +790,7 @@ const requestPasswordReset = async (req, res) => {
     }
 
     try {
-        const [rows] = await userModel.login([rawEmail]);
+        const [rows] = await userModel.login([cleanEmail]);
         if (rows.length === 0) {
             return renderForgotPassword(res, {
                 step: 'request',
@@ -845,9 +852,12 @@ const requestPasswordReset = async (req, res) => {
 
 // POST /forgot-password/resend
 const resendPasswordResetCode = async (req, res) => {
-    const resetState = req.session.pwdReset;
+    const resetState = req.session?.pwdReset;
     if (!resetState || !resetState.userId || isAdmin(resetState)) {
-        delete req.session.pwdReset;
+        if (req.session) {
+            delete req.session.pwdReset;
+            await saveSession(req);
+        }
         return res.redirect('/forgot-password');
     }
 
@@ -883,9 +893,12 @@ const resendPasswordResetCode = async (req, res) => {
 
 // POST /forgot-password/verify
 const verifyPasswordResetCode = async (req, res) => {
-    const resetState = req.session.pwdReset;
+    const resetState = req.session?.pwdReset;
     if (!resetState || !resetState.userId || isAdmin(resetState)) {
-        delete req.session.pwdReset;
+        if (req.session) {
+            delete req.session.pwdReset;
+            await saveSession(req);
+        }
         return res.redirect('/forgot-password');
     }
 
@@ -975,9 +988,12 @@ const verifyPasswordResetCode = async (req, res) => {
 
 // POST /forgot-password/reset
 const completePasswordReset = async (req, res) => {
-    const resetState = req.session.pwdReset;
+    const resetState = req.session?.pwdReset;
     if (!resetState || !resetState.userId || !resetState.verified || !resetState.resetToken || isAdmin(resetState)) {
-        delete req.session.pwdReset;
+        if (req.session) {
+            delete req.session.pwdReset;
+            await saveSession(req);
+        }
         return res.redirect('/forgot-password');
     }
 

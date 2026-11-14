@@ -4,7 +4,7 @@ async function login(params, values = [], connection = db) {
     return connection.execute(`SELECT u.id, u.full_name, u.email, u.password_hash, ar.role_code AS role
              FROM users u
              JOIN account_roles ar ON ar.id = u.role_id
-             WHERE u.email = ?`, params);
+             WHERE LOWER(u.email) = LOWER(?)`, params);
 }
 
 async function loginQuery2(params, values = [], connection = db) {
@@ -12,7 +12,7 @@ async function loginQuery2(params, values = [], connection = db) {
 }
 
 async function register(params, values = [], connection = db) {
-    return connection.execute('SELECT id FROM users WHERE email = ?', params);
+    return connection.execute('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', params);
 }
 
 async function registerQuery2(params, values = [], connection = db) {

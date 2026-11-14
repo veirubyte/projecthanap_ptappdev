@@ -69,9 +69,10 @@
               <span class="font-bold text-slate-800"><%= caseItem.item_name %></span>
               <span>•</span>
               <span><%= caseItem.category || 'Uncategorized' %></span>
-              <% if (caseItem.location) { %>
+              <% const guestLocation = caseItem.location_found_lost || caseItem.location; %>
+              <% if (guestLocation) { %>
                 <span>•</span>
-                <span><%= caseItem.location %></span>
+                <span><%= guestLocation %></span>
               <% } %>
               <span>•</span>
               <span class="uppercase font-semibold"><%= caseItem.status || 'active' %></span>
@@ -110,7 +111,7 @@
         </a>
         <div class="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
           <% if (user) { %>
-            <a href="/report" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
+            <a href="/items/new?type=lost" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
               Report Lost Item
             </a>
             <a href="/dashboard" class="px-5 py-2.5 rounded-xl bg-[#09436B] text-white text-xs font-bold shadow-xs hover:bg-[#204667] transition">

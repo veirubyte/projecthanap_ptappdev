@@ -110,20 +110,27 @@
                     </div>
                     <div>
                       <h3 class="text-xs sm:text-sm font-bold text-slate-900"><%= claim.item_name %></h3>
-                      <p class="text-[11px] text-slate-500">Claimant: <strong class="text-slate-700"><%= claim.claimant_name %></strong> • <%= timeAgo(claim.created_at) %></p>
+                      <p class="text-[11px] text-slate-500"><%= claim.report_type === 'lost' ? 'Finder:' : 'Claimant:' %> <strong class="text-slate-700"><%= claim.claimant_name %></strong> • <%= timeAgo(claim.created_at) %></p>
                     </div>
                   </div>
                   <div class="flex items-center gap-1.5 shrink-0">
                     <%
                       const scoreMatch = typeof claim.proof_details === 'string' ? claim.proof_details.match(/^\[Match Score:\s*(\d+)%\]/) : null;
                       const extractedScore = scoreMatch ? Number(scoreMatch[1]) : null;
+                      const receivedBadgeClass = (claim.status === 'approved' || claim.status === 'returned')
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : (claim.status === 'rejected'
+                          ? 'bg-rose-100 text-rose-800'
+                          : (claim.status === 'escalated'
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : 'bg-amber-100 text-amber-800'));
                     %>
                     <% if (extractedScore !== null) { %>
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <%= extractedScore >= 75 ? 'bg-teal-100 text-teal-800 border border-teal-200' : 'bg-slate-100 text-slate-700 border border-slate-200' %>" title="Match Engine Confidence Score">
                         <%= extractedScore %>% Match
                       </span>
                     <% } %>
-                    <span data-claim-status="<%= claim.status %>" class="claim-status-badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
+                    <span data-claim-status="<%= claim.status %>" class="claim-status-badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= receivedBadgeClass %>">
                       <%= claim.status %>
                     </span>
                   </div>
@@ -177,10 +184,19 @@
                     </div>
                     <div>
                       <h3 class="text-xs sm:text-sm font-bold text-slate-900"><%= claim.item_name %></h3>
-                      <p class="text-[11px] text-slate-500">Finder: <strong class="text-slate-700"><%= claim.reporter_name %></strong> • <%= timeAgo(claim.created_at) %></p>
+                      <p class="text-[11px] text-slate-500"><%= claim.report_type === 'lost' ? 'Owner:' : 'Finder:' %> <strong class="text-slate-700"><%= claim.reporter_name %></strong> • <%= timeAgo(claim.created_at) %></p>
                     </div>
                   </div>
-                  <span data-claim-status="<%= claim.status %>" class="claim-status-badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
+                  <%
+                    const madeBadgeClass = (claim.status === 'approved' || claim.status === 'returned')
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : (claim.status === 'rejected'
+                        ? 'bg-rose-100 text-rose-800'
+                        : (claim.status === 'escalated'
+                          ? 'bg-indigo-100 text-indigo-800'
+                          : 'bg-amber-100 text-amber-800'));
+                  %>
+                  <span data-claim-status="<%= claim.status %>" class="claim-status-badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase <%= madeBadgeClass %>">
                     <%= claim.status %>
                   </span>
                 </div>
