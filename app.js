@@ -201,7 +201,8 @@ app.use((req, res) => {
         user: req.session?.user || null,
         returnUrl: req.session?.user
             ? (['admin', 'administrator'].includes(String(req.session.user.role || '').toLowerCase()) ? '/admin/dashboard' : '/dashboard')
-            : '/'
+            : '/',
+        returnLabel: req.session?.user ? 'Back to Dashboard' : 'Back to Home'
     });
 });
 
@@ -218,7 +219,8 @@ app.use((err, req, res, next) => {
         user: req.session?.user || null,
         returnUrl: req.session?.user
             ? (['admin', 'administrator'].includes(String(req.session.user.role || '').toLowerCase()) ? '/admin/dashboard' : '/dashboard')
-            : '/'
+            : '/',
+        returnLabel: req.session?.user ? 'Back to Dashboard' : 'Back to Home'
     });
 });
 

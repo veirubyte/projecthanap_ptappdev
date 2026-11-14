@@ -117,8 +117,13 @@
                   </span>
                 <% } %>
               </div>
+              <%
+                const counterpartLabel = claim.report_type === 'lost'
+                  ? (safeUserIsClaimant ? (claim.reporter_name + ' (Owner)') : (claim.claimant_name + ' (Finder)'))
+                  : (safeUserIsClaimant ? (claim.reporter_name + ' (Finder)') : (claim.claimant_name + ' (Claimant)'));
+              %>
               <span class="text-[11px] sm:text-[12px] text-on-surface-variant/80 mt-0.5 truncate">
-                Direct handover coordination with <%= safeUserIsClaimant ? (claim.reporter_name + ' (Finder)') : (claim.claimant_name + ' (Claimant)') %>
+                Direct handover coordination with <%= counterpartLabel %>
               </span>
             </div>
           </div>
@@ -144,50 +149,60 @@
               </div>
             <% } %>
 
-            <!-- '⋯' overflow menu -->
-            <div class="relative" id="menuDropdownWrapper">
-              <button aria-expanded="false" aria-haspopup="true" aria-label="More options" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-on-surface bg-slate-100/70 hover:bg-white border border-slate-200/60 transition-all cursor-pointer" id="moreOptionsBtn" type="button">
-                <span class="material-symbols-outlined text-[20px]">more_horiz</span>
-              </button>
-              <div class="hidden absolute right-0 top-12 w-56 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-xl py-1.5 z-30" id="optionsMenu">
-                <% if (claim.status === 'pending' && (safeUserIsReporter || safeUserIsAdmin)) { %>
-                  <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Approve this ownership claim?');">
-                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+            <%
+              const canApproveOrReject = claim.status === 'pending' && (safeUserIsReporter || safeUserIsAdmin);
+              const canEscalate = !itemMarkedReturned && ['pending', 'approved'].includes(claim.status);
+            %>
+            <% if (canApproveOrReject || canEscalate) { %>
+              <!-- '⋯' overflow menu -->
+              <div class="relative" id="menuDropdownWrapper">
+                <button aria-expanded="false" aria-haspopup="true" aria-label="More options" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-on-surface bg-slate-100/70 hover:bg-white border border-slate-200/60 transition-all cursor-pointer" id="moreOptionsBtn" type="button">
+                  <span class="material-symbols-outlined text-[20px]">more_horiz</span>
+                </button>
+                <div class="hidden absolute right-0 top-12 w-56 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-xl py-1.5 z-30" id="optionsMenu">
+                  <% if (canApproveOrReject) { %>
+                    <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Approve this ownership claim?');">
+                      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                      <% } %>
+                      <input type="hidden" name="action" value="approved"/>
+                      <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
+                        <span>Approve Claim</span>
+                      </button>
+                    </form>
+                    <% if (canEscalate) { %>
+                      <div class="h-px bg-slate-100 my-1"></div>
                     <% } %>
-                    <input type="hidden" name="action" value="approved"/>
-                    <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
-                      <span class="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
-                      <span>Approve Claim</span>
-                    </button>
-                  </form>
-                  <div class="h-px bg-slate-100 my-1"></div>
-                <% } %>
-                <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Escalate this case to Campus Security for arbitration?');">
-                  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
                   <% } %>
-                  <input type="hidden" name="action" value="escalated"/>
-                  <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-error hover:bg-rose-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">shield_person</span>
-                    <span>Escalate to Security</span>
-                  </button>
-                </form>
-                <% if (claim.status === 'pending' && (safeUserIsReporter || safeUserIsAdmin)) { %>
-                  <div class="h-px bg-slate-100 my-1"></div>
-                  <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Reject this ownership claim?');">
-                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
-                    <% } %>
-                    <input type="hidden" name="action" value="rejected"/>
-                    <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer">
-                      <span class="material-symbols-outlined text-[18px] text-slate-400">cancel</span>
-                      <span>Reject Claim</span>
-                    </button>
-                  </form>
-                <% } %>
+                  <% if (canEscalate) { %>
+                    <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Escalate this case to Campus Security for arbitration?');">
+                      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                      <% } %>
+                      <input type="hidden" name="action" value="escalated"/>
+                      <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-error hover:bg-rose-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">shield_person</span>
+                        <span>Escalate to Security</span>
+                      </button>
+                    </form>
+                  <% } %>
+                  <% if (canApproveOrReject) { %>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <form action="/claims/<%= claim.id %>/status" method="POST" onsubmit="return confirm('Reject this ownership claim?');">
+                      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
+                      <% } %>
+                      <input type="hidden" name="action" value="rejected"/>
+                      <button type="submit" class="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px] text-slate-400">cancel</span>
+                        <span>Reject Claim</span>
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
               </div>
-            </div>
+            <% } %>
           </div>
         </div>
 

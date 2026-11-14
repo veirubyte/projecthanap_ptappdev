@@ -413,8 +413,8 @@
 
         const isActive = t === tab;
         btn.className = isActive
-          ? 'pb-3 text-xs font-bold text-primary border-b-2 border-primary -mb-px flex items-center gap-1.5 cursor-pointer'
-          : 'pb-3 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5 cursor-pointer';
+          ? 'shrink-0 pb-3 text-xs font-bold text-primary border-b-2 border-primary -mb-px flex items-center gap-1.5 cursor-pointer'
+          : 'shrink-0 pb-3 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1.5 cursor-pointer';
         btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
         content.classList.toggle('hidden', !isActive);
       });

@@ -11,6 +11,8 @@ const sessionCache = new Map();
 const sessionLastTouch = new Map();
 const SESSION_CACHE_TTL = 15000; // 15 seconds
 const TOUCH_DEBOUNCE_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_SWEEP_INTERVAL_MS = 10 * 60 * 1000; // Sweep expired sessions at most once every 10 minutes
+let lastExpiredSweepAt = 0;
 
 class DatabaseSessionStore extends session.Store {
     constructor() {
@@ -73,13 +75,32 @@ class DatabaseSessionStore extends session.Store {
                 );
             }
 
-            sessionCache.set(sid, { sess, expiresAt: expires.getTime(), cachedAt: Date.now() });
-            sessionLastTouch.set(sid, Date.now());
+            const now = Date.now();
+            sessionCache.set(sid, { sess, expiresAt: expires.getTime(), cachedAt: now });
+            sessionLastTouch.set(sid, now);
+
+            if (now - lastExpiredSweepAt > SESSION_SWEEP_INTERVAL_MS && Math.random() < 0.05) {
+                lastExpiredSweepAt = now;
+                this.purgeExpired().catch((sweepErr) => {
+                    console.warn('[SessionStore] Expired session sweep warning:', sweepErr.message);
+                });
+            }
 
             if (callback) callback(null);
         } catch (err) {
             console.error('[SessionStore] Error saving session:', err.message);
             if (callback) callback(err);
+        }
+    }
+
+    async purgeExpired() {
+        await this.pool.execute('DELETE FROM user_sessions WHERE expires_at < CURRENT_TIMESTAMP', []);
+        const now = Date.now();
+        for (const [key, entry] of sessionCache.entries()) {
+            if (!entry || entry.expiresAt <= now) {
+                sessionCache.delete(key);
+                sessionLastTouch.delete(key);
+            }
         }
     }
 

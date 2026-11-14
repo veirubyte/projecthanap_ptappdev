@@ -45,7 +45,7 @@ async function findCatalogReports({ statusFilter, isCatalog, typeFilter, catFilt
     }
 
     if (q) {
-        querySql += ` AND (r.item_name LIKE ? OR r.description LIKE ? OR r.location_found_lost LIKE ?)`;
+        querySql += ` AND (LOWER(r.item_name) LIKE LOWER(?) OR LOWER(r.description) LIKE LOWER(?) OR LOWER(r.location_found_lost) LIKE LOWER(?))`;
         const wildcard = `%${q}%`;
         params.push(wildcard, wildcard, wildcard);
     }

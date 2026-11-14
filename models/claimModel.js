@@ -86,7 +86,7 @@ async function listClaimsQuery2(params, values = [], connection = db) {
 
 async function showClaimChat(params, values = [], connection = db) {
     return connection.execute(`SELECT c.*, 
-                    r.item_name, r.category, r.description AS item_description, r.location_found_lost, ${primaryImageSelect}, r.status AS item_status, r.user_id AS reporter_id,
+                    r.item_name, r.report_type, r.category, r.description AS item_description, r.location_found_lost, ${primaryImageSelect}, r.status AS item_status, r.user_id AS reporter_id,
                     claimant.full_name AS claimant_name, claimant.email AS claimant_email, claimant_role.role_code AS claimant_role,
                     reporter.full_name AS reporter_name, reporter.email AS reporter_email, reporter_role.role_code AS reporter_role
              FROM claims c

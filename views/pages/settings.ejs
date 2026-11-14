@@ -5,6 +5,12 @@
   const safeClaimsMade = (typeof claimsMade !== 'undefined' && Array.isArray(claimsMade)) ? claimsMade : [];
   var isAdmin = (typeof locals !== 'undefined' && typeof locals.isAdmin !== 'undefined') ? Boolean(locals.isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
   var profileUser = (typeof locals !== 'undefined' && locals.profileUser) ? locals.profileUser : (typeof user !== 'undefined' && user ? { ...user, role_label: (user.role === 'admin' ? 'System Administrator' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff Member' : 'Guest Member'))) } : { full_name: 'User', email: '', role: 'guest', role_label: 'Guest' });
+  const allowedTabs = isAdmin
+    ? ['personal', 'security', 'activity', 'notifications', 'darkmode']
+    : ['personal', 'security', 'posts', 'activity', 'notifications', 'darkmode'];
+  const requestedTab = (typeof activeTab !== 'undefined' && allowedTabs.includes(activeTab))
+    ? activeTab
+    : (isAdmin ? 'security' : 'personal');
 %>
   <html class="h-full hanap-hide-scrollbar" lang="en">
 
@@ -20,14 +26,6 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
       rel="stylesheet" />
 
-    <script>
-      // Theme immediate load
-      if (localStorage.getItem('hanap_theme') === 'dark' || (!('hanap_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script id="tailwind-config">
       tailwind.config = {
@@ -142,9 +140,13 @@
                           <% } %>
 
                             <!-- Tab Buttons -->
+                            <%
+                              const activeTabBtnClass = 'tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-[#09436B] text-white shadow-xs cursor-pointer text-left';
+                              const inactiveTabBtnClass = 'tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left';
+                            %>
                             <nav class="flex flex-col gap-1" id="settingsTabNav">
                               <button type="button" data-tab="personal"
-                                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-[#09436B] text-white shadow-xs cursor-pointer text-left">
+                                class="<%= requestedTab === 'personal' ? activeTabBtnClass : inactiveTabBtnClass %>">
                                 <div class="flex items-center gap-2.5">
                                   <span class="material-symbols-outlined text-[19px]">person</span>
                                   <span>Personal Details</span>
@@ -153,7 +155,7 @@
                               </button>
 
                               <button type="button" data-tab="security"
-                                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 transition-all cursor-pointer text-left">
+                                class="<%= requestedTab === 'security' ? activeTabBtnClass : inactiveTabBtnClass %>">
                                 <div class="flex items-center gap-2.5">
                                   <span class="material-symbols-outlined text-[19px]">shield</span>
                                   <span>Security &amp; Privacy</span>
@@ -161,8 +163,9 @@
                                 <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
                               </button>
 
+                              <% if (!isAdmin) { %>
                               <button type="button" data-tab="posts"
-                                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left">
+                                class="<%= requestedTab === 'posts' ? activeTabBtnClass : inactiveTabBtnClass %>">
                                 <div class="flex items-center gap-2.5">
                                   <span class="material-symbols-outlined text-[19px]">inventory_2</span>
                                   <span>Post &amp; Reports</span>
@@ -172,9 +175,10 @@
                                   <%= safeMyReports.length %>
                                 </span>
                               </button>
+                              <% } %>
 
                               <button type="button" data-tab="activity"
-                                class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left">
+                                class="<%= requestedTab === 'activity' ? activeTabBtnClass : inactiveTabBtnClass %>">
                                 <div class="flex items-center gap-2.5">
                                   <span class="material-symbols-outlined text-[19px]">history</span>
                                   <span>Activity Log</span>
@@ -183,7 +187,7 @@
                               </button>
 
                                   <button type="button" data-tab="notifications"
-                                    class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left">
+                                    class="<%= requestedTab === 'notifications' ? activeTabBtnClass : inactiveTabBtnClass %>">
                                     <div class="flex items-center gap-2.5">
                                       <span class="material-symbols-outlined text-[19px]">notifications</span>
                                       <span>Notification Details</span>
@@ -192,7 +196,7 @@
                                   </button>
 
                                   <button type="button" data-tab="darkmode"
-                                    class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left">
+                                    class="<%= requestedTab === 'darkmode' ? activeTabBtnClass : inactiveTabBtnClass %>">
                                     <div class="flex items-center gap-2.5">
                                       <span
                                         class="material-symbols-outlined text-[19px] text-amber-500">dark_mode</span>
@@ -211,7 +215,7 @@
 
                           <!-- ================= PANEL 1: PERSONAL DETAILS ================= -->
                           <div id="panel-personal"
-                            class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6">
+                            class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6<%= requestedTab === 'personal' ? '' : ' hidden' %>">
                             <div class="border-b border-slate-100 pb-4">
                               <h2 class="text-lg font-bold text-slate-900">Personal Details</h2>
                               <p class="text-xs text-slate-500">Update your account information, institutional contacts,
@@ -264,7 +268,7 @@
                                       <input type="text" id="department" name="department"
                                         placeholder="e.g. BSIT / College of Computer Studies"
                                         value="<%= profileUser.department || '' %>"
-                                        class="w-full h-11 px-4 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] <%= ['student', 'staff'].includes(profileUser.role) ? '' : 'bg-slate-100/80 text-slate-500 cursor-not-allowed' %>"
+                                        class="w-full h-11 px-4 rounded-xl border border-slate-200/90 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] <%= ['student', 'staff'].includes(profileUser.role) ? 'bg-white/80 text-slate-900' : 'bg-slate-100/80 text-slate-500 cursor-not-allowed' %>"
                                         <%= ['student', 'staff'].includes(profileUser.role) ? ''
                                         : 'disabled aria-disabled="true" title="Department is editable for student and staff accounts."'
                                         %>
@@ -323,7 +327,7 @@
 
                           <!-- ================= PANEL 2: SECURITY & PRIVACY ================= -->
                           <div id="panel-security"
-                            class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
+                            class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6<%= requestedTab === 'security' ? '' : ' hidden' %>">
                             <div class="border-b border-slate-100 pb-4">
                               <h2 class="text-lg font-bold text-slate-900">Security &amp; Privacy</h2>
                               <p class="text-xs text-slate-500">Manage your password, privacy masking, and active campus
@@ -523,6 +527,7 @@
                             </div>
                           </div>
 
+                          <% if (!isAdmin) { %>
                           <!-- ================= PANEL 3: POSTS & REPORTS ================= -->
                           <div id="panel-posts"
                             class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
@@ -619,6 +624,7 @@
                                 </div>
                                 <% } %>
                           </div>
+                          <% } %>
 
                           <!-- ================= PANEL 4: ACTIVITY LOG ================= -->
                           <div id="panel-activity"
@@ -831,7 +837,7 @@
           const tabButtons = document.querySelectorAll('.tab-btn');
           const panels = document.querySelectorAll('.settings-panel');
 
-          function switchTab(tabName) {
+          function switchTab(tabName, updateHash = true) {
             panels.forEach(p => p.classList.add('hidden'));
             const activePanel = document.getElementById(`panel-${tabName}`);
             if (activePanel) activePanel.classList.remove('hidden');
@@ -844,20 +850,24 @@
               }
             });
 
-            history.replaceState(null, null, `#${tabName}`);
+            if (updateHash) {
+              history.replaceState(null, null, `#${tabName}`);
+            }
           }
 
           tabButtons.forEach(btn => {
             btn.addEventListener('click', () => {
               const tab = btn.getAttribute('data-tab');
-              switchTab(tab);
+              switchTab(tab, true);
             });
           });
 
-          // Handle Hash on load
+          // Handle Hash or server-requested active tab on load
+          const defaultTab = '<%= requestedTab %>';
           const hash = window.location.hash.replace('#', '');
-          if (hash && document.getElementById(`panel-${hash}`)) {
-            switchTab(hash);
+          const initialTab = (hash && document.getElementById(`panel-${hash}`)) ? hash : defaultTab;
+          if (initialTab && document.getElementById(`panel-${initialTab}`)) {
+            switchTab(initialTab, Boolean(hash));
           }
         })();
 

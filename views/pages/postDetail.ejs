@@ -412,30 +412,6 @@
                   </a>
                 </div>
               </div>
-            <% } else if (user.role === 'admin') { %>
-              <!-- Admin Administrative Console State -->
-              <div class="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-950 dark:text-indigo-200 space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2 font-bold text-xs text-indigo-900 dark:text-indigo-300">
-                    <span class="material-symbols-outlined text-indigo-700 dark:text-indigo-400 text-base">admin_panel_settings</span>
-                    <span>Administrative Oversight Active</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 text-[10px] font-extrabold uppercase tracking-wider">Officer Mode</span>
-                </div>
-                <p class="text-xs text-indigo-900/80 dark:text-indigo-300/80 leading-relaxed">
-                  As an administrator, you have full custody and moderation authority. Quick management actions (Edit & Delete) are pinned to the top case bar.
-                </p>
-                <div class="pt-1 flex flex-wrap items-center gap-2">
-                  <a href="/admin/reports" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold shadow-2xs transition">
-                    <span class="material-symbols-outlined text-sm">archive</span>
-                    <span>All Reports Ledger</span>
-                  </a>
-                  <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-slate-700 text-xs font-bold shadow-2xs transition">
-                    <span class="material-symbols-outlined text-sm">dashboard</span>
-                    <span>Admin Console</span>
-                  </a>
-                </div>
-              </div>
             <% } else if (existingClaim && existingClaim.status !== 'rejected') { %>
               <!-- Claim Already Submitted -->
               <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 space-y-2">
