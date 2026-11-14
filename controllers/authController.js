@@ -1,8 +1,9 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const userModel = require('../models/userModel');
-const guardianLinkModel = require('../models/guardianLinkModel');
 const { getConnection } = require('../models/connectionModel');
+const DatabaseSessionStore = require('../config/sessionStore');
+const { timingSafeMatch } = require('../config/security');
 const {
     CSPC_INSTITUTIONAL_DOMAINS,
     isValidEmailSyntax,
@@ -12,12 +13,19 @@ const {
     isInstitutional,
     isGuest
 } = require('../config/roles');
-const { issueCode, verifyCode, issuePasswordResetCode } = require('../services/mfa');
+const {
+    issueCode,
+    verifyCode,
+    issuePasswordResetCode,
+    verifyPasswordResetCode: verifyPasswordResetChallenge
+} = require('../services/mfa');
 const {
     isDeviceTrustedForUser,
     recordDevice2FaVerification,
     touchDeviceLogin
 } = require('../services/deviceTrust');
+
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(crypto.randomBytes(24).toString('hex'), 10);
 
 
 /**
@@ -68,12 +76,19 @@ async function saveSession(req) {
 }
 
 async function establishAuthenticatedSession(req, res, sessionUser) {
-    delete req.session.pendingMfaUser;
-    delete req.session.pendingMfaCategory;
-    delete req.session.mfaCooldownUntil;
-    delete req.session.mfaAttemptsRemaining;
-    delete req.session.validMfaCodeHashes;
-    req.session.csrfToken = req.session.csrfToken || crypto.randomBytes(24).toString('hex');
+    if (req.session && typeof req.session.regenerate === 'function') {
+        await new Promise((resolve, reject) => {
+            req.session.regenerate((err) => (err ? reject(err) : resolve()));
+        });
+    } else {
+        delete req.session.pendingMfaUser;
+        delete req.session.pendingMfaCategory;
+        delete req.session.mfaCooldownUntil;
+        delete req.session.mfaAttemptsRemaining;
+        delete req.session.validMfaCodeHashes;
+    }
+
+    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
     res.locals.csrfToken = req.session.csrfToken;
     req.session.user = sessionUser;
     await saveSession(req);
@@ -309,7 +324,7 @@ const login = async (req, res) => {
                 email,
                 invalidFields: ['email'],
                 errorTitle: 'Institutional account required',
-                errorMessage: 'The email you entered is not a recognized CSPC institutional email.\nIf you are a parent, guardian, or external guest, please select "Guest" to continue.',
+                errorMessage: 'The email you entered is not a recognized CSPC institutional email.\nIf you are a campus visitor or external guest, please select "Guest" to continue.',
                 errorType: 'institutional_domain_required',
                 action: 'switch_to_guest',
                 status: 400
@@ -323,6 +338,7 @@ const login = async (req, res) => {
 
         // Account does not exist
         if (rows.length === 0) {
+            await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
             if (category === 'institution') {
                 return renderLogin(res, {
                     category: 'institution',
@@ -378,14 +394,14 @@ const login = async (req, res) => {
             });
         }
 
-        // Case B: User selected Institution, but account has a Guest or Parent role.
+        // Case B: User selected Institution, but account has a Guest role.
         if (category === 'institution' && isGuest(userRecord)) {
             return renderLogin(res, {
                 category: 'institution',
                 email,
                 invalidFields: ['email'],
                 errorTitle: 'Institutional account required',
-                errorMessage: 'Your email is not a recognized CSPC institutional email. If you are a parent, guardian, or guest, please select Guest.',
+                errorMessage: 'Your email is not a recognized CSPC institutional email. If you are a campus visitor or guest, please select Guest.',
                 errorType: 'guest_account_detected',
                 action: 'switch_to_guest',
                 status: 403
@@ -486,8 +502,6 @@ const register = async (req, res) => {
     const cleanEmail = rawEmail.toLowerCase();
     const password = typeof req.body.password === 'string' ? req.body.password : '';
     const confirmPassword = typeof req.body.confirm_password === 'string' ? req.body.confirm_password : '';
-    const studentEmailInput = typeof req.body.student_email === 'string' ? req.body.student_email.trim() : '';
-    const studentEmail = studentEmailInput.toLowerCase();
     const institutionalRole = typeof req.body.institutional_role === 'string'
         ? req.body.institutional_role.trim().toLowerCase()
         : '';
@@ -495,7 +509,6 @@ const register = async (req, res) => {
     const values = {
         full_name: rawFullName,
         email: rawEmail,
-        student_email: studentEmailInput,
         institutional_role: institutionalRole
     };
 
@@ -573,17 +586,6 @@ const register = async (req, res) => {
         });
     }
 
-    if (category === 'guest' && studentEmail && !isInstitutionalEmail(studentEmail)) {
-        return renderRegister(res, {
-            category,
-            values,
-            invalidFields: ['student_email'],
-            errorTitle: 'Invalid student email',
-            errorMessage: 'Enter a valid CSPC institutional Student email, or leave this field blank to register as a Guest.',
-            status: 400
-        });
-    }
-
     // 4. Institutional domain validation if category is Institution
     if (category === 'institution') {
         if (!isInstitutionalEmail(cleanEmail)) {
@@ -592,7 +594,7 @@ const register = async (req, res) => {
                 values,
                 invalidFields: ['email'],
                 errorTitle: 'Institutional email required',
-                errorMessage: 'Institution registration requires an official @my.cspc.edu.ph or @cspc.edu.ph email address.\nIf you are a parent or guest, please switch to the Guest registration tab.',
+                errorMessage: 'Institution registration requires an official @my.cspc.edu.ph or @cspc.edu.ph email address.\nIf you are a campus visitor or guest, please switch to the Guest registration tab.',
                 errorType: 'institutional_domain_required',
                 action: 'switch_to_guest',
                 status: 400
@@ -645,8 +647,6 @@ const register = async (req, res) => {
 
         const passwordHash = await bcrypt.hash(password, 10);
         const connection = await getConnection();
-        let parentRequestCreated = false;
-        let studentMatchFound = false;
         try {
             await connection.beginTransaction();
 
@@ -656,19 +656,7 @@ const register = async (req, res) => {
                 throw new Error(`Account role is missing from account_roles: ${roleCode}`);
             }
 
-            let studentId = null;
-            if (category === 'guest' && studentEmail) {
-                const [studentRows] = await userModel.registerQuery3([studentEmail], [], connection);
-                studentMatchFound = studentRows.length > 0;
-                if (studentMatchFound) studentId = studentRows[0].id;
-            }
-
-            const [insertResult] = await userModel.registerQuery4([rawFullName, cleanEmail, passwordHash, roleRows[0].id], [], connection);
-
-            if (studentId !== null) {
-                await guardianLinkModel.register([insertResult.insertId, studentId], [], connection);
-                parentRequestCreated = true;
-            }
+            await userModel.registerQuery4([rawFullName, cleanEmail, passwordHash, roleRows[0].id], [], connection);
 
             await connection.commit();
         } catch (error) {
@@ -679,11 +667,7 @@ const register = async (req, res) => {
         }
 
         // 9. Redirect to login with explicit success parameters
-        const successMsg = parentRequestCreated
-            ? 'Your Guest account has been created. The linked Student must approve your Parent / Guardian request in Account Settings.'
-            : category === 'guest' && studentEmail && !studentMatchFound
-                ? 'No Student account matched that email. Your account was created as a Guest.'
-                : 'Your HANAP account has been created. You can now sign in using your registered credentials.';
+        const successMsg = 'Your HANAP account has been created. You can now sign in using your registered credentials.';
         return res.redirect(`/login?msg=${encodeURIComponent(successMsg)}&registered_email=${encodeURIComponent(cleanEmail)}&category=${category}`);
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -923,13 +907,14 @@ const verifyPasswordResetCode = async (req, res) => {
     }
 
     try {
-        const outcome = await verifyCode(resetState.userId, submittedCode, resetState.validCodeHashes);
+        const outcome = await verifyPasswordResetChallenge(resetState.userId, submittedCode, resetState.validCodeHashes);
 
         if (outcome.status === 'verified') {
             const token = crypto.randomBytes(32).toString('hex');
             resetState.step = 'reset';
             resetState.verified = true;
             resetState.resetToken = token;
+            await saveSession(req);
             return res.redirect('/forgot-password');
         }
 
@@ -998,7 +983,7 @@ const completePasswordReset = async (req, res) => {
 
     const { new_password, confirm_password, token } = req.body;
 
-    if (!token || token !== resetState.resetToken) {
+    if (!token || !timingSafeMatch(token, resetState.resetToken)) {
         return renderForgotPassword(res, {
             step: 'reset',
             category: resetState.category,
@@ -1046,6 +1031,7 @@ const completePasswordReset = async (req, res) => {
     try {
         const passwordHash = await bcrypt.hash(passwordVal, 10);
         await userModel.updateSecurityQuery2([passwordHash, resetState.userId]);
+        await DatabaseSessionStore.destroyUserSessionsForUser(resetState.userId, null, req.sessionStore);
 
         // Clean up reset session
         delete req.session.pwdReset;

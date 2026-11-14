@@ -272,7 +272,14 @@
         </div>
 
         <!-- Bottom Floating Glass Pill Input Bar -->
+        <% const isChatClosed = ['rejected', 'returned'].includes(String(claim.status || '').toLowerCase()); %>
         <div class="claim-chat-composer p-3 sm:px-6 sm:py-4 bg-white/60 backdrop-blur-xl border-t border-slate-200/60 shrink-0">
+          <% if (isChatClosed) { %>
+            <div class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-slate-100/90 border border-slate-200 text-slate-600 text-xs font-semibold">
+              <span class="material-symbols-outlined text-[16px] text-slate-500">lock</span>
+              <span>This claim conversation is closed (<%= claim.status %>) and no longer accepts new messages.</span>
+            </div>
+          <% } else { %>
           <form class="claim-chat-form flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-full px-3 py-1.5 sm:px-4 sm:py-2 border border-slate-200/80 shadow-[0_4px_16px_rgba(15,23,42,0.04)] focus-within:ring-2 focus-within:ring-sky-500/40 focus-within:border-sky-400 focus-within:bg-white transition-all" id="chatForm" action="/claims/<%= claim.id %>/messages" method="POST">
             <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
@@ -299,6 +306,7 @@
               <span class="material-symbols-outlined text-[19px]">arrow_upward</span>
             </button>
           </form>
+          <% } %>
         </div>
       </div>
     </div>

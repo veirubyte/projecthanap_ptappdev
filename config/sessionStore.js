@@ -115,6 +115,54 @@ class DatabaseSessionStore extends session.Store {
             if (callback) callback(err);
         }
     }
+
+    async destroyUserSessions(userId, exceptSid = null) {
+        if (!userId) return;
+        const targetId = String(userId);
+
+        for (const [sid, cached] of sessionCache.entries()) {
+            const cachedUserId = cached?.sess?.user?.id;
+            if (cachedUserId !== undefined && String(cachedUserId) === targetId && sid !== exceptSid) {
+                sessionCache.delete(sid);
+                sessionLastTouch.delete(sid);
+            }
+        }
+
+        try {
+            const whereClause = this.pool.isPostgres
+                ? "(sess::jsonb->'user'->>'id') = ?"
+                : "CAST(JSON_UNQUOTE(JSON_EXTRACT(sess, '$.user.id')) AS CHAR) = ?";
+            const params = exceptSid ? [targetId, exceptSid] : [targetId];
+            const exceptClause = exceptSid ? ' AND sid <> ?' : '';
+
+            const [rows] = await this.pool.execute(
+                `SELECT sid FROM user_sessions WHERE ${whereClause}${exceptClause}`,
+                params
+            );
+            for (const row of rows || []) {
+                if (row.sid) {
+                    sessionCache.delete(row.sid);
+                    sessionLastTouch.delete(row.sid);
+                }
+            }
+            await this.pool.execute(
+                `DELETE FROM user_sessions WHERE ${whereClause}${exceptClause}`,
+                params
+            );
+        } catch (err) {
+            console.error('[SessionStore] Error revoking user sessions:', err.message);
+        }
+    }
 }
+
+DatabaseSessionStore.destroyUserSessionsForUser = async function destroyUserSessionsForUser(userId, exceptSid = null, sessionStore = null) {
+    if (!userId) return;
+    if (sessionStore && typeof sessionStore.destroyUserSessions === 'function') {
+        await sessionStore.destroyUserSessions(userId, exceptSid);
+        return;
+    }
+    const store = new DatabaseSessionStore();
+    await store.destroyUserSessions(userId, exceptSid);
+};
 
 module.exports = DatabaseSessionStore;

@@ -6,7 +6,12 @@ const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 const RUNTIME_FALLBACK_SECRET = crypto.randomBytes(32).toString('hex');
 
 function getSecret() {
-    return process.env.SESSION_SECRET || RUNTIME_FALLBACK_SECRET;
+    const configuredSecret = String(process.env.SESSION_SECRET || '').trim();
+    if (configuredSecret) return configuredSecret;
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('SESSION_SECRET environment variable must be configured in production.');
+    }
+    return RUNTIME_FALLBACK_SECRET;
 }
 
 function parseCookieHeader(cookieHeader, name) {

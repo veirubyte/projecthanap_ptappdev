@@ -3,10 +3,8 @@
   const mfaEnabledForView = typeof mfaEnabled !== 'undefined' && Boolean(mfaEnabled);
   const safeMyReports = (typeof myReports !== 'undefined' && Array.isArray(myReports)) ? myReports : [];
   const safeClaimsMade = (typeof claimsMade !== 'undefined' && Array.isArray(claimsMade)) ? claimsMade : [];
-  const safeGuardianRequests = (typeof guardianRequests !== 'undefined' && Array.isArray(guardianRequests)) ? guardianRequests : [];
-  const safeGuardianLinks = (typeof guardianLinks !== 'undefined' && Array.isArray(guardianLinks)) ? guardianLinks : [];
   var isAdmin = (typeof locals !== 'undefined' && typeof locals.isAdmin !== 'undefined') ? Boolean(locals.isAdmin) : (typeof user !== 'undefined' && user && user.role === 'admin');
-  var profileUser = (typeof locals !== 'undefined' && locals.profileUser) ? locals.profileUser : (typeof user !== 'undefined' && user ? { ...user, role_label: (user.role === 'admin' ? 'System Administrator' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff Member' : (user.role === 'parent' ? 'Parent / Guest' : 'Guest Member')))) } : { full_name: 'User', email: '', role: 'guest', role_label: 'Guest' });
+  var profileUser = (typeof locals !== 'undefined' && locals.profileUser) ? locals.profileUser : (typeof user !== 'undefined' && user ? { ...user, role_label: (user.role === 'admin' ? 'System Administrator' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff Member' : 'Guest Member'))) } : { full_name: 'User', email: '', role: 'guest', role_label: 'Guest' });
 %>
   <html class="h-full hanap-hide-scrollbar" lang="en">
 
@@ -184,22 +182,6 @@
                                 <span class="material-symbols-outlined text-[16px] opacity-70">chevron_right</span>
                               </button>
 
-                              <% if (['student', 'guest' , 'parent' ].includes(profileUser.role)) { %>
-                                <button type="button" data-tab="connections"
-                                  class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left">
-                                  <div class="flex items-center gap-2.5">
-                                    <span class="material-symbols-outlined text-[19px]">family_restroom</span>
-                                    <span>Student Connections</span>
-                                  </div>
-                                  <% if (profileUser.role==='student' && safeGuardianRequests.length> 0) { %>
-                                    <span
-                                      class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
-                                      <%= safeGuardianRequests.length %>
-                                    </span>
-                                    <% } %>
-                                </button>
-                                <% } %>
-
                                   <button type="button" data-tab="notifications"
                                     class="tab-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 cursor-pointer text-left">
                                     <div class="flex items-center gap-2.5">
@@ -226,105 +208,6 @@
 
                     <!-- ================= MAIN CONTENT PANELS (8 cols) ================= -->
                     <div class="lg:col-span-8 flex flex-col gap-6" id="settingsPanelsContainer">
-
-                      <% if (['student', 'guest' , 'parent' ].includes(profileUser.role)) { %>
-                        <div id="panel-connections"
-                          class="settings-panel rounded-3xl p-6 sm:p-8 bg-white/90 backdrop-blur-xl border border-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.04)] flex flex-col gap-6 hidden">
-                          <div class="border-b border-slate-100 pb-4">
-                            <h2 class="text-lg font-bold text-slate-900">Student Connections</h2>
-                            <p class="text-xs text-slate-500">Parent / Guardian access is granted only after the Student
-                              approves a request.</p>
-                          </div>
-
-                          <% if (profileUser.role==='student' ) { %>
-                            <div class="space-y-3">
-                              <h3 class="text-sm font-bold text-slate-800">Pending Parent / Guardian requests</h3>
-                              <% if (safeGuardianRequests.length===0) { %>
-                                <p class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
-                                  You have no pending connection requests.</p>
-                                <% } else { %>
-                                  <% safeGuardianRequests.forEach(request=> { %>
-                                    <div
-                                      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
-                                      <div class="min-w-0">
-                                        <p class="text-sm font-bold text-slate-900 truncate">
-                                          <%= request.guardian_name %>
-                                        </p>
-                                        <p class="text-xs text-slate-500 truncate">
-                                          <%= request.guardian_email %>
-                                        </p>
-                                        <p class="text-[11px] text-slate-400 mt-1">Requested <%= new
-                                            Date(request.requested_at).toLocaleString() %>
-                                        </p>
-                                      </div>
-                                      <div class="flex items-center gap-2 shrink-0">
-                                        <form action="/settings/guardian-links/<%= request.id %>/reject" method="POST">
-                                          <% if (typeof csrfToken !=='undefined' && csrfToken) { %><input type="hidden"
-                                              name="_csrf" value="<%= csrfToken %>" />
-                                            <% } %>
-                                              <button type="submit"
-                                                class="px-3 py-2 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold hover:bg-rose-50">Reject</button>
-                                        </form>
-                                        <form action="/settings/guardian-links/<%= request.id %>/approve" method="POST">
-                                          <% if (typeof csrfToken !=='undefined' && csrfToken) { %><input type="hidden"
-                                              name="_csrf" value="<%= csrfToken %>" />
-                                            <% } %>
-                                              <button type="submit"
-                                                class="px-3 py-2 rounded-xl bg-[#09436B] text-white text-xs font-bold hover:bg-[#2B5B84]">Approve</button>
-                                        </form>
-                                      </div>
-                                    </div>
-                                    <% }) %>
-                                      <% } %>
-                            </div>
-                            <% } else { %>
-                              <div class="space-y-3">
-                                <h3 class="text-sm font-bold text-slate-800">Request a Student connection</h3>
-                                <p class="text-xs text-slate-500">Enter the Student's CSPC email. Your account remains
-                                  Guest until that Student approves the request.</p>
-                                <form action="/settings/guardian-links" method="POST"
-                                  class="flex flex-col sm:flex-row gap-3">
-                                  <% if (typeof csrfToken !=='undefined' && csrfToken) { %><input type="hidden"
-                                      name="_csrf" value="<%= csrfToken %>" />
-                                    <% } %>
-                                      <input type="email" name="student_email" required autocomplete="email"
-                                        placeholder="student@my.cspc.edu.ph"
-                                        class="flex-1 min-w-0 h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:ring-2 focus:ring-sky-500" />
-                                      <button type="submit"
-                                        class="px-5 h-11 rounded-xl bg-[#09436B] text-white text-xs font-bold hover:bg-[#2B5B84]">Send
-                                        request</button>
-                                </form>
-                              </div>
-
-                              <div class="space-y-3">
-                                <h3 class="text-sm font-bold text-slate-800">Your Student connections</h3>
-                                <% if (safeGuardianLinks.length===0) { %>
-                                  <p class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
-                                    No Student connection requests yet.</p>
-                                  <% } else { %>
-                                    <% safeGuardianLinks.forEach(link=> { %>
-                                      <div
-                                        class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
-                                        <div class="min-w-0">
-                                          <p class="text-sm font-bold text-slate-900 truncate">
-                                            <%= link.student_name %>
-                                          </p>
-                                          <p class="text-xs text-slate-500 truncate">
-                                            <%= link.student_email %>
-                                          </p>
-                                        </div>
-                                        <span
-                                          class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold <%= link.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : (link.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') %>">
-                                          <%= link.status==='approved' ? 'Approved' : (link.status==='rejected'
-                                            ? 'Rejected' : 'Pending approval' ) %>
-                                        </span>
-                                      </div>
-                                      <% }) %>
-                                        <% } %>
-                              </div>
-                              <% } %>
-                        </div>
-                        <% } %>
 
                           <!-- ================= PANEL 1: PERSONAL DETAILS ================= -->
                           <div id="panel-personal"
@@ -381,9 +264,9 @@
                                       <input type="text" id="department" name="department"
                                         placeholder="e.g. BSIT / College of Computer Studies"
                                         value="<%= profileUser.department || '' %>"
-                                        class="w-full h-11 px-4 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] <%= profileUser.role === 'student' ? '' : 'bg-slate-100/80 text-slate-500 cursor-not-allowed' %>"
-                                        <%=profileUser.role==='student' ? ''
-                                        : 'disabled aria-disabled="true" title="Department is only editable for student accounts."'
+                                        class="w-full h-11 px-4 rounded-xl border border-slate-200/90 bg-white/80 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6] <%= ['student', 'staff'].includes(profileUser.role) ? '' : 'bg-slate-100/80 text-slate-500 cursor-not-allowed' %>"
+                                        <%= ['student', 'staff'].includes(profileUser.role) ? ''
+                                        : 'disabled aria-disabled="true" title="Department is editable for student and staff accounts."'
                                         %>
                                       />
                                     </div>
@@ -836,7 +719,7 @@
                                           another student files a claim on an item you reported.</span>
                                       </div>
                                     </div>
-                                    <input checked
+                                    <input <%= Number(profileUser.notify_claims ?? 1) === 1 ? 'checked' : '' %>
                                       class="w-5 h-5 text-[#2B5B84] rounded-md focus:ring-sky-500 accent-[#2B5B84] cursor-pointer"
                                       type="checkbox" name="notify_claims" />
                                   </div>
@@ -853,7 +736,7 @@
                                           in your active claim coordination conversation.</span>
                                       </div>
                                     </div>
-                                    <input checked
+                                    <input <%= Number(profileUser.notify_chat ?? 1) === 1 ? 'checked' : '' %>
                                       class="w-5 h-5 text-[#2B5B84] rounded-md focus:ring-sky-500 accent-[#2B5B84] cursor-pointer"
                                       type="checkbox" name="notify_chat" />
                                   </div>
@@ -870,7 +753,7 @@
                                           high-priority lost valuables (IDs, keys, laptops).</span>
                                       </div>
                                     </div>
-                                    <input checked
+                                    <input <%= Number(profileUser.notify_broadcasts ?? 1) === 1 ? 'checked' : '' %>
                                       class="w-5 h-5 text-[#2B5B84] rounded-md focus:ring-sky-500 accent-[#2B5B84] cursor-pointer"
                                       type="checkbox" name="notify_broadcasts" />
                                   </div>

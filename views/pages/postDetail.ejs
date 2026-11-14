@@ -436,7 +436,7 @@
                   </a>
                 </div>
               </div>
-            <% } else if (existingClaim) { %>
+            <% } else if (existingClaim && existingClaim.status !== 'rejected') { %>
               <!-- Claim Already Submitted -->
               <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 space-y-2">
                 <div class="flex items-center gap-2 font-bold text-xs">
@@ -476,6 +476,17 @@
                 Claims can only be submitted for active item reports.
               </div>
             <% } else { %>
+              <% if (existingClaim && existingClaim.status === 'rejected') { %>
+                <div class="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200 text-xs space-y-1">
+                  <div class="flex items-center gap-1.5 font-bold">
+                    <span class="material-symbols-outlined text-sm text-rose-600 dark:text-rose-400">info</span>
+                    <span>Previous Claim Rejected — Submit Updated Proof</span>
+                  </div>
+                  <p class="text-[11px] text-rose-800 dark:text-rose-300/90">
+                    Your earlier ownership claim on this case was declined. You may update your verification answers below to file a new claim.
+                  </p>
+                </div>
+              <% } %>
               <!-- Active Claim Verification Form -->
               <!-- Finder / Owner Asks Speech Box -->
               <div class="claim-question-card relative p-3.5 rounded-2xl bg-sky-50/80 border border-sky-100/90 shadow-2xs">
@@ -568,7 +579,7 @@
               <!-- Security Desk Link -->
               <div class="pt-2 text-center border-t border-slate-100">
                 <a class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-primary transition-colors" href="/claims/guest-claim?case=<%= item.id %>">
-                  Parent or Guest? Route to Security &rarr;
+                  Campus Guest? Route to Security &rarr;
                 </a>
               </div>
             <% } %>

@@ -25,12 +25,8 @@ const HELP_TOPICS = [
         reply: 'Open the Catalog (/catalog) to browse item reports. Use the available search and filters to narrow listings, then open a listing to see its details. Sign in if you want to submit a claim or report an item.'
     },
     {
-        matches: /\b(guardian|parent link|link.*student|student.*link)\b/i,
-        reply: 'A parent or guardian can request a student link from Settings. The student must approve the request. Parents and guests can browse public listings; for claiming a recovered item, follow the Security Desk guide at /claims/guest-claim.'
-    },
-    {
-        matches: /\b(security desk|security office|custody|hand.?over|guest|visitor|parent)\b/i,
-        reply: 'For guest or Security Desk claims, open the Security Desk guide (/claims/guest-claim) and follow its current identity-verification instructions. Guests can browse public listings, but cannot report found items; found property should be surrendered to Campus Security.'
+        matches: /\b(security desk|security office|custody|hand.?over|guest|visitor)\b/i,
+        reply: 'Guests can browse the public Catalog, report lost items from their Dashboard, and verify identity at the Security Desk (/claims/guest-claim). For physical custody items, visit Campus Security with a valid ID.'
     },
     {
         matches: /\b(chat|message|messaging|contact.*finder|contact.*claimant|phone number)\b/i,

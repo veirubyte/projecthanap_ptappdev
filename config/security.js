@@ -51,6 +51,16 @@ function csrfTokenInjector(req, res, next) {
     next();
 }
 
+function timingSafeMatch(provided, expected) {
+    if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+    const providedBuf = Buffer.from(provided, 'utf8');
+    const expectedBuf = Buffer.from(expected, 'utf8');
+    if (providedBuf.length === 0 || providedBuf.length !== expectedBuf.length) {
+        return false;
+    }
+    return crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
 function csrfProtection(req, res, next) {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         return next();
@@ -68,7 +78,7 @@ function csrfProtection(req, res, next) {
                           req.headers['x-csrf-token'] ||
                           req.headers['csrf-token'];
 
-    if (!providedToken || providedToken !== sessionToken) {
+    if (!timingSafeMatch(providedToken, sessionToken)) {
         if ((req.headers.accept || '').includes('application/json')) {
             return res.status(403).json({ error: 'Invalid or missing CSRF token.' });
         }
@@ -90,6 +100,7 @@ function csrfProtectionExcept(exemptPaths) {
 
 module.exports = {
     rateLimiter,
+    timingSafeMatch,
     csrfTokenInjector,
     csrfProtection,
     csrfProtectionExcept

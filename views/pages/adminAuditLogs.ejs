@@ -1,10 +1,27 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html class="hanap-hide-scrollbar" lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Security Audit Logs - CSPC Admin</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#09436b",
+            "primary-container": "#2b5b84",
+            "secondary": "#0058be",
+            "surface": "#faf8ff",
+            "on-surface": "#131b2e",
+            "on-surface-variant": "#42474e"
+          }
+        }
+      }
+    };
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <%- include('../partials/themeSetup') %>
@@ -13,12 +30,12 @@
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col selection:bg-blue-600/15 selection:text-blue-700 relative overflow-x-hidden">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col selection:bg-blue-600/15 selection:text-blue-700 relative overflow-x-hidden">
 <% const auditLogsList = (typeof logs !== 'undefined' && Array.isArray(logs)) ? logs : ((typeof auditLogs !== 'undefined' && Array.isArray(auditLogs)) ? auditLogs : []); %>
   <!-- Ambient Background Blobs -->
   <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-    <div class="absolute -top-[18%] -left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-br from-blue-300/30 via-indigo-200/20 to-transparent blur-[120px]"></div>
-    <div class="absolute top-[20%] -right-[15%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-bl from-sky-200/30 via-teal-100/20 to-transparent blur-[130px]"></div>
+    <div class="absolute -top-[18%] -left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-br from-blue-300/30 via-indigo-200/20 to-transparent dark:from-blue-600/15 dark:via-indigo-500/10 blur-[120px]"></div>
+    <div class="absolute top-[20%] -right-[15%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-bl from-sky-200/30 via-teal-100/20 to-transparent dark:from-sky-500/15 dark:via-teal-500/10 blur-[130px]"></div>
   </div>
 
   <%- include('../partials/navbar', { active: 'admin-audit-logs' }) %>
@@ -27,21 +44,21 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider mb-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 border border-blue-200 dark:border-blue-800/70 text-xs font-bold uppercase tracking-wider mb-2">
           <span class="material-symbols-outlined text-[15px]">policy</span>
           Immutable Governance Ledger
         </div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">System Security & Audit Logs</h1>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">System Security & Audit Logs</h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
           Chronological record of administrative actions, custody releases, role assignments, and archive dispositions.
         </p>
       </div>
       <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
-        <a href="/admin/audit-logs/export" download="cspc_security_audit_logs.csv" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/80 bg-white/80 backdrop-blur-md text-xs font-semibold text-slate-700 hover:bg-white shadow-sm hover:shadow transition-all cursor-pointer">
+        <a href="/admin/audit-logs/export" download="cspc_security_audit_logs.csv" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 shadow-sm hover:shadow transition-all cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">download</span>
           <span>Export CSV</span>
         </a>
-        <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition-all">
+        <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all">
           <span class="material-symbols-outlined text-[16px]">arrow_back</span>
           <span>Admin Console</span>
         </a>
@@ -49,25 +66,25 @@
     </div>
 
     <!-- Search & Ledger Card -->
-    <div class="bg-white/85 backdrop-blur-xl rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div class="p-4 sm:p-5 sm:px-6 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+    <div class="bg-white/85 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="p-4 sm:p-5 sm:px-6 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div class="relative w-full sm:max-w-xs">
           <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2">search</span>
           <input
             type="text"
             id="auditSearchInput"
             placeholder="Filter by officer, action, or IP..."
-            class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50/70 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 focus:outline-none"
+            class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/80 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 focus:outline-none"
           />
         </div>
-        <div class="text-xs font-semibold text-slate-500">
-          Total Logged Events: <span class="text-slate-900 font-bold"><%= (typeof logs !== 'undefined' && logs) ? logs.length : 0 %></span>
+        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          Total Logged Events: <span class="text-slate-900 dark:text-slate-100 font-bold"><%= (typeof logs !== 'undefined' && logs) ? logs.length : 0 %></span>
         </div>
       </div>
 
       <div class="overflow-x-auto hanap-hide-scrollbar">
         <table class="w-full text-left text-xs min-w-[640px]">
-          <thead class="bg-slate-50/80 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200/70">
+          <thead class="bg-slate-50/80 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/70 dark:border-slate-800">
             <tr>
               <th class="py-3.5 px-6">Log ID</th>
               <th class="py-3.5 px-6">Administrator</th>
@@ -76,24 +93,24 @@
               <th class="py-3.5 px-6 text-right">Timestamp</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-200/60" id="auditTableBody">
+          <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800" id="auditTableBody">
             <% if (!auditLogsList || auditLogsList.length === 0) { %>
               <tr>
-                <td colspan="5" class="py-12 text-center text-slate-400 font-medium">
+                <td colspan="5" class="py-12 text-center text-slate-400 dark:text-slate-500 font-medium">
                   No administrative audit logs recorded yet.
                 </td>
               </tr>
             <% } else { %>
               <% auditLogsList.forEach(log => { %>
-                <tr class="audit-row hover:bg-slate-50/80 transition-colors">
-                  <td class="py-3.5 px-6 font-mono font-semibold text-slate-500">#<%= log.id %></td>
+                <tr class="audit-row hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                  <td class="py-3.5 px-6 font-mono font-semibold text-slate-500 dark:text-slate-400">#<%= log.id %></td>
                   <td class="py-3.5 px-6">
-                    <div class="font-semibold text-slate-900"><%= log.admin_name || 'System Officer' %></div>
-                    <div class="text-[11px] text-slate-400"><%= log.admin_email || '' %></div>
+                    <div class="font-semibold text-slate-900 dark:text-slate-100"><%= log.admin_name || 'System Officer' %></div>
+                    <div class="text-[11px] text-slate-400 dark:text-slate-500"><%= log.admin_email || '' %></div>
                   </td>
-                  <td class="py-3.5 px-6 font-medium text-slate-800"><%= log.action_description || log.action %></td>
-                  <td class="py-3.5 px-6 font-mono text-slate-500"><%= log.ip_address || '127.0.0.1' %></td>
-                  <td class="py-3.5 px-6 text-right text-slate-500">
+                  <td class="py-3.5 px-6 font-medium text-slate-800 dark:text-slate-200"><%= log.action_description || log.action %></td>
+                  <td class="py-3.5 px-6 font-mono text-slate-500 dark:text-slate-400"><%= log.ip_address || '127.0.0.1' %></td>
+                  <td class="py-3.5 px-6 text-right text-slate-500 dark:text-slate-400">
                     <%= typeof timeAgo === 'function' ? timeAgo(log.timestamp) : new Date(log.timestamp).toLocaleString() %>
                   </td>
                 </tr>

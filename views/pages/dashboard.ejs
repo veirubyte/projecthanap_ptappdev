@@ -37,7 +37,7 @@
   <% const catalogFinders = typeof recognizedFinders !== 'undefined' ? recognizedFinders : []; %>
   <% const catalogHandovers = typeof successfulHandovers !== 'undefined' ? successfulHandovers : []; %>
   <% const catalogCategoryCounts = typeof categoryCounts !== 'undefined' ? categoryCounts : {}; %>
-  <% const catalogCanReportFound = Boolean(user && !['guest', 'parent', 'parent/guest'].includes(String(user.role || '').toLowerCase())); %>
+  <% const catalogCanReportFound = Boolean(user && String(user.role || '').toLowerCase() !== 'guest'); %>
   
   <!-- Ambient Mesh Gradient Underlays (Stitch Reference) -->
   <% if (isCatalog) { %>
@@ -350,7 +350,7 @@
               </span>
               <span class="material-symbols-outlined text-base">chevron_right</span>
             </a>
-            <% if (user.role !== 'guest' && user.role !== 'parent' && user.role !== 'parent/guest') { %>
+            <% if (user && user.role !== 'guest') { %>
               <a href="/items/new?type=found" class="w-full sm:w-56 h-12 px-6 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm font-bold shadow-2xs transition flex items-center justify-between gap-4 cursor-pointer">
                 <span class="flex items-center gap-1.5">
                   <span class="text-base font-normal">+</span>
@@ -379,17 +379,18 @@
       <!-- Interactive Smart Match Spotlight Card (if any matches) -->
       <% if (smartMatchList && smartMatchList.length > 0) { %>
         <% const topMatch = smartMatchList[0]; %>
+        <% const matchScore = Math.min(99, Math.max(0, Number(topMatch.match_score || 0))); %>
         <div class="dashboard-match-card relative overflow-hidden rounded-3xl bg-gradient-to-r from-teal-500/10 via-white/85 to-sky-500/10 backdrop-blur-xl border border-teal-200/60 p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.08)] transition hover:border-teal-300">
           <div class="dashboard-match-glow absolute -right-12 -top-12 w-44 h-44 rounded-full bg-teal-300/20 blur-2xl pointer-events-none"></div>
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
             <div class="flex items-center gap-4 min-w-0">
-              <!-- Circular Progress Ring (92%) -->
+              <!-- Circular Progress Ring -->
               <div class="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
                 <svg class="w-12 h-12 -rotate-90 transform" viewBox="0 0 36 36">
                   <path class="text-teal-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.2"></path>
-                  <path class="text-teal-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-linecap="round" stroke-width="3.2"></path>
+                  <path class="text-teal-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="<%= matchScore %>, 100" stroke-linecap="round" stroke-width="3.2"></path>
                 </svg>
-                <span class="absolute text-[11px] font-bold text-teal-800">92%</span>
+                <span class="absolute text-[11px] font-bold text-teal-800"><%= matchScore %>%</span>
               </div>
               <div class="min-w-0">
                 <div class="flex items-center gap-2">
@@ -556,12 +557,14 @@
                           <div class="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center text-[10px] font-bold">✓</div>
                           <span class="text-[10px] font-bold text-slate-700 mt-1">Reported</span>
                         </div>
-                        <!-- Step 2: Matched -->
-                        <div class="flex flex-col items-center">
-                          <div class="w-5 h-5 rounded-full <%= r.status !== 'active' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white ring-4 ring-teal-100' %> flex items-center justify-center text-[10px] font-bold">
-                            <%= isResolvedReport ? '✓' : '2' %>
+                        <% const activeClaimsCount = Number(r.active_claim_count || 0); %>
+                        <% const hasMatchedActivity = activeClaimsCount > 0 || isResolvedReport || r.status === 'pending_review'; %>
+                        <!-- Step 2: Matched / Claims -->
+                        <div class="flex flex-col items-center <%= hasMatchedActivity ? '' : 'opacity-60' %>">
+                          <div class="w-5 h-5 rounded-full <%= isResolvedReport ? 'bg-teal-600 text-white' : (hasMatchedActivity ? 'bg-teal-600 text-white ring-4 ring-teal-100' : 'bg-slate-200 text-slate-600') %> flex items-center justify-center text-[10px] font-bold">
+                            <%= isResolvedReport ? '✓' : (activeClaimsCount > 0 ? activeClaimsCount : '2') %>
                           </div>
-                          <span class="text-[10px] font-bold text-teal-700 mt-1">Matched</span>
+                          <span class="text-[10px] <%= hasMatchedActivity ? 'font-bold text-teal-700' : 'font-medium text-slate-500' %> mt-1"><%= hasMatchedActivity ? (activeClaimsCount > 0 ? `${activeClaimsCount} ${activeClaimsCount === 1 ? 'Claim' : 'Claims'}` : 'Matched') : 'Cataloged' %></span>
                         </div>
                         <!-- Step 3: Verifying -->
                         <div class="flex flex-col items-center <%= isResolvedReport ? '' : 'opacity-50' %>">

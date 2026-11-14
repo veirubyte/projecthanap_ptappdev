@@ -76,10 +76,6 @@ router.post('/items/:id/edit', requireAuth, controller.updateItemReport);
 // GET /settings - Full Account Settings Studio
 router.get('/settings', requireAuth, controller.showSettings);
 
-router.post('/settings/guardian-links', requireNonAdminAuth, controller.createGuardianLink);
-
-router.post('/settings/guardian-links/:id/:decision', requireNonAdminAuth, controller.decideGuardianLink);
-
 // POST /settings/profile - Update Personal Details
 router.post('/settings/profile', requireAuth, controller.updateProfile);
 

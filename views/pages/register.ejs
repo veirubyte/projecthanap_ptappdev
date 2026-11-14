@@ -134,7 +134,7 @@
           </a>
         </div>
 
-        <!-- Header and Role Selection Toggle: [ CSPC Student / Staff ] [ Parent / Guest ] -->
+        <!-- Header and Role Selection Toggle: [ CSPC Student / Staff ] [ Guest ] -->
         <div class="space-y-3">
           <div>
             <h2 class="text-2xl md:text-3xl font-extrabold text-[#0F172A] tracking-tight" id="regHeading">
@@ -142,12 +142,12 @@
             </h2>
             <p class="text-xs text-slate-500 mt-1" id="regSubtitle">
               <%= (typeof category !=='undefined' && category==='guest' )
-                ? 'For parents, guardians, and external campus visitors.'
+                ? 'For external campus visitors and community guests.'
                 : 'For CSPC students and faculty/staff members.' %>
             </p>
           </div>
 
-          <!-- Segmented Role Toggle: [ Student / Staff ] [ Parent / Guest ] -->
+          <!-- Segmented Role Toggle: [ Student / Staff ] [ Guest ] -->
           <div class="w-full bg-[#F1F5F9] p-1.5 rounded-2xl flex items-center border border-slate-200/80 shadow-inner"
             role="tablist" aria-label="Account Role Selection">
             <button
@@ -160,7 +160,7 @@
               class="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-center transition-all cursor-pointer <%= (typeof category !== 'undefined' && category === 'guest') ? 'text-[#2B5B84] bg-white shadow-xs' : 'text-slate-500 hover:text-slate-800' %>"
               id="tab-guest" data-reg-category="guest" type="button" role="tab"
               aria-selected="<%= (typeof category !== 'undefined' && category === 'guest') %>">
-              Parent / Guest
+              Guest
             </button>
           </div>
 
@@ -273,19 +273,6 @@
                   </select>
                 </div>
 
-                <div
-                  class="guest-student-link flex flex-col gap-1.5 sm:col-span-2 <%= (typeof category === 'undefined' || category !== 'guest') ? 'hidden' : '' %>">
-                  <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider"
-                    for="studentEmail">Student CSPC Email (optional)</label>
-                  <input
-                    class="w-full h-10 px-3.5 rounded-xl bg-white/90 border border-slate-200/90 text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/15"
-                    id="studentEmail" name="student_email" type="email" autocomplete="email"
-                    placeholder="student@my.cspc.edu.ph"
-                    value="<%= (typeof values !== 'undefined' && values.student_email) || '' %>" />
-                  <span class="text-[11px] text-slate-500">The student must approve your Parent / Guardian request.
-                    Without an approved link, your account remains a Guest.</span>
-                </div>
-
                 <!-- Password with Eye Toggle -->
                 <div>
                   <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5"
@@ -387,7 +374,6 @@
       const alertContainer = document.getElementById('regAlertContainer');
       const roleField = document.querySelector('.institution-role-field');
       const roleSelect = document.getElementById('institutionalRole');
-      const studentLinkField = document.querySelector('.guest-student-link');
 
       clearRegValidationErrors();
       if (alertContainer) {
@@ -400,7 +386,6 @@
       if (cat === 'institution') {
         roleField.classList.remove('hidden');
         roleSelect.required = true;
-        studentLinkField.classList.add('hidden');
         tabInst.className = 'flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-center transition-all cursor-pointer text-[#2B5B84] bg-white shadow-xs';
         tabInst.setAttribute('aria-selected', 'true');
         tabGuest.className = 'flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-center transition-all cursor-pointer text-slate-500 hover:text-slate-800';
@@ -413,16 +398,15 @@
       } else {
         roleField.classList.add('hidden');
         roleSelect.required = false;
-        studentLinkField.classList.remove('hidden');
         tabGuest.className = 'flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-center transition-all cursor-pointer text-[#2B5B84] bg-white shadow-xs';
         tabGuest.setAttribute('aria-selected', 'true');
         tabInst.className = 'flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-center transition-all cursor-pointer text-slate-500 hover:text-slate-800';
         tabInst.setAttribute('aria-selected', 'false');
 
         heading.textContent = 'Create Account';
-        subtitle.textContent = 'For parents, guardians, and external campus visitors.';
+        subtitle.textContent = 'For external campus visitors and community guests.';
         emailLabel.textContent = 'Email Address *';
-        emailInput.placeholder = 'parent@gmail.com';
+        emailInput.placeholder = 'guest@gmail.com';
       }
     }
 
@@ -655,7 +639,7 @@
           emailInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
           showRegAlert(
             'Institutional email required',
-            'Institution registration requires an official @my.cspc.edu.ph or @cspc.edu.ph email address.\nIf you are a parent or guest, please switch to the Guest registration tab.',
+            'Institution registration requires an official @my.cspc.edu.ph or @cspc.edu.ph email address.\nIf you are a visitor or guest, please switch to the Guest registration tab.',
             'switch_to_guest'
           );
           emailInput.focus();

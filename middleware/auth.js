@@ -21,7 +21,7 @@ function denyAdmin(req, res, next) {
     if (req.session.user && isAdmin(req.session.user)) {
         return renderAccessDenied(req, res, {
             errorTitle: 'User Dashboard Access Only',
-            errorMessage: 'Administrator accounts cannot access student, staff, or parent pages.',
+            errorMessage: 'Administrator accounts cannot access student, staff, or guest pages.',
             returnUrl: '/admin/dashboard',
             returnLabel: 'Back to Admin Dashboard'
         });
