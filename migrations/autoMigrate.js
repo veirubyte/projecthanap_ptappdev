@@ -27,10 +27,11 @@ async function autoMigrate() {
           );
           CREATE TABLE IF NOT EXISTS public.password_resets (
             id SERIAL PRIMARY KEY,
-            user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-            code_hash VARCHAR(255) NOT NULL,
-            expires_at TIMESTAMPTZ NOT NULL,
+            user_id INT UNIQUE NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+            code_hash VARCHAR(255),
+            expires_at TIMESTAMPTZ,
             attempts SMALLINT NOT NULL DEFAULT 0,
+            last_sent_at TIMESTAMPTZ,
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
           );
           CREATE TABLE IF NOT EXISTS public.user_sessions (
@@ -42,6 +43,24 @@ async function autoMigrate() {
           ALTER TABLE public.item_report_images ADD COLUMN IF NOT EXISTS file_data TEXT;
           ALTER TABLE public.item_reports ALTER COLUMN secret_challenge TYPE TEXT;
           ALTER TABLE public.item_reports ALTER COLUMN secret_answer TYPE TEXT;
+          ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notify_claims SMALLINT NOT NULL DEFAULT 1;
+          ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notify_chat SMALLINT NOT NULL DEFAULT 1;
+          ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notify_broadcasts SMALLINT NOT NULL DEFAULT 1;
+          ALTER TABLE public.password_resets ADD COLUMN IF NOT EXISTS last_sent_at TIMESTAMPTZ;
+          ALTER TABLE public.password_resets ALTER COLUMN code_hash DROP NOT NULL;
+          ALTER TABLE public.password_resets ALTER COLUMN expires_at DROP NOT NULL;
+          DELETE FROM public.password_resets a USING public.password_resets b WHERE a.user_id = b.user_id AND a.id < b.id;
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_user_unique ON public.password_resets(user_id);
+
+          -- Consolidate legacy parent role into campus guest & drop guardian_student_links
+          INSERT INTO public.account_roles (role_code, display_name)
+          VALUES ('guest', 'Campus Guest')
+          ON CONFLICT (role_code) DO UPDATE SET display_name = EXCLUDED.display_name;
+          UPDATE public.users
+          SET role_id = (SELECT id FROM public.account_roles WHERE role_code = 'guest' LIMIT 1)
+          WHERE role_id IN (SELECT id FROM public.account_roles WHERE role_code = 'parent');
+          DELETE FROM public.account_roles WHERE role_code = 'parent';
+          DROP TABLE IF EXISTS public.guardian_student_links CASCADE;
 
           -- Enforce Row Level Security (RLS) across all public tables
           ALTER TABLE public.account_roles ENABLE ROW LEVEL SECURITY;
@@ -53,7 +72,6 @@ async function autoMigrate() {
           ALTER TABLE public.item_report_images ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.claim_messages ENABLE ROW LEVEL SECURITY;
-          ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
           ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
 
@@ -156,17 +174,25 @@ async function autoMigrate() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS password_resets (
           id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-          user_id INT NOT NULL,
-          code_hash VARCHAR(255) NOT NULL,
-          expires_at DATETIME NOT NULL,
+          user_id INT NOT NULL UNIQUE,
+          code_hash VARCHAR(255) NULL DEFAULT NULL,
+          expires_at DATETIME NULL DEFAULT NULL,
           attempts TINYINT NOT NULL DEFAULT 0,
+          last_sent_at TIMESTAMP NULL DEFAULT NULL,
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_password_resets_user (user_id),
           CONSTRAINT fk_password_resets_user
             FOREIGN KEY (user_id) REFERENCES users(id)
             ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=${charset} COLLATE=${collation}
       `);
+      const [resetCols] = await connection.query('DESCRIBE password_resets');
+      const resetColNames = resetCols.map(c => c.Field);
+      if (!resetColNames.includes('last_sent_at')) {
+        await connection.query('ALTER TABLE `password_resets` ADD COLUMN `last_sent_at` TIMESTAMP NULL DEFAULT NULL AFTER `attempts`');
+      }
+      await connection.query('ALTER TABLE `password_resets` MODIFY COLUMN `code_hash` VARCHAR(255) NULL DEFAULT NULL, MODIFY COLUMN `expires_at` DATETIME NULL DEFAULT NULL').catch(() => {});
+      await connection.query('DELETE p1 FROM password_resets p1 INNER JOIN password_resets p2 WHERE p1.user_id = p2.user_id AND p1.id < p2.id').catch(() => {});
+      await connection.query('ALTER TABLE `password_resets` ADD UNIQUE INDEX `uq_password_resets_user` (`user_id`)').catch(() => {});
 
       // 5. Ensure user_sessions table exists for persistent session storage
       console.log('[MIGRATION] Ensuring user_sessions table exists...');
@@ -179,7 +205,31 @@ async function autoMigrate() {
         ) ENGINE=InnoDB DEFAULT CHARSET=${charset} COLLATE=${collation}
       `);
 
-      // 6. Ensure file_data column exists in item_report_images
+      // 6. Ensure notification preference columns exist on users
+      const [userCols] = await connection.query('DESCRIBE users');
+      const userColNames = userCols.map(c => c.Field);
+      if (!userColNames.includes('notify_claims')) {
+        await connection.query('ALTER TABLE `users` ADD COLUMN `notify_claims` TINYINT(1) NOT NULL DEFAULT 1');
+      }
+      if (!userColNames.includes('notify_chat')) {
+        await connection.query('ALTER TABLE `users` ADD COLUMN `notify_chat` TINYINT(1) NOT NULL DEFAULT 1');
+      }
+      if (!userColNames.includes('notify_broadcasts')) {
+        await connection.query('ALTER TABLE `users` ADD COLUMN `notify_broadcasts` TINYINT(1) NOT NULL DEFAULT 1');
+      }
+
+      // 7. Consolidate legacy parent role into campus guest & drop guardian_student_links
+      await connection.query("INSERT IGNORE INTO account_roles (role_code, display_name) VALUES ('guest', 'Campus Guest')").catch(() => {});
+      await connection.query("UPDATE account_roles SET display_name = 'Campus Guest' WHERE role_code = 'guest'").catch(() => {});
+      await connection.query(`
+        UPDATE users
+        SET role_id = (SELECT id FROM account_roles WHERE role_code = 'guest' LIMIT 1)
+        WHERE role_id IN (SELECT id FROM account_roles WHERE role_code = 'parent')
+      `).catch(() => {});
+      await connection.query("DELETE FROM account_roles WHERE role_code = 'parent'").catch(() => {});
+      await connection.query('DROP TABLE IF EXISTS guardian_student_links').catch(() => {});
+
+      // 8. Ensure file_data column exists in item_report_images
       const [imgCols] = await connection.query('DESCRIBE item_report_images');
       const imgColNames = imgCols.map(c => c.Field);
       if (!imgColNames.includes('file_data')) {

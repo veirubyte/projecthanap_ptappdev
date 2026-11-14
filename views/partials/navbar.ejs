@@ -81,7 +81,7 @@
       <% if (typeof user !== 'undefined' && user) { %>
         <% const notificationBadgeCount = Number(typeof unreadNotificationCount !== 'undefined' ? unreadNotificationCount : 0); %>
         <!-- Notification bell with recent unread count badge -->
-        <a id="notificationBellLink" href="/claims" aria-label="Notifications" class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors" title="Notifications" data-notification-count="<%= notificationBadgeCount %>">
+        <a id="notificationBellLink" href="<%= isAdminUser ? '/admin/handover' : '/claims' %>" aria-label="Notifications" class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-colors" title="Notifications" data-notification-count="<%= notificationBadgeCount %>">
           <span class="material-symbols-outlined text-[20px] sm:text-[22px]">notifications</span>
           <span id="notificationBadge" class="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 min-w-[13px] h-[13px] sm:min-w-[14px] sm:h-[14px] px-0.5 sm:px-1 rounded-full bg-[#1D63B8] text-white text-[8px] sm:text-[9px] font-bold flex items-center justify-center shadow-xs ring-1 ring-white <%= notificationBadgeCount > 0 ? '' : 'hidden' %>" data-visible="<%= notificationBadgeCount > 0 ? 'true' : 'false' %>">
             <%= notificationBadgeCount > 99 ? '99+' : notificationBadgeCount %>
@@ -107,7 +107,7 @@
               <div class="flex items-center gap-1.5 whitespace-nowrap">
                 <span class="font-bold text-slate-800 text-xs sm:text-sm max-w-[120px] truncate whitespace-nowrap"><%= user.full_name %></span>
                 <span class="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold capitalize whitespace-nowrap shrink-0">
-                  <%= isAdminUser ? 'Admin' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : (user.role === 'parent' ? 'Parent' : (user.role === 'legacy_institutional' ? 'Review' : 'Guest')))) %>
+                  <%= isAdminUser ? 'Admin' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : 'Guest')) %>
                 </span>
               </div>
               <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap">CSPC Account</span>
@@ -364,7 +364,16 @@
 
     const baseCount = Number(bell.dataset.notificationCount || 0);
     const seenAt = Number(localStorage.getItem('hanap_notifications_seen_at') || 0);
-    const isViewed = seenAt > 0 && Date.now() - seenAt < 24 * 60 * 60 * 1000;
+    const seenCountRaw = localStorage.getItem('hanap_notifications_seen_count');
+    let seenCount = seenCountRaw === null ? null : Number(seenCountRaw);
+    if (seenCount !== null && baseCount < seenCount) {
+      seenCount = baseCount;
+      localStorage.setItem('hanap_notifications_seen_count', String(baseCount));
+    }
+    const isViewed = seenAt > 0
+      && Date.now() - seenAt < 24 * 60 * 60 * 1000
+      && seenCount !== null
+      && baseCount <= seenCount;
 
     if (baseCount > 0 && !isViewed) {
       badge.classList.remove('hidden');
@@ -384,7 +393,9 @@
   const bell = document.getElementById('notificationBellLink');
   if (bell) {
     bell.addEventListener('click', () => {
-      localStorage.setItem('hanap_notifications_seen_at', Date.now());
+      const currentCount = Number(bell.dataset.notificationCount || 0);
+      localStorage.setItem('hanap_notifications_seen_at', String(Date.now()));
+      localStorage.setItem('hanap_notifications_seen_count', String(currentCount));
       const badge = document.getElementById('notificationBadge');
       if (badge) badge.classList.add('hidden');
     });

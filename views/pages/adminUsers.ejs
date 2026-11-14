@@ -78,11 +78,6 @@
           </span>
         </div>
         <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
-          <!-- Testbed 403 Block Pill (from ZIP B) -->
-          <a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/70 hover:bg-rose-100/80 transition-all shadow-xs" href="/admin/test-403">
-            <span class="material-symbols-outlined text-[14px]">lock</span>
-            <span>Test 403 Block</span>
-          </a>
           <!-- Add User Button -->
           <button onclick="openAddUserModal()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-container shadow-md shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer" type="button">
             <span class="material-symbols-outlined text-[16px]">person_add</span>
@@ -98,10 +93,8 @@
           <button data-filter="all" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary text-white shadow-xs transition-all cursor-pointer" type="button">All</button>
           <button data-filter="student" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Students</button>
           <button data-filter="staff" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Staff</button>
-          <button data-filter="parent" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Parents</button>
           <button data-filter="guest" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Guests</button>
           <button data-filter="admin" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Admins</button>
-          <button data-filter="legacy_institutional" class="filter-pill shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-white/70 transition-all cursor-pointer" type="button">Needs review</button>
         </div>
         <!-- Sleek Glass Search Input -->
         <div class="relative w-full sm:w-72">
@@ -136,7 +129,7 @@
                   <tr class="hover:bg-white/70 transition-colors user-row" data-role="<%= u.role %>">
                     <td class="py-3.5 px-5">
                       <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-xl <%= u.role === 'admin' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : (u.role === 'parent' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (u.role === 'guest' || u.role === 'legacy_institutional' ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-blue-100/80 text-blue-800 border border-blue-200/60')) %> font-semibold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                        <div class="w-8 h-8 rounded-xl <%= u.role === 'admin' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : (u.role === 'guest' ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-blue-100/80 text-blue-800 border border-blue-200/60') %> font-semibold text-xs flex items-center justify-center shrink-0 shadow-xs">
                           <%= initials %>
                         </div>
                         <div class="flex flex-col min-w-0">
@@ -146,7 +139,7 @@
                       </div>
                     </td>
                     <td class="py-3.5 px-4">
-                      <span class="user-role-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium <%= u.role === 'admin' ? 'bg-indigo-100/80 text-indigo-800 border border-indigo-200/60' : (u.role === 'parent' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (u.role === 'guest' || u.role === 'legacy_institutional' ? 'bg-slate-100/80 text-slate-700 border border-slate-200/60' : 'bg-blue-50/90 text-primary border border-blue-200/50')) %> shadow-xs capitalize">
+                      <span class="user-role-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium <%= u.role === 'admin' ? 'bg-indigo-100/80 text-indigo-800 border border-indigo-200/60' : (u.role === 'guest' ? 'bg-slate-100/80 text-slate-700 border border-slate-200/60' : 'bg-blue-50/90 text-primary border border-blue-200/50') %> shadow-xs capitalize">
                         <%= u.role_label %>
                       </span>
                     </td>
@@ -174,9 +167,6 @@
                             </button>
                           </form>
                         <% } %>
-                        <% if (u.role === 'parent') { %>
-                          <span class="text-[10px] font-semibold text-emerald-700">Student-approved</span>
-                        <% } else { %>
                           <form action="/admin/users/<%= u.id %>/role" method="POST" class="inline-flex items-center gap-1.5" onsubmit="return confirm('Are you sure you want to change this user\'s role?');">
                             <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
                               <input type="hidden" name="_csrf" value="<%= csrfToken %>"/>
@@ -186,11 +176,9 @@
                               <option value="staff" <%= u.role === 'staff' ? 'selected' : '' %>>Staff</option>
                               <option value="guest" <%= u.role === 'guest' ? 'selected' : '' %>>Guest</option>
                               <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>Admin</option>
-                              <option value="legacy_institutional" <%= u.role === 'legacy_institutional' ? 'selected' : '' %>>Needs review</option>
                             </select>
                             <button type="submit" class="user-action-button px-2 py-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-white text-[11px] font-medium border border-slate-200/60 shadow-2xs transition cursor-pointer">Save</button>
                           </form>
-                        <% } %>
                       </div>
                     </td>
                   </tr>

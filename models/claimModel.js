@@ -35,7 +35,23 @@ async function showItemDetails(params, values = [], connection = db) {
 }
 
 async function createClaim(params, values = [], connection = db) {
-    return connection.execute("SELECT id FROM claims WHERE item_id = ? AND claimant_id = ? AND status = 'pending'", params);
+    return connection.execute("SELECT id FROM claims WHERE item_id = ? AND claimant_id = ? AND status IN ('pending', 'escalated')", params);
+}
+
+async function countActivePendingClaims(params, values = [], connection = db) {
+    return connection.execute("SELECT COUNT(*) AS count FROM claims WHERE claimant_id = ? AND status = 'pending'", params);
+}
+
+async function listPendingClaimsForQuotaReset(params, values = [], connection = db) {
+    return connection.execute("SELECT id, item_id FROM claims WHERE claimant_id = ? AND status = 'pending'", params);
+}
+
+async function listCompetingActiveClaims(params, values = [], connection = db) {
+    return connection.execute("SELECT id, claimant_id FROM claims WHERE item_id = ? AND id <> ? AND status IN ('pending', 'escalated')", params);
+}
+
+async function closeCompetingClaims(params, values = [], connection = db) {
+    return connection.execute("UPDATE claims SET status = 'rejected' WHERE item_id = ? AND id <> ? AND status IN ('pending', 'escalated')", params);
 }
 
 async function createClaimQuery2(params, values = [], connection = db) {
@@ -103,7 +119,7 @@ async function sendClaimMessageQuery2(params, values = [], connection = db) {
 }
 
 async function updateClaimStatus(params, values = [], connection = db) {
-    return connection.execute(`SELECT c.*, r.user_id AS reporter_id, r.item_name
+    return connection.execute(`SELECT c.*, r.user_id AS reporter_id, r.item_name, r.custody_mode, r.report_type
              FROM claims c 
              JOIN item_reports r ON r.id = c.item_id 
              WHERE c.id = ?`, params);
@@ -155,13 +171,13 @@ async function showAdminDashboard(params, values = [], connection = db) {
 
 async function showAdminDashboardQuery2(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
+            SELECT c.*, r.item_name, r.custody_mode, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE ar.role_code IN ('guest', 'parent')
+            WHERE ar.role_code = 'guest' OR c.status = 'escalated' OR r.custody_mode = 'security_desk'
             ORDER BY c.created_at DESC
         `);
 }
@@ -183,7 +199,7 @@ async function listAdminUsers(params, values = [], connection = db) {
     return connection.execute(`
             SELECT u.id, u.full_name, u.email, ar.role_code AS role, ar.display_name AS role_label,
                    d.name AS department, u.student_id, u.created_at,
-                   (SELECT COUNT(*) FROM claims c WHERE c.claimant_id = u.id AND c.status IN ('pending', 'escalated')) AS claim_count
+                   (SELECT COUNT(*) FROM claims c WHERE c.claimant_id = u.id AND c.status = 'pending') AS claim_count
             FROM users u
             JOIN account_roles ar ON ar.id = u.role_id
             LEFT JOIN departments d ON d.id = u.department_id
@@ -193,20 +209,21 @@ async function listAdminUsers(params, values = [], connection = db) {
 
 async function listHandoverClaims(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost,
+            SELECT c.*, r.item_name, r.custody_mode, ${primaryImageSelect}, r.location_found_lost,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role, u.email AS claimant_email, u.student_id
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id
             JOIN account_roles ar ON ar.id = u.role_id
             WHERE c.status IN ('pending', 'escalated')
+              AND (c.status = 'escalated' OR r.custody_mode = 'security_desk' OR ar.role_code = 'guest')
             ORDER BY c.created_at DESC
         `);
 }
 
 async function showHandoverClaim(params, values = [], connection = db) {
     return connection.execute(`
-            SELECT c.*, r.item_name, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
+            SELECT c.*, r.item_name, r.custody_mode, r.report_type, ${primaryImageSelect}, r.location_found_lost, r.status AS item_status,
                    u.full_name AS claimant_name, ar.role_code AS claimant_role, u.email AS claimant_email, u.student_id
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
@@ -233,7 +250,7 @@ async function rejectHandover(params, values = [], connection = db) {
 }
 
 async function resetUserQuota(params, values = [], connection = db) {
-    return connection.execute("UPDATE claims SET status = 'rejected' WHERE claimant_id = ? AND status IN ('pending', 'escalated')", params);
+    return connection.execute("UPDATE claims SET status = 'rejected' WHERE claimant_id = ? AND status = 'pending'", params);
 }
 
 async function rejectHandoverQuery2(params, values = [], connection = db) {
@@ -241,7 +258,15 @@ async function rejectHandoverQuery2(params, values = [], connection = db) {
 }
 
 async function listAdminReports(params, values = [], connection = db) {
-    return connection.execute(`SELECT COUNT(*) as count FROM claims WHERE status IN ('approved', 'returned')`);
+    return connection.execute(`
+            SELECT COUNT(*) as count
+            FROM claims c
+            JOIN item_reports r ON r.id = c.item_id
+            JOIN users u ON u.id = c.claimant_id
+            JOIN account_roles ar ON ar.id = u.role_id
+            WHERE c.status IN ('approved', 'returned')
+              AND (r.custody_mode = 'security_desk' OR ar.role_code = 'guest')
+        `);
 }
 
 async function showAdminAnalytics(params, values = [], connection = db) {
@@ -255,7 +280,9 @@ async function showAdminAnalytics(params, values = [], connection = db) {
             JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE ar.role_code NOT IN ('parent', 'guest')
+            WHERE ar.role_code <> 'guest'
+              AND r.custody_mode = 'peer_meetup'
+              AND c.status <> 'escalated'
         `);
 }
 
@@ -270,7 +297,9 @@ async function showAdminAnalyticsQuery2(params, values = [], connection = db) {
             JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE ar.role_code IN ('parent', 'guest') OR r.location_found_lost LIKE '%Office%'
+            WHERE r.custody_mode = 'security_desk'
+               OR ar.role_code = 'guest'
+               OR c.status = 'escalated'
         `);
 }
 
@@ -289,9 +318,11 @@ async function showAdminAnalyticsQuery4(params, values = [], connection = db) {
     return connection.execute(`
             SELECT COUNT(*) as cnt 
             FROM claims c 
+            JOIN item_reports r ON r.id = c.item_id
             JOIN users u ON u.id = c.claimant_id 
             JOIN account_roles ar ON ar.id = u.role_id
-            WHERE c.status IN ('pending', 'escalated') AND ar.role_code IN ('parent', 'guest')
+            WHERE c.status IN ('pending', 'escalated')
+              AND (c.status = 'escalated' OR r.custody_mode = 'security_desk' OR ar.role_code = 'guest')
         `);
 }
 
@@ -300,10 +331,21 @@ async function getUnreadNotificationCount(params, values = [], connection = db) 
             SELECT COUNT(*) AS unread_count
             FROM claims c
             JOIN item_reports r ON r.id = c.item_id
-            WHERE (r.user_id = ? OR c.claimant_id = ?)
-              AND c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-              AND c.status IN ('pending', 'approved', 'rejected', 'escalated', 'returned')
+            WHERE (r.user_id = ? AND c.status IN ('pending', 'escalated'))
+               OR (c.claimant_id = ? AND c.status IN ('approved', 'rejected', 'returned') AND c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY))
         `, params);
+}
+
+async function getAdminNotificationCount(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT COUNT(*) AS unread_count
+            FROM claims c
+            JOIN item_reports r ON r.id = c.item_id
+            JOIN users u ON u.id = c.claimant_id
+            JOIN account_roles ar ON ar.id = u.role_id
+            WHERE c.status IN ('pending', 'escalated')
+              AND (c.status = 'escalated' OR r.custody_mode = 'security_desk' OR ar.role_code = 'guest')
+        `);
 }
 
 module.exports = {
@@ -311,6 +353,10 @@ module.exports = {
     showDashboardQuery2,
     showItemDetails,
     createClaim,
+    countActivePendingClaims,
+    listPendingClaimsForQuotaReset,
+    listCompetingActiveClaims,
+    closeCompetingClaims,
     createClaimQuery2,
     createClaimQuery3,
     cancelClaim,
@@ -344,5 +390,6 @@ module.exports = {
     showAdminAnalyticsQuery3,
     showAdminAnalyticsQuery4,
     getUnreadNotificationCount,
+    getAdminNotificationCount,
     resetUserQuota
 };

@@ -78,7 +78,7 @@
             <!-- Orbiting Badge 1: Top-Left (Smart Match) -->
             <div class="absolute -top-3 left-1 z-30 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/90 shadow-sm flex items-center gap-1.5 transform -rotate-3 transition-all hover:rotate-0 hover:scale-105">
               <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
-              <span class="text-[11px] font-bold text-slate-700 tracking-tight">92% Smart Match</span>
+              <span class="text-[11px] font-bold text-slate-700 tracking-tight">Smart Matching</span>
             </div>
 
             <!-- Orbiting Badge 2: Top-Right (Privacy Shield) -->
@@ -240,7 +240,7 @@
                 <%= (typeof category !== 'undefined' && category === 'guest') ? 'Guest Login' : 'Institutional Login' %>
               </h2>
               <p class="text-xs text-slate-500 mt-0.5" id="loginSubtitle">
-                <%= (typeof category !== 'undefined' && category === 'guest') ? 'For parents, guardians, and external guests.' : 'Centralized portal for CSPC students, staff, and administrators.' %>
+                <%= (typeof category !== 'undefined' && category === 'guest') ? 'For campus visitors and external guests.' : 'Centralized portal for CSPC students, staff, and administrators.' %>
               </p>
             </div>
 
@@ -531,7 +531,7 @@
         tabInst.setAttribute('aria-selected', 'false');
 
         heading.textContent = 'Guest Login';
-        subtitle.textContent = 'For parents, guardians, and external guests.';
+        subtitle.textContent = 'For campus visitors and external guests.';
         emailLabel.textContent = 'Email Address';
         emailInput.placeholder = 'name@gmail.com';
         if (createAccountLink) {
@@ -696,7 +696,7 @@
           emailInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
           showClientAlert(
             'Institutional account required',
-            'The email you entered is not a recognized CSPC institutional email.\nIf you are a parent, guardian, or external guest, please select "Guest" to continue.',
+            'The email you entered is not a recognized CSPC institutional email.\nIf you are an external campus visitor or guest, please select "Guest" to continue.',
             'switch_to_guest'
           );
           emailInput.focus();
@@ -732,10 +732,10 @@
       const allowed = handleLoginSubmit(e);
       if (allowed !== false && !e.defaultPrevented) {
         loginSubmitting = true;
-        const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        const signInBtn = document.getElementById('signInBtn');
+        if (signInBtn) {
+          signInBtn.disabled = true;
+          signInBtn.classList.add('opacity-75', 'cursor-not-allowed');
         }
       }
       return allowed;

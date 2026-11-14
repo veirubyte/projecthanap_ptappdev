@@ -118,7 +118,7 @@
       <div class="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-2xl sm:rounded-full bg-slate-50/80 border border-slate-200/80 text-[11px] sm:text-xs text-slate-600 mb-8 font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] backdrop-blur-sm max-w-full">
         <span>Attempted: <span class="font-semibold text-slate-800 break-all"><%= typeof attemptedPath !== 'undefined' ? attemptedPath : 'Unknown route' %></span></span>
         <span class="text-slate-300 hidden xs:inline">•</span>
-        <span>Role: <span class="font-semibold text-slate-800"><%= user ? (['admin', 'administrator'].includes(String(user.role || '').toLowerCase()) ? 'Administrator' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : (user.role === 'parent' ? 'Parent / Guardian' : 'Guest')))) : 'Guest' %></span></span>
+        <span>Role: <span class="font-semibold text-slate-800"><%= user ? (['admin', 'administrator'].includes(String(user.role || '').toLowerCase()) ? 'Administrator' : (user.role === 'student' ? 'Student' : (user.role === 'staff' ? 'Staff' : 'Guest'))) : 'Guest' %></span></span>
       </div>
 
       <!-- Tactile Gradient Action Button with Specular Highlight and Glow -->

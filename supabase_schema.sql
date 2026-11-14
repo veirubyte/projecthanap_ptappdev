@@ -70,8 +70,7 @@ CREATE TABLE IF NOT EXISTS public.account_roles (
 INSERT INTO public.account_roles (id, role_code, display_name) VALUES
   (1, 'student', 'Student'),
   (2, 'staff', 'Staff'),
-  (3, 'parent', 'Parent / Guardian'),
-  (4, 'guest', 'Guest'),
+  (4, 'guest', 'Campus Guest'),
   (5, 'admin', 'Administrator'),
   (6, 'legacy_institutional', 'Unclassified Institutional Account')
 ON CONFLICT (role_code) DO UPDATE 
@@ -109,7 +108,10 @@ CREATE TABLE IF NOT EXISTS public.users (
   phone_number VARCHAR(50),
   student_id VARCHAR(50),
   department_id INT REFERENCES public.departments(id) ON DELETE SET NULL,
-  mfa_enabled SMALLINT NOT NULL DEFAULT 0
+  mfa_enabled SMALLINT NOT NULL DEFAULT 0,
+  notify_claims SMALLINT NOT NULL DEFAULT 1,
+  notify_chat SMALLINT NOT NULL DEFAULT 1,
+  notify_broadcasts SMALLINT NOT NULL DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON public.users(role_id);
@@ -132,10 +134,11 @@ CREATE TABLE IF NOT EXISTS public.user_mfa (
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.password_resets (
   id SERIAL PRIMARY KEY,
-  user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  code_hash VARCHAR(255) NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
+  user_id INT UNIQUE NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  code_hash VARCHAR(255),
+  expires_at TIMESTAMPTZ,
   attempts SMALLINT NOT NULL DEFAULT 0,
+  last_sent_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -224,22 +227,7 @@ CREATE INDEX IF NOT EXISTS idx_claim_messages_claim ON public.claim_messages(cla
 CREATE INDEX IF NOT EXISTS idx_claim_messages_sender_id ON public.claim_messages(sender_id);
 
 -- ----------------------------------------------------------------------------
--- 10. Table: guardian_student_links
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.guardian_student_links (
-  id SERIAL PRIMARY KEY,
-  guardian_user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  student_user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  status VARCHAR(32) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-  requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  responded_at TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS idx_guardian_links_guardian ON public.guardian_student_links(guardian_user_id);
-CREATE INDEX IF NOT EXISTS idx_guardian_links_student ON public.guardian_student_links(student_user_id);
-
--- ----------------------------------------------------------------------------
--- 11. Table: audit_logs
+-- 10. Table: audit_logs
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id SERIAL PRIMARY KEY,
@@ -269,7 +257,6 @@ ALTER TABLE public.item_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.item_report_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.claim_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.guardian_student_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
 

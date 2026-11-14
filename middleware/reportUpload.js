@@ -98,6 +98,28 @@ function uploadReportPhotos(req, res, next) {
         }
 
         const uploadedFiles = req.files || [];
+        const { timingSafeMatch } = require('../config/security');
+        const sessionCsrfToken = req.session && req.session.csrfToken ? String(req.session.csrfToken) : '';
+        const submittedCsrfToken = (req.body && req.body._csrf)
+            || req.headers['x-csrf-token']
+            || req.headers['csrf-token']
+            || '';
+        if (!sessionCsrfToken || !timingSafeMatch(submittedCsrfToken, sessionCsrfToken)) {
+            await Promise.all(
+                uploadedFiles
+                    .filter((file) => file && file.path)
+                    .map((file) => fs.promises.unlink(file.path).catch(() => {}))
+            );
+            return res.status(403).render('403', {
+                user: req.session ? req.session.user : null,
+                errorTitle: 'Invalid Request Token',
+                errorMessage: 'Your form session expired or could not be verified. Please go back, refresh the page, and submit again.',
+                attemptedPath: req.originalUrl,
+                returnUrl: '/dashboard',
+                returnLabel: 'Back to Dashboard'
+            });
+        }
+
         let detectedTypes;
         try {
             detectedTypes = await Promise.all(uploadedFiles.map((file) => detectImageType(file.path)));

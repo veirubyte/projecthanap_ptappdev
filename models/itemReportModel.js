@@ -87,7 +87,25 @@ async function showDashboardQuery4(params, values = [], connection = db) {
 }
 
 async function showDashboardQuery5(params, values = [], connection = db) {
-    return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.user_id = ? ORDER BY r.date_reported DESC LIMIT 4`, params);
+    return connection.execute(`
+            SELECT r.*, ${primaryImageSelect},
+                   (SELECT COUNT(*) FROM claims c WHERE c.item_id = r.id AND c.status IN ('pending', 'escalated')) AS active_claim_count
+            FROM item_reports r
+            WHERE r.user_id = ?
+            ORDER BY r.date_reported DESC
+            LIMIT 4
+        `, params);
+}
+
+async function findMatchCandidates(params, values = [], connection = db) {
+    return connection.execute(`
+            SELECT r.id, r.report_type, r.item_name, r.category, r.location_found_lost, r.description, r.date_reported, ${primaryImageSelect}
+            FROM item_reports r
+            WHERE r.status = 'active'
+              AND r.user_id <> ?
+            ORDER BY r.date_reported DESC
+            LIMIT 80
+        `, params);
 }
 
 async function showDashboardQuery6(params, values = [], connection = db) {
@@ -138,7 +156,7 @@ async function showItemDetails(params, values = [], connection = db) {
 }
 
 async function showItemReportImages(params, values = [], connection = db) {
-    return connection.execute(`SELECT image_path, is_primary, sort_order
+    return connection.execute(`SELECT id, image_path, is_primary, sort_order
              FROM item_report_images
              WHERE report_id = ?
              ORDER BY is_primary DESC, sort_order ASC, id ASC`, params);
@@ -209,33 +227,73 @@ async function updateItemReport(params, values = [], connection = db) {
     return connection.execute(`SELECT r.*, ${primaryImageSelect} FROM item_reports r WHERE r.id = ?`, params);
 }
 
-async function updateItemReportQuery2(params, imagePaths = []) {
+async function updateItemReportQuery2(params, imagePaths = [], options = {}) {
     const connection = await db.getConnection();
     let transactionOpen = false;
+    const removeImageIds = Array.isArray(options.removeImageIds)
+        ? options.removeImageIds.map((id) => parseInt(id, 10)).filter((id) => Number.isInteger(id) && id > 0)
+        : [];
+    const custodyMode = options.custodyMode || null;
+    const reportId = params[7];
+    let removedPaths = [];
+
     try {
         await connection.beginTransaction();
         transactionOpen = true;
-        await connection.execute(`UPDATE item_reports
-             SET item_name = ?, category = ?, description = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?
-             WHERE id = ?`, params);
+
+        if (custodyMode) {
+            await connection.execute(`UPDATE item_reports
+                 SET item_name = ?, category = ?, description = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?, custody_mode = ?
+                 WHERE id = ?`, [...params.slice(0, 7), custodyMode, reportId]);
+        } else {
+            await connection.execute(`UPDATE item_reports
+                 SET item_name = ?, category = ?, description = ?, status = ?, location_found_lost = ?, secret_challenge = ?, secret_answer = ?
+                 WHERE id = ?`, params);
+        }
+
+        if (removeImageIds.length > 0) {
+            const placeholders = removeImageIds.map(() => '?').join(', ');
+            const [toDelete] = await connection.execute(
+                `SELECT id, image_path FROM item_report_images WHERE report_id = ? AND id IN (${placeholders})`,
+                [reportId, ...removeImageIds]
+            );
+            removedPaths = toDelete.map((row) => row.image_path).filter(Boolean);
+            await connection.execute(
+                `DELETE FROM item_report_images WHERE report_id = ? AND id IN (${placeholders})`,
+                [reportId, ...removeImageIds]
+            );
+        }
+
+        const [remainingImages] = await connection.execute(
+            'SELECT id, is_primary, sort_order FROM item_report_images WHERE report_id = ? ORDER BY is_primary DESC, sort_order ASC, id ASC',
+            [reportId]
+        );
+        let hasPrimary = remainingImages.some((row) => Number(row.is_primary) === 1);
+        if (!hasPrimary && remainingImages.length > 0) {
+            await connection.execute(
+                'UPDATE item_report_images SET is_primary = 1 WHERE id = ?',
+                [remainingImages[0].id]
+            );
+            hasPrimary = true;
+        }
 
         if (imagePaths.length > 0) {
-            const [existingImages] = await connection.execute(
-                'SELECT COUNT(*) AS image_count FROM item_report_images WHERE report_id = ?',
-                [params[7]]
-            );
-            let sortOrder = Number(existingImages[0].image_count);
-            for (const img of imagePaths) {
+            let sortOrder = remainingImages.reduce((max, row) => Math.max(max, (Number(row.sort_order) || 0) + 1), 0);
+            for (let index = 0; index < imagePaths.length; index += 1) {
+                const img = imagePaths[index];
                 const imgPath = typeof img === 'object' && img ? img.path : img;
                 const fileData = typeof img === 'object' && img ? img.fileData : null;
+                const isPrimary = (!hasPrimary && index === 0) ? 1 : 0;
                 await connection.execute(`INSERT INTO item_report_images (report_id, image_path, file_data, is_primary, sort_order)
-                     VALUES (?, ?, ?, ?, ?)`, [params[7], imgPath, fileData, sortOrder === 0 ? 1 : 0, sortOrder]);
+                     VALUES (?, ?, ?, ?, ?)`, [reportId, imgPath, fileData, isPrimary, sortOrder]);
                 sortOrder += 1;
+                if (isPrimary) hasPrimary = true;
             }
         }
 
         await connection.commit();
         transactionOpen = false;
+        return { removedPaths };
     } catch (err) {
         if (transactionOpen) await connection.rollback();
         throw err;
@@ -327,7 +385,10 @@ async function showAdminDashboardQuery5(params, values = [], connection = db) {
 }
 
 async function approveReportArchive(params, values = [], connection = db) {
-    return connection.execute("UPDATE item_reports SET status = 'archived' WHERE id = ?", params);
+    return connection.execute(
+        "UPDATE item_reports SET status = 'archived' WHERE id = ? AND (status = 'pending_review' OR date_reported <= NOW() - INTERVAL 60 DAY)",
+        params
+    );
 }
 
 async function batchApproveReportArchive(params, values = [], connection = db) {
@@ -385,6 +446,7 @@ module.exports = {
     showDashboardQuery3,
     showDashboardQuery4,
     showDashboardQuery5,
+    findMatchCandidates,
     showDashboardQuery6,
     createItemReport,
     showItemDetails,

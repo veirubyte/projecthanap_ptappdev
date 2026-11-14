@@ -75,36 +75,40 @@ function validatePasswordStrength(password) {
     };
 }
 
+function normalizeRole(role) {
+    const r = String(role || '').trim().toLowerCase();
+    if (r === 'administrator') return 'admin';
+    if (r === 'parent' || r === 'guardian' || r === 'parent/guest') return 'guest';
+    return r;
+}
+
 /**
  * Role checkers use the normalized role codes stored in the session.
  */
 function isAdmin(user) {
     if (!user) return false;
-    const r = String(user.role || '').trim().toLowerCase();
-    return r === 'admin' || r === 'administrator';
+    return normalizeRole(user.role) === 'admin';
 }
 
 function isStudent(user) {
     if (!user) return false;
-    const r = String(user.role || '').trim().toLowerCase();
-    return r === 'student';
+    return normalizeRole(user.role) === 'student';
 }
 
 function isStaff(user) {
     if (!user) return false;
-    return String(user.role || '').trim().toLowerCase() === 'staff';
+    return normalizeRole(user.role) === 'staff';
 }
 
 function isInstitutional(user) {
     if (!user) return false;
-    const r = String(user.role || '').trim().toLowerCase();
+    const r = normalizeRole(user.role);
     return r === 'student' || r === 'staff' || r === 'legacy_institutional' || r === 'student/staff';
 }
 
 function isGuest(user) {
     if (!user) return false;
-    const r = String(user.role || '').trim().toLowerCase();
-    return r === 'guest' || r === 'parent' || r === 'parent/guest';
+    return normalizeRole(user.role) === 'guest';
 }
 
 module.exports = {
@@ -112,6 +116,7 @@ module.exports = {
     isValidEmailSyntax,
     isInstitutionalEmail,
     validatePasswordStrength,
+    normalizeRole,
     isAdmin,
     isStudent,
     isStaff,

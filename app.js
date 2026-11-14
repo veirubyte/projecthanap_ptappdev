@@ -20,7 +20,16 @@ const compression = require('compression');
 const crypto = require('crypto');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+function getRequiredSessionSecret() {
+    const configuredSecret = String(process.env.SESSION_SECRET || '').trim();
+    if (configuredSecret) return configuredSecret;
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('SESSION_SECRET environment variable must be configured in production.');
+    }
+    return crypto.randomBytes(32).toString('hex');
+}
+
+const sessionSecret = getRequiredSessionSecret();
 
 const port = Number(process.env.PORT || 3000);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -90,8 +99,8 @@ app.get('/uploads/:filename', async (req, res, next) => {
 
     try {
         const [rows] = await pool.execute(
-            'SELECT file_data FROM item_report_images WHERE image_path LIKE ? AND file_data IS NOT NULL LIMIT 1',
-            [`%${filename}%`]
+            'SELECT file_data FROM item_report_images WHERE image_path = ? AND file_data IS NOT NULL LIMIT 1',
+            [`/uploads/${filename}`]
         );
         if (rows && rows.length > 0 && rows[0].file_data) {
             const rawData = rows[0].file_data;

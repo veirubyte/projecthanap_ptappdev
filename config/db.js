@@ -70,21 +70,26 @@ if (isPostgres) {
     );
     translated = translated.replace(/UTC_TIMESTAMP\(\)/gi, "CURRENT_TIMESTAMP");
 
-    // 4. ON DUPLICATE KEY UPDATE handling
-    if (/ON\s+DUPLICATE\s+KEY\s+UPDATE\s+id\s*=\s*LAST_INSERT_ID\s*\(\s*id\s*\)/i.test(translated)) {
+    // 4. ON DUPLICATE KEY UPDATE handling (explicit table targets only; no unsafe catch-all)
+    if (/INTO\s+departments\b/i.test(translated) && /ON\s+DUPLICATE\s+KEY\s+UPDATE\s+id\s*=\s*LAST_INSERT_ID\s*\(\s*id\s*\)/i.test(translated)) {
       translated = translated.replace(
         /ON\s+DUPLICATE\s+KEY\s+UPDATE\s+id\s*=\s*LAST_INSERT_ID\s*\(\s*id\s*\)/gi,
         'ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id'
       );
-    } else if (/user_sessions/i.test(translated) && /ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
+    } else if (/INTO\s+user_sessions\b/i.test(translated) && /ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
       translated = translated.replace(
         /ON\s+DUPLICATE\s+KEY\s+UPDATE[\s\S]*$/gi,
         'ON CONFLICT (sid) DO UPDATE SET sess = EXCLUDED.sess, expires_at = EXCLUDED.expires_at'
       );
-    } else if (/ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
+    } else if (/INTO\s+user_mfa\b/i.test(translated) && /ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
       translated = translated.replace(
         /ON\s+DUPLICATE\s+KEY\s+UPDATE[\s\S]*$/gi,
         'ON CONFLICT (user_id) DO UPDATE SET code_hash = EXCLUDED.code_hash, code_expires_at = EXCLUDED.code_expires_at, attempts = 0, last_sent_at = CURRENT_TIMESTAMP'
+      );
+    } else if (/INTO\s+password_resets\b/i.test(translated) && /ON\s+DUPLICATE\s+KEY\s+UPDATE/i.test(translated)) {
+      translated = translated.replace(
+        /ON\s+DUPLICATE\s+KEY\s+UPDATE[\s\S]*$/gi,
+        'ON CONFLICT (user_id) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at, attempts = 0, last_sent_at = CURRENT_TIMESTAMP'
       );
     }
 

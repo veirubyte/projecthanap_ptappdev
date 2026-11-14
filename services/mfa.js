@@ -75,7 +75,7 @@ async function issueCode(userId, email) {
 }
 
 async function issuePasswordResetCode(userId, email) {
-    const [rows] = await mfaModel.issueCode([userId], []);
+    const [rows] = await mfaModel.issuePasswordResetCode([userId], []);
 
     const existing = rows[0];
     const now = Date.now();
@@ -104,12 +104,12 @@ async function issuePasswordResetCode(userId, email) {
     const code = createCode();
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000;
-    await mfaModel.issueCodeQuery2([userId, codeHash], [CODE_EXPIRY_MINUTES]);
+    await mfaModel.issuePasswordResetCodeUpsert([userId, codeHash], [CODE_EXPIRY_MINUTES]);
 
     try {
         await sendPasswordResetCode(email, code);
     } catch (error) {
-        await mfaModel.issueCodeQuery3([userId], []);
+        await mfaModel.clearPasswordResetCode([userId], []);
         throw error;
     }
 
@@ -123,14 +123,32 @@ async function issuePasswordResetCode(userId, email) {
     };
 }
 
-async function verifyCode(userId, submittedCode, sessionHashes = []) {
+const MFA_VERIFICATION_STORE = {
+    selectForUpdate: mfaModel.verifyCode,
+    clearExpired: mfaModel.verifyCodeQuery2,
+    clearLocked: mfaModel.verifyCodeQuery3,
+    clearMaxAttempts: mfaModel.verifyCodeQuery4,
+    setAttempts: mfaModel.verifyCodeQuery5,
+    clearVerified: mfaModel.verifyCodeQuery6
+};
+
+const PASSWORD_RESET_VERIFICATION_STORE = {
+    selectForUpdate: mfaModel.verifyPasswordResetCode,
+    clearExpired: mfaModel.clearPasswordResetCode,
+    clearLocked: mfaModel.clearPasswordResetCode,
+    clearMaxAttempts: mfaModel.clearPasswordResetCode,
+    setAttempts: mfaModel.incrementPasswordResetAttempts,
+    clearVerified: mfaModel.clearPasswordResetCode
+};
+
+async function verifyChallengeCode(store, userId, submittedCode, sessionHashes = []) {
     const cleanCode = typeof submittedCode === 'string' ? submittedCode.trim() : '';
     const connection = await getConnection();
 
     try {
         await connection.beginTransaction();
 
-        const [rows] = await mfaModel.verifyCode([userId], [], connection);
+        const [rows] = await store.selectForUpdate([userId], [], connection);
 
         if (rows.length === 0 || !rows[0].code_hash) {
             if (await matchesAnySessionHash(cleanCode, sessionHashes)) {
@@ -141,42 +159,42 @@ async function verifyCode(userId, submittedCode, sessionHashes = []) {
             return { status: 'not_pending', attemptsRemaining: MAX_CODE_ATTEMPTS };
         }
 
-        const mfa = rows[0];
-        if (Number(mfa.attempts) >= MAX_CODE_ATTEMPTS) {
-            await mfaModel.verifyCodeQuery3([userId], [], connection);
+        const challenge = rows[0];
+        if (Number(challenge.attempts) >= MAX_CODE_ATTEMPTS) {
+            await store.clearLocked([userId], [], connection);
             await connection.commit();
             return { status: 'locked', attemptsRemaining: 0 };
         }
 
-        const isExpired = mfa.code_expires_at
-            ? new Date(mfa.code_expires_at).getTime() <= Date.now()
-            : Boolean(mfa.code_expired);
+        const isExpired = challenge.code_expires_at
+            ? new Date(challenge.code_expires_at).getTime() <= Date.now()
+            : Boolean(challenge.code_expired);
 
         const matchesSession = await matchesAnySessionHash(cleanCode, sessionHashes);
 
         if (isExpired && !matchesSession) {
-            await mfaModel.verifyCodeQuery2([userId], [], connection);
+            await store.clearExpired([userId], [], connection);
             await connection.commit();
             return { status: 'expired', attemptsRemaining: MAX_CODE_ATTEMPTS };
         }
 
-        const isDirectMatch = /^\d{6}$/.test(cleanCode) && (await bcrypt.compare(cleanCode, mfa.code_hash) || matchesSession);
+        const isDirectMatch = /^\d{6}$/.test(cleanCode) && (await bcrypt.compare(cleanCode, challenge.code_hash) || matchesSession);
         const matches = Boolean(isDirectMatch);
 
         if (!matches) {
-            const nextAttempts = Number(mfa.attempts) + 1;
+            const nextAttempts = Number(challenge.attempts) + 1;
             if (nextAttempts >= MAX_CODE_ATTEMPTS) {
-                await mfaModel.verifyCodeQuery4([userId], [], connection);
+                await store.clearMaxAttempts([userId], [], connection);
                 await connection.commit();
                 return { status: 'locked', attemptsRemaining: 0 };
             }
 
-            await mfaModel.verifyCodeQuery5([nextAttempts, userId], [], connection);
+            await store.setAttempts([nextAttempts, userId], [], connection);
             await connection.commit();
             return { status: 'invalid', attemptsRemaining: MAX_CODE_ATTEMPTS - nextAttempts };
         }
 
-        await mfaModel.verifyCodeQuery6([userId], [], connection);
+        await store.clearVerified([userId], [], connection);
 
         await connection.commit();
         return { status: 'verified', attemptsRemaining: MAX_CODE_ATTEMPTS };
@@ -188,4 +206,12 @@ async function verifyCode(userId, submittedCode, sessionHashes = []) {
     }
 }
 
-module.exports = { issueCode, verifyCode, issuePasswordResetCode, RESEND_COOLDOWN_SECONDS };
+async function verifyCode(userId, submittedCode, sessionHashes = []) {
+    return verifyChallengeCode(MFA_VERIFICATION_STORE, userId, submittedCode, sessionHashes);
+}
+
+async function verifyPasswordResetCode(userId, submittedCode, sessionHashes = []) {
+    return verifyChallengeCode(PASSWORD_RESET_VERIFICATION_STORE, userId, submittedCode, sessionHashes);
+}
+
+module.exports = { issueCode, verifyCode, issuePasswordResetCode, verifyPasswordResetCode, RESEND_COOLDOWN_SECONDS };

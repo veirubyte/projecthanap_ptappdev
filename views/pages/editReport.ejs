@@ -125,7 +125,7 @@
                 id="category-select" 
                 name="category"
               >
-                <% const categoryOptions = (typeof categories !== 'undefined' && Array.isArray(categories) && categories.length) ? categories : ['Electronics', 'IDs & Cards', 'Keys & Lanyards', 'Bags & Wallets', 'Books & Notes', 'Clothing & Wearables', 'Tumblers & Bottles', 'Accessories', 'Others']; %>
+                <% const categoryOptions = (typeof categories !== 'undefined' && Array.isArray(categories) && categories.length) ? categories : ['Electronics', 'Keys & Lanyards', 'IDs & Cards', 'Bags & Wallets', 'Tumblers & Bottles', 'Books & Documents', 'Clothing & Accessories', 'Other']; %>
                 <% categoryOptions.forEach(cat => { %>
                   <option value="<%= cat %>" <%= (item.category === cat) ? 'selected' : '' %>><%= cat %></option>
                 <% }) %>
@@ -137,11 +137,11 @@
           <!-- Status Segmented Pill Selector -->
           <div class="flex flex-col gap-1.5">
             <label class="text-[13px] font-semibold text-on-surface">Status</label>
-            <div class="grid grid-cols-3 p-1 rounded-xl bg-slate-100/80 border border-slate-200/60 backdrop-blur-md shadow-inner gap-1 h-11 items-center" id="statusButtonGroup">
+            <div class="grid grid-cols-2 sm:grid-cols-5 p-1 rounded-xl bg-slate-100/80 border border-slate-200/60 backdrop-blur-md shadow-inner gap-1 min-h-11 items-center" id="statusButtonGroup">
               <button 
                 type="button" 
                 data-status="active" 
-                class="status-btn h-8 rounded-lg text-[12px] font-semibold flex items-center justify-center transition-all <%= (item.status === 'active' || !item.status) ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'text-on-surface-variant hover:text-on-surface' %>"
+                class="status-btn h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center transition-all <%= (item.status === 'active' || !item.status) ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'text-on-surface-variant hover:text-on-surface' %>"
               >
                 Active
               </button>
@@ -154,10 +154,24 @@
               </button>
               <button 
                 type="button" 
+                data-status="claimed" 
+                class="status-btn h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center transition-all <%= item.status === 'claimed' ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'text-on-surface-variant hover:text-on-surface' %>"
+              >
+                Claimed
+              </button>
+              <button 
+                type="button" 
                 data-status="returned" 
-                class="status-btn h-8 rounded-lg text-[12px] font-semibold flex items-center justify-center transition-all <%= item.status === 'returned' ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'text-on-surface-variant hover:text-on-surface' %>"
+                class="status-btn h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center transition-all <%= item.status === 'returned' ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'text-on-surface-variant hover:text-on-surface' %>"
               >
                 Returned
+              </button>
+              <button 
+                type="button" 
+                data-status="archived" 
+                class="status-btn h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center transition-all col-span-2 sm:col-span-1 <%= item.status === 'archived' ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'text-on-surface-variant hover:text-on-surface' %>"
+              >
+                Archived
               </button>
             </div>
           </div>
@@ -183,15 +197,58 @@
         <div class="flex flex-col gap-2">
           <label class="text-[13px] font-semibold text-on-surface" for="report-photos">Photos</label>
           <% if (typeof itemImages !== 'undefined' && itemImages.length > 0) { %>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-3">
               <% itemImages.forEach(image => { %>
-                <img class="w-16 h-16 rounded-lg object-cover border border-slate-200" src="<%= image.image_path %>" alt="Current item photo"/>
+                <div class="flex flex-col items-center gap-1">
+                  <img class="w-16 h-16 rounded-lg object-cover border border-slate-200" src="<%= image.image_path %>" alt="Current item photo"/>
+                  <% if (image.id) { %>
+                    <label class="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 cursor-pointer select-none">
+                      <input type="checkbox" name="remove_image_ids" value="<%= image.id %>" class="rounded border-rose-300 text-rose-600 focus:ring-rose-500"/>
+                      <span>Remove</span>
+                    </label>
+                  <% } %>
+                </div>
               <% }) %>
             </div>
           <% } %>
           <input class="w-full text-xs text-on-surface-variant" id="report-photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple/>
-          <p class="text-[11px] text-on-surface-variant">Add up to <%= Math.max(0, 6 - (typeof itemImages !== 'undefined' ? itemImages.length : 0)) %> more photos (JPEG, PNG, or WebP; 5 MB max each). Existing photos are kept.</p>
+          <p class="text-[11px] text-on-surface-variant">Keep up to 6 photos total (JPEG, PNG, or WebP; 5 MB max each). Check "Remove" under any photo above to delete it when saving.</p>
         </div>
+
+        <% if (item.report_type === 'found' && (item.status === 'active' || !item.status) && !item.custody_received_at) { %>
+          <!-- Custody & Handover Mode -->
+          <div class="flex flex-col gap-2">
+            <label class="text-[13px] font-semibold text-on-surface">Custody &amp; Handover Mode</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200/80 bg-white/70 cursor-pointer hover:bg-white transition">
+                <input
+                  type="radio"
+                  name="custody_mode"
+                  value="peer_meetup"
+                  class="mt-0.5 text-primary focus:ring-primary"
+                  <%= (item.custody_mode || 'peer_meetup') === 'peer_meetup' ? 'checked' : '' %>
+                />
+                <div class="text-xs">
+                  <span class="font-bold text-slate-900 block">Direct Peer Meetup</span>
+                  <span class="text-[11px] text-slate-500">Coordinate verification and campus meetup directly with verified claimants.</span>
+                </div>
+              </label>
+              <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200/80 bg-white/70 cursor-pointer hover:bg-white transition">
+                <input
+                  type="radio"
+                  name="custody_mode"
+                  value="security_desk"
+                  class="mt-0.5 text-primary focus:ring-primary"
+                  <%= item.custody_mode === 'security_desk' ? 'checked' : '' %>
+                />
+                <div class="text-xs">
+                  <span class="font-bold text-slate-900 block">CSPC Security Desk</span>
+                  <span class="text-[11px] text-slate-500">Surrender item to Campus Security Office for official administrative release.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        <% } %>
 
         <% 
           const existingPairs = (typeof challengePairs !== 'undefined' && challengePairs && challengePairs.length) 
@@ -476,9 +533,11 @@
         const selected = btn.getAttribute('data-status');
         statusInput.value = selected;
         statusButtons.forEach(b => {
-          b.className = 'status-btn h-8 rounded-lg text-[12px] font-semibold flex items-center justify-center transition-all text-on-surface-variant hover:text-on-surface';
+          const isArchived = b.getAttribute('data-status') === 'archived';
+          b.className = `status-btn h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center transition-all ${isArchived ? 'col-span-2 sm:col-span-1 ' : ''}text-on-surface-variant hover:text-on-surface`;
         });
-        btn.className = 'status-btn h-8 rounded-lg text-[12px] font-semibold flex items-center justify-center transition-all bg-white text-primary shadow-sm border border-slate-200/60';
+        const isBtnArchived = btn.getAttribute('data-status') === 'archived';
+        btn.className = `status-btn h-8 rounded-lg text-[11px] font-semibold flex items-center justify-center transition-all ${isBtnArchived ? 'col-span-2 sm:col-span-1 ' : ''}bg-white text-primary shadow-sm border border-slate-200/60`;
       });
     });
   </script>

@@ -5,13 +5,138 @@ const auditLogModel = require('../models/auditLogModel');
 const itemReportModel = require('../models/itemReportModel');
 const claimModel = require('../models/claimModel');
 const userModel = require('../models/userModel');
-const guardianLinkModel = require('../models/guardianLinkModel');
 const mfaModel = require('../models/mfaModel');
 const { getConnection } = require('../models/connectionModel');
+const DatabaseSessionStore = require('../config/sessionStore');
 const { isAdmin, isGuest, isInstitutionalEmail, validatePasswordStrength, isValidEmailSyntax } = require('../config/roles');
 const { ANSWER_MATCH_THRESHOLD, calculateAnswerMatch, parseChallenges, calculateMultiAnswerMatch } = require('../services/answerMatch');
 const { issueCode, verifyCode } = require('../services/mfa');
 const { sendMfaEnabledNotice, verifyEmailTransport } = require('../services/email');
+const { flagStaleItems } = require('../services/lifecycle');
+
+const STALE_SWEEP_INTERVAL_MS = 15 * 60 * 1000;
+let lastStaleSweepAt = 0;
+let staleSweepInFlight = null;
+
+async function ensureStaleItemsSwept() {
+    const now = Date.now();
+    if (now - lastStaleSweepAt < STALE_SWEEP_INTERVAL_MS) return;
+    if (staleSweepInFlight) return staleSweepInFlight;
+
+    lastStaleSweepAt = now;
+    staleSweepInFlight = flagStaleItems()
+        .catch((err) => {
+            lastStaleSweepAt = 0;
+            console.error('[Lifecycle Sweep] Error flagging stale items:', err.message);
+        })
+        .finally(() => {
+            staleSweepInFlight = null;
+        });
+
+    return staleSweepInFlight;
+}
+
+function tokenizeMatchText(value) {
+    if (typeof value !== 'string') return [];
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((token) => token.length >= 3);
+}
+
+function computeMatchScore(sourceReport, candidate) {
+    if (!sourceReport || !candidate || sourceReport.report_type === candidate.report_type) return 0;
+
+    let score = 0;
+    if (sourceReport.category && candidate.category && sourceReport.category === candidate.category) {
+        score += 50;
+    }
+
+    const srcLocation = new Set(tokenizeMatchText(sourceReport.location_found_lost));
+    const candLocation = tokenizeMatchText(candidate.location_found_lost);
+    if (srcLocation.size > 0 && candLocation.length > 0) {
+        const locOverlap = candLocation.filter((tok) => srcLocation.has(tok)).length;
+        if (locOverlap > 0) {
+            score += Math.min(25, Math.round((locOverlap / Math.max(srcLocation.size, 1)) * 25));
+        }
+    }
+
+    const srcWords = new Set([
+        ...tokenizeMatchText(sourceReport.item_name),
+        ...tokenizeMatchText(sourceReport.description)
+    ]);
+    const candWords = new Set([
+        ...tokenizeMatchText(candidate.item_name),
+        ...tokenizeMatchText(candidate.description)
+    ]);
+    if (srcWords.size > 0 && candWords.size > 0) {
+        let wordOverlap = 0;
+        for (const word of candWords) {
+            if (srcWords.has(word)) wordOverlap += 1;
+        }
+        if (wordOverlap > 0) {
+            score += Math.min(24, Math.round((wordOverlap / Math.min(srcWords.size, candWords.size)) * 24));
+        }
+    }
+
+    return Math.min(99, score);
+}
+
+function computeSmartMatches(myActiveReports, candidates) {
+    if (!Array.isArray(myActiveReports) || myActiveReports.length === 0 || !Array.isArray(candidates) || candidates.length === 0) {
+        return [];
+    }
+
+    const scored = [];
+    for (const candidate of candidates) {
+        let bestScore = 0;
+        let matchedReport = null;
+        for (const myReport of myActiveReports) {
+            const score = computeMatchScore(myReport, candidate);
+            if (score > bestScore) {
+                bestScore = score;
+                matchedReport = myReport;
+            }
+        }
+        if (bestScore >= 50 && matchedReport) {
+            scored.push({
+                ...candidate,
+                match_score: bestScore,
+                matched_with_id: matchedReport.id,
+                matched_with_name: matchedReport.item_name
+            });
+        }
+    }
+
+    scored.sort((a, b) => {
+        if (b.match_score !== a.match_score) return b.match_score - a.match_score;
+        return new Date(b.date_reported).getTime() - new Date(a.date_reported).getTime();
+    });
+
+    return scored.slice(0, 5);
+}
+
+function maskContactPhoneNumbers(text) {
+    if (typeof text !== 'string') return '';
+    return text.replace(
+        /(?:\+?63[\s.-]?9\d{2}[\s.-]?\d{3}[\s.-]?\d{4}|09\d{2}[\s.-]?\d{3}[\s.-]?\d{4}|\(\d{2,4}\)\s?\d{3,4}[-.\s]?\d{4}|\b\d{3,4}[-.\s]\d{3,4}[-.\s]\d{4}\b|\b0\d{9,10}\b)/g,
+        '[contact hidden until claim approved]'
+    );
+}
+
+async function closeCompetingClaimsForItem(itemId, winningClaimId, actorId, resolutionLabel) {
+    const [competing] = await claimModel.listCompetingActiveClaims([itemId, winningClaimId], []);
+    if (!competing || competing.length === 0) return;
+
+    await claimModel.closeCompetingClaims([itemId, winningClaimId], []);
+    await Promise.all(competing.map((row) => (
+        claimModel.updateClaimStatusQuery6(
+            [row.id, actorId, `[SYSTEM] This claim was automatically closed because another claim for this item was ${resolutionLabel}.`],
+            []
+        )
+    )));
+}
 
 
 function extractVerificationPairs(body) {
@@ -182,14 +307,8 @@ const showDashboard = async (req, res) => {
             }
 
             if (myActiveReports.length > 0) {
-                const oppositeType = myActiveReports[0].report_type === 'lost' ? 'found' : 'lost';
-                const userCategories = [...new Set(myActiveReports.map((r) => r.category))];
-                const placeholders = userCategories.map(() => '?').join(',');
-
-                if (userCategories.length > 0) {
-                    const [matches] = await itemReportModel.showDashboardQuery6([user.id, oppositeType, ...userCategories], [placeholders]);
-                    smartMatches = matches;
-                }
+                const [candidates] = await itemReportModel.findMatchCandidates([user.id], []);
+                smartMatches = computeSmartMatches(myActiveReports, candidates);
             }
         }
 
@@ -302,10 +421,36 @@ const createItemReport = async (req, res) => {
     }
 };
 
-const showGuestClaimGuide = (req, res) => {
-    const caseId = req.query.case || '';
+const showGuestClaimGuide = async (req, res) => {
+    const rawCase = typeof req.query.case === 'string' ? req.query.case.trim() : '';
+    const caseIdInt = parseInt(rawCase, 10);
+    let caseItem = null;
+
+    if (Number.isSafeInteger(caseIdInt) && caseIdInt > 0) {
+        try {
+            const [rows] = await itemReportModel.showItemDetails([caseIdInt], []);
+            if (rows.length > 0) {
+                const row = rows[0];
+                caseItem = {
+                    id: row.id,
+                    item_name: row.item_name,
+                    report_type: row.report_type,
+                    category: row.category,
+                    location_found_lost: row.location_found_lost,
+                    status: row.status,
+                    custody_mode: row.custody_mode,
+                    date_reported: row.date_reported,
+                    primary_image_path: row.primary_image_path
+                };
+            }
+        } catch (err) {
+            console.error('Error loading guest claim case summary:', err);
+        }
+    }
+
     res.render('guestClaim', {
-        caseId,
+        caseId: rawCase,
+        caseItem,
         user: req.session.user || null
     });
 };
@@ -463,6 +608,17 @@ const createClaim = async (req, res) => {
         const [existing] = await claimModel.createClaim([itemId, req.session.user.id], []);
         if (existing.length > 0) {
             return res.redirect(`/claims/${existing[0].id}`);
+        }
+
+        // Enforce 3-pending-claim cap for non-admin claimants
+        if (!isAdmin(req.session.user)) {
+            const [pendingCountRows] = await claimModel.countActivePendingClaims([req.session.user.id], []);
+            const activePendingCount = Number(pendingCountRows[0]?.count || 0);
+            if (activePendingCount >= 3) {
+                return res.redirect(
+                    `/items/${itemId}?error=${encodeURIComponent('You have reached the limit of 3 active pending claims. Please withdraw an existing claim in My Claims before submitting another.')}`
+                );
+            }
         }
 
         const questions = parseChallenges(item.secret_challenge);
@@ -630,7 +786,15 @@ const sendClaimMessage = async (req, res) => {
             return res.status(403).send('Unauthorized');
         }
 
-        await claimModel.sendClaimMessageQuery2([claimId, user.id, text], []);
+        if (['rejected', 'returned'].includes(claim.status)) {
+            return res.redirect(`/claims/${claimId}?error=${encodeURIComponent('This claim conversation is closed and no longer accepts new messages.')}`);
+        }
+
+        const sanitizedText = ['pending', 'escalated'].includes(claim.status)
+            ? maskContactPhoneNumbers(text)
+            : text;
+
+        await claimModel.sendClaimMessageQuery2([claimId, user.id, sanitizedText], []);
 
         return res.redirect(`/claims/${claimId}`);
     } catch (err) {
@@ -668,14 +832,20 @@ const updateClaimStatus = async (req, res) => {
             return res.redirect(`/claims/${claimId}?error=Only the finder or an admin can resolve this claim.`);
         }
 
+        if (!userIsAdmin && ['approved', 'returned'].includes(action) && claim.custody_mode === 'security_desk' && claim.report_type === 'found') {
+            return res.redirect(`/claims/${claimId}?error=${encodeURIComponent('This item is under Security Desk custody and can only be released by an administrator.')}`);
+        }
+
         await claimModel.updateClaimStatusQuery2([action, claimId], []);
 
         if (action === 'approved') {
             await itemReportModel.updateClaimStatus([claim.item_id], []);
             await claimModel.updateClaimStatusQuery3([claimId, user.id, `[SYSTEM] Claim marked as APPROVED. The item "${claim.item_name}" has been marked as claimed/reunited.`], []);
+            await closeCompetingClaimsForItem(claim.item_id, claimId, user.id, 'approved');
         } else if (action === 'returned') {
             await itemReportModel.updateClaimStatusQuery2([claim.item_id], []);
             await claimModel.updateClaimStatusQuery4([claimId, user.id, `[SYSTEM] Item marked as RETURNED. The item "${claim.item_name}" has been handed back and closed as returned.`], []);
+            await closeCompetingClaimsForItem(claim.item_id, claimId, user.id, 'marked returned');
         } else if (action === 'escalated') {
             await claimModel.updateClaimStatusQuery5([claimId, user.id, `[SECURITY ESCALATION] Claim has been escalated to Campus Security Desk for manual verification and custody handover.`], []);
         } else {
@@ -716,24 +886,25 @@ const listMyReports = async (req, res) => {
 };
 
 const updateItemStatus = async (req, res) => {
+    const user = req.session.user;
+    const redirectBase = isAdmin(user) ? '/admin/reports' : '/my-reports';
     const itemId = parseInt(req.params.id, 10);
     if (!Number.isSafeInteger(itemId) || itemId < 1) {
-        return res.redirect('/my-reports?error=Invalid item ID.');
+        return res.redirect(`${redirectBase}?error=Invalid item ID.`);
     }
     const newStatus = req.body.status;
 
     if (!['active', 'claimed', 'returned', 'archived', 'pending_review'].includes(newStatus)) {
-        return res.redirect('/my-reports');
+        return res.redirect(redirectBase);
     }
 
     try {
         const [itemRows] = await itemReportModel.updateItemStatus([itemId], []);
-        if (itemRows.length === 0) return res.redirect('/my-reports');
+        if (itemRows.length === 0) return res.redirect(redirectBase);
         const item = itemRows[0];
 
-        const user = req.session.user;
         if (!isAdmin(user) && item.user_id !== user.id) {
-            return res.redirect('/my-reports?error=Unauthorized.');
+            return res.redirect(`${redirectBase}?error=Unauthorized.`);
         }
 
         await itemReportModel.updateItemStatusQuery2([newStatus, itemId], []);
@@ -742,26 +913,27 @@ const updateItemStatus = async (req, res) => {
             await logAudit(user.id, `Admin changed item #${itemId} status to ${newStatus}`, req.ip);
         }
 
-        return res.redirect(`/my-reports?msg=${encodeURIComponent(`Item marked as ${newStatus}.`)}`);
+        return res.redirect(`${redirectBase}?msg=${encodeURIComponent(`Item marked as ${newStatus}.`)}`);
     } catch (err) {
         console.error('Error changing item status:', err);
-        return res.redirect('/my-reports?error=Error updating status.');
+        return res.redirect(`${redirectBase}?error=Error updating status.`);
     }
 };
 
 const deleteItemReport = async (req, res) => {
+    const user = req.session.user;
+    const redirectBase = isAdmin(user) ? '/admin/reports' : '/my-reports';
     const itemId = parseInt(req.params.id, 10);
     if (!Number.isSafeInteger(itemId) || itemId < 1) {
-        return res.redirect('/my-reports?error=Invalid item ID.');
+        return res.redirect(`${redirectBase}?error=Invalid item ID.`);
     }
     try {
         const [itemRows] = await itemReportModel.deleteItemReport([itemId], []);
-        if (itemRows.length === 0) return res.redirect('/my-reports');
+        if (itemRows.length === 0) return res.redirect(redirectBase);
         const item = itemRows[0];
 
-        const user = req.session.user;
         if (!isAdmin(user) && item.user_id !== user.id) {
-            return res.redirect('/my-reports?error=Unauthorized.');
+            return res.redirect(`${redirectBase}?error=Unauthorized.`);
         }
 
         const [storedImages] = await itemReportModel.showItemReportImages([itemId], []);
@@ -774,10 +946,10 @@ const deleteItemReport = async (req, res) => {
             await logAudit(user.id, `Admin deleted item report #${itemId} ("${item.item_name}")`, req.ip);
         }
 
-        return res.redirect(`/my-reports?msg=${encodeURIComponent('Report deleted successfully.')}`);
+        return res.redirect(`${redirectBase}?msg=${encodeURIComponent('Report deleted successfully.')}`);
     } catch (err) {
         console.error('Error deleting report:', err);
-        return res.redirect('/my-reports?error=Failed to delete report.');
+        return res.redirect(`${redirectBase}?error=Failed to delete report.`);
     }
 };
 
@@ -890,19 +1062,40 @@ const updateItemReport = async (req, res) => {
         }
 
         const [existingImages] = await itemReportModel.showItemReportImages([itemId], []);
-        const existingImageCount = existingImages.length || (item.primary_image_path ? 1 : 0);
-        if (existingImageCount + uploadedFiles.length > 6) {
+        const rawRemoveIds = req.body.remove_image_ids;
+        const requestedRemoveIds = (Array.isArray(rawRemoveIds) ? rawRemoveIds : (rawRemoveIds ? [rawRemoveIds] : []))
+            .map((id) => parseInt(id, 10))
+            .filter((id) => Number.isInteger(id) && id > 0);
+        const existingIdSet = new Set(existingImages.map((img) => Number(img.id)).filter((id) => Number.isInteger(id) && id > 0));
+        const validRemoveIds = [...new Set(requestedRemoveIds.filter((id) => existingIdSet.has(id)))];
+
+        const existingImageCount = existingImages.length;
+        const remainingImageCount = Math.max(0, existingImageCount - validRemoveIds.length);
+        if (remainingImageCount + uploadedFiles.length > 6) {
             await removeUploadedFiles(uploadedFiles);
-            return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('A report can have up to 6 photos total. Remove no photos and choose fewer new photos.')}`);
+            return res.redirect(`/items/${itemId}/edit?error=${encodeURIComponent('A report can have up to 6 photos total. Remove existing photos or upload fewer new photos.')}`);
         }
 
         const validStatuses = ['active', 'claimed', 'returned', 'archived', 'pending_review'];
         const finalStatus = validStatuses.includes(status) ? status : item.status;
+        const requestedCustody = req.body.custody_mode === 'security_desk'
+            ? 'security_desk'
+            : (req.body.custody_mode === 'peer_meetup' ? 'peer_meetup' : null);
+        const custodyMode = (
+            requestedCustody
+            && item.report_type === 'found'
+            && item.status === 'active'
+            && !item.custody_received_at
+        ) ? requestedCustody : null;
 
-        await itemReportModel.updateItemReportQuery2(
+        const updateResult = await itemReportModel.updateItemReportQuery2(
             [itemName, category, description, finalStatus, location, secretChallenge, secretAnswer, itemId],
-            imagePaths
+            imagePaths,
+            { removeImageIds: validRemoveIds, custodyMode }
         );
+        if (updateResult && Array.isArray(updateResult.removedPaths) && updateResult.removedPaths.length > 0) {
+            await removeReportImageFiles(updateResult.removedPaths);
+        }
 
         if (isAdmin(user)) {
             await logAudit(user.id, `Admin edited report #${itemId} ("${itemName}")`, req.ip);
@@ -927,13 +1120,6 @@ const showSettings = async (req, res) => {
         req.session.user.role = profileUser.role;
         const mfaEnabled = Boolean(profileUser.mfa_enabled);
 
-        const [guardianRequests] = profileUser.role === 'student'
-            ? await guardianLinkModel.showSettings([user.id], [])
-            : [[]];
-        const [guardianLinks] = ['guest', 'parent'].includes(profileUser.role)
-            ? await guardianLinkModel.showSettingsQuery2([user.id], [])
-            : [[]];
-
         // Fetch User's Reports
         const [myReports] = await itemReportModel.showSettings([user.id], []);
 
@@ -946,8 +1132,6 @@ const showSettings = async (req, res) => {
         res.render('settings', {
             user,
             profileUser,
-            guardianRequests,
-            guardianLinks,
             myReports,
             claimsMade,
             auditHistory,
@@ -960,106 +1144,7 @@ const showSettings = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching settings:', err);
-        res.redirect('/dashboard?error=Error loading account settings.');
-    }
-};
-
-const createGuardianLink = async (req, res) => {
-    const guardian = req.session.user;
-    const studentEmail = typeof req.body.student_email === 'string'
-        ? req.body.student_email.trim().toLowerCase()
-        : '';
-    if (!isValidEmailSyntax(studentEmail) || !isInstitutionalEmail(studentEmail)) {
-        return res.redirect(`/settings?error=${encodeURIComponent('Enter a valid CSPC Student email address.')}#connections`);
-    }
-
-    const connection = await getConnection();
-    try {
-        await connection.beginTransaction();
-        const [guardianRoles] = await userModel.createGuardianLink([guardian.id], [], connection);
-        if (guardianRoles.length === 0 || !['guest', 'parent'].includes(guardianRoles[0].role_code)) {
-            await connection.rollback();
-            return res.redirect(`/settings?error=${encodeURIComponent('Only Guest or Parent accounts can request a Student link.')}#connections`);
-        }
-
-        const [students] = await userModel.createGuardianLinkQuery2([studentEmail], [], connection);
-        if (students.length === 0) {
-            await connection.rollback();
-            return res.redirect(`/settings?error=${encodeURIComponent('No Student account matches that CSPC email. Your account remains a Guest.')}#connections`);
-        }
-
-        const studentId = students[0].id;
-        const [existingLinks] = await guardianLinkModel.createGuardianLink([guardian.id, studentId], [], connection);
-        if (existingLinks.length > 0 && existingLinks[0].status !== 'rejected') {
-            await connection.rollback();
-            return res.redirect(`/settings?error=${encodeURIComponent('A pending or approved link already exists for that Student.')}#connections`);
-        }
-
-        if (existingLinks.length > 0) {
-            await guardianLinkModel.createGuardianLinkQuery2([existingLinks[0].id], [], connection);
-        } else {
-            await guardianLinkModel.createGuardianLinkQuery3([guardian.id, studentId], [], connection);
-        }
-
-        await connection.commit();
-        return res.redirect(`/settings?msg=${encodeURIComponent('Parent / Guardian request sent. The Student must approve it.')}#connections`);
-    } catch (err) {
-        await connection.rollback();
-        console.error('Error creating guardian link request:', err);
-        return res.redirect(`/settings?error=${encodeURIComponent('Could not create the Student link request. Please try again.')}#connections`);
-    } finally {
-        connection.release();
-    }
-};
-
-const decideGuardianLink = async (req, res) => {
-    const studentId = req.session.user.id;
-    const linkId = Number.parseInt(req.params.id, 10);
-    const decision = req.params.decision;
-    if (!Number.isInteger(linkId) || linkId < 1 || !['approve', 'reject'].includes(decision)) {
-        return res.redirect(`/settings?error=${encodeURIComponent('Invalid guardian link request.')}#connections`);
-    }
-
-    const connection = await getConnection();
-    try {
-        await connection.beginTransaction();
-        const [approverRows] = await userModel.decideGuardianLink([studentId], [], connection);
-        if (approverRows.length === 0 || approverRows[0].role_code !== 'student') {
-            await connection.rollback();
-            return res.redirect(`/settings?error=${encodeURIComponent('Only the linked Student can decide this request.')}#connections`);
-        }
-
-        const [links] = await guardianLinkModel.decideGuardianLink([linkId, studentId], [], connection);
-        if (links.length === 0) {
-            await connection.rollback();
-            return res.redirect(`/settings?error=${encodeURIComponent('That request is no longer pending.')}#connections`);
-        }
-
-        if (decision === 'approve') {
-            const [guardianRoles] = await userModel.decideGuardianLinkQuery2([links[0].guardian_user_id], [], connection);
-            if (guardianRoles.length === 0 || !['guest', 'parent'].includes(guardianRoles[0].role_code)) {
-                await connection.rollback();
-                return res.redirect(`/settings?error=${encodeURIComponent('This account is no longer eligible for Parent / Guardian approval.')}#connections`);
-            }
-        }
-
-        const status = decision === 'approve' ? 'approved' : 'rejected';
-        await guardianLinkModel.decideGuardianLinkQuery2([status, linkId], [], connection);
-        if (decision === 'approve') {
-            await userModel.decideGuardianLinkQuery3([links[0].guardian_user_id], [], connection);
-        }
-
-        await connection.commit();
-        const message = decision === 'approve'
-            ? 'Parent / Guardian link approved.'
-            : 'Parent / Guardian link rejected.';
-        return res.redirect(`/settings?msg=${encodeURIComponent(message)}#connections`);
-    } catch (err) {
-        await connection.rollback();
-        console.error('Error deciding guardian link request:', err);
-        return res.redirect(`/settings?error=${encodeURIComponent('Could not update the guardian request. Please try again.')}#connections`);
-    } finally {
-        connection.release();
+        res.redirect(isAdmin(user) ? '/admin/dashboard?error=Error loading account settings.' : '/dashboard?error=Error loading account settings.');
     }
 };
 
@@ -1081,7 +1166,7 @@ const updateProfile = async (req, res) => {
         const role = roleRows[0].role_code;
         const email = roleRows[0].email;
         const studentId = roleRows[0].student_id;
-        const canEditDepartment = role === 'student';
+        const canEditDepartment = ['student', 'staff'].includes(role);
         const department = canEditDepartment ? requestedDepartment : '';
         if (canEditDepartment && department.length > 255) {
             return res.redirect(`/settings?error=${encodeURIComponent('Department / course must be 255 characters or fewer.')}#personal`);
@@ -1146,6 +1231,7 @@ const updateSecurity = async (req, res) => {
 
         const hashed = await bcrypt.hash(newPassword, 10);
         await userModel.updateSecurityQuery2([hashed, user.id], []);
+        await DatabaseSessionStore.destroyUserSessionsForUser(user.id, req.sessionID, req.sessionStore);
 
         return res.redirect(`/settings?msg=${encodeURIComponent('Security password updated successfully.')}#security`);
     } catch (err) {
@@ -1210,6 +1296,7 @@ const disableMfa = async (req, res) => {
 
         await userModel.disableMfaQuery2([req.session.user.id], []);
         await mfaModel.disableMfa([req.session.user.id], []);
+        await DatabaseSessionStore.destroyUserSessionsForUser(req.session.user.id, req.sessionID, req.sessionStore);
         return res.redirect(`/settings?msg=${encodeURIComponent('Email MFA has been disabled.')}#security`);
     } catch (error) {
         console.error('Error disabling email MFA:', error);
@@ -1217,15 +1304,27 @@ const disableMfa = async (req, res) => {
     }
 };
 
-const updateNotificationSettings = (req, res) => {
-    return res.redirect(`/settings?msg=${encodeURIComponent('Notification preferences saved successfully.')}#notifications`);
+const updateNotificationSettings = async (req, res) => {
+    const user = req.session.user;
+    const notifyClaims = req.body.notify_claims ? 1 : 0;
+    const notifyChat = req.body.notify_chat ? 1 : 0;
+    const notifyBroadcasts = req.body.notify_broadcasts ? 1 : 0;
+    try {
+        await userModel.updateNotificationSettings([notifyClaims, notifyChat, notifyBroadcasts, user.id], []);
+        return res.redirect(`/settings?msg=${encodeURIComponent('Notification preferences saved successfully.')}#notifications`);
+    } catch (err) {
+        console.error('Error updating notification settings:', err);
+        return res.redirect(`/settings?error=${encodeURIComponent('Failed to save notification preferences.')}#notifications`);
+    }
 };
 
 const deleteAccount = async (req, res) => {
     const user = req.session.user;
     try {
+        await mfaModel.deletePasswordResetForAccount([user.id], []);
         await mfaModel.deleteAccount([user.id], []);
         await userModel.deleteAccount([user.id], []);
+        await DatabaseSessionStore.destroyUserSessionsForUser(user.id, req.sessionID, req.sessionStore);
         req.session.destroy(() => {
             res.redirect('/login?msg=' + encodeURIComponent('Your account has been deleted.'));
         });
@@ -1238,6 +1337,7 @@ const deleteAccount = async (req, res) => {
 const showAdminDashboard = async (req, res) => {
     const user = req.session.user;
     try {
+        await ensureStaleItemsSwept();
         const [
             [userCount],
             [reportCount],
@@ -1376,7 +1476,14 @@ const resetUserQuota = async (req, res) => {
         return res.redirect('/admin/users?error=Invalid user ID.');
     }
     try {
+        const [pendingClaims] = await claimModel.listPendingClaimsForQuotaReset([targetUserId], []);
         await claimModel.resetUserQuota([targetUserId], []);
+        await Promise.all((pendingClaims || []).map((row) => (
+            claimModel.updateClaimStatusQuery6(
+                [row.id, req.session.user.id, '[SYSTEM] This pending claim was closed during an administrator claim quota reset.'],
+                []
+            )
+        )));
         await logAudit(req.session.user.id, `Admin reset claim quota limit for user #${targetUserId}`, req.ip);
         return res.redirect('/admin/users?msg=User claim quota limit reset successfully.');
     } catch (err) {
@@ -1387,7 +1494,7 @@ const resetUserQuota = async (req, res) => {
 
 const updateUserRole = async (req, res) => {
     const targetUserId = parseInt(req.params.id, 10);
-    const newRole = ['student', 'staff', 'guest', 'admin', 'legacy_institutional'].includes(req.body.new_role)
+    const newRole = ['student', 'staff', 'guest', 'admin'].includes(req.body.new_role)
         ? req.body.new_role
         : null;
     if (!newRole) {
@@ -1404,11 +1511,12 @@ const updateUserRole = async (req, res) => {
         if (['student', 'staff', 'admin'].includes(newRole) && !isInstitutionalEmail(targetUsers[0].email)) {
             return res.redirect('/admin/users?error=Student, Staff, and Admin accounts require a CSPC institutional email.');
         }
-        const [linkedGuardians] = await guardianLinkModel.updateUserRole([targetUserId], []);
-        if (linkedGuardians.length > 0 && newRole !== 'parent') {
-            return res.redirect('/admin/users?error=Approved Parent accounts cannot be reassigned.');
-        }
         await userModel.updateUserRoleQuery2([newRole, targetUserId], []);
+        await DatabaseSessionStore.destroyUserSessionsForUser(
+            targetUserId,
+            targetUserId === req.session.user.id ? req.sessionID : null,
+            req.sessionStore
+        );
         await logAudit(req.session.user.id, `Admin changed role of user #${targetUserId} to ${newRole}`, req.ip);
         return res.redirect(`/admin/users?msg=User role updated to ${newRole}.`);
     } catch (err) {
@@ -1478,6 +1586,7 @@ const confirmHandover = async (req, res) => {
         await itemReportModel.confirmHandover([claim.item_id], []);
 
         await claimModel.confirmHandoverQuery3([claimId, user.id, `[SECURITY LOG] Officer ${user.full_name} confirmed physical custody release and handover.`], []);
+        await closeCompetingClaimsForItem(claim.item_id, claimId, user.id, 'released by Campus Security');
 
         await logAudit(user.id, `Officer confirmed physical custody release for claim #${claimId}`, req.ip);
 
@@ -1518,6 +1627,7 @@ const showForbiddenPage = (req, res) => {
 const listAdminReports = async (req, res) => {
     const user = req.session.user;
     try {
+        await ensureStaleItemsSwept();
         const [
             [reports],
             [deskClaims],
@@ -1530,38 +1640,42 @@ const listAdminReports = async (req, res) => {
 
         // Calculate archive stats
         const totalReports = reports.length;
-        const claimedReports = reports.filter(r => r.status === 'claimed').length;
+        const claimedReports = reports.filter((r) => ['claimed', 'returned'].includes(r.status)).length;
         const recoveryRate = totalReports > 0 ? Math.round((claimedReports / totalReports) * 100) : 0;
-        const peerReturns = reports.filter(r => r.status === 'claimed' && r.report_type === 'found').length;
-        const deskHandovers = deskClaims[0]?.count || 0;
+        const peerReturns = reports.filter(
+            (r) => ['claimed', 'returned'].includes(r.status) && r.report_type === 'found' && r.custody_mode === 'peer_meetup'
+        ).length;
+        const deskHandovers = Number(deskClaims[0]?.count || 0);
 
         // Compute days since reported for 60-day archive queue
         const now = new Date();
-        const enrichedReports = reports.map(r => {
+        const enrichedReports = reports.map((r) => {
             const reportDate = new Date(r.date_reported);
-            const diffTime = Math.abs(now - reportDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffTime = Math.max(0, now - reportDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const eligibleForDisposition = !['claimed', 'returned', 'archived'].includes(r.status)
+                && (diffDays >= 60 || r.status === 'pending_review');
             return {
                 ...r,
                 daysActive: diffDays,
-                isOverdue: diffDays >= 60 || r.status === 'archived'
+                isOverdue: eligibleForDisposition
             };
         });
 
-        // 60-day queue filter (items active for >60 days or status archived)
-        const archiveQueue = enrichedReports.filter(r => r.isOverdue || r.daysActive >= 30);
+        // Strict 60-day queue filter (only 60+ day overdue or pending_review items)
+        const archiveQueue = enrichedReports.filter((r) => r.isOverdue);
 
         res.render('adminReports', {
             user,
             reports: enrichedReports,
-            archiveQueue: archiveQueue.length > 0 ? archiveQueue : enrichedReports.slice(0, 5),
+            archiveQueue,
             auditLogs,
             csrfToken: res.locals.csrfToken || '',
             stats: {
                 totalReports,
-                recoveryRate: recoveryRate || 86,
-                peerReturns: peerReturns || 94,
-                deskHandovers: deskHandovers || 28
+                recoveryRate,
+                peerReturns,
+                deskHandovers
             },
             timeAgo,
             msg: req.query.msg || null,
@@ -1580,7 +1694,14 @@ const approveReportArchive = async (req, res) => {
         return res.redirect('/admin/reports?error=Invalid item ID.');
     }
     try {
-        await itemReportModel.approveReportArchive([itemId], []);
+        const [result] = await itemReportModel.approveReportArchive([itemId], []);
+        if (!result || result.affectedRows !== 1) {
+            const errorMsg = 'Only items active for 60+ days or pending review can be archived.';
+            if (req.xhr || req.headers.accept?.includes('json')) {
+                return res.status(400).json({ error: errorMsg });
+            }
+            return res.redirect(`/admin/reports?error=${encodeURIComponent(errorMsg)}`);
+        }
         await logAudit(user.id, `Admin approved 60-day disposition for item #${itemId}`, req.ip);
         if (req.xhr || req.headers.accept?.includes('json')) {
             return res.json({ success: true, message: 'Item approved for disposition.' });
@@ -1634,43 +1755,36 @@ const showAdminAnalytics = async (req, res) => {
         const deskFirst = (deskStats && deskStats[0]) || {};
         const reportFirst = (reportStats && reportStats[0]) || { total_reports: 0, total_claimed: 0, total_active: 0, total_archived: 0 };
 
-        const p2pTotal = p2pFirst.total_claims || 0;
-        const p2pApproved = p2pFirst.approved_claims || 0;
-        const p2pSuccessRate = p2pTotal > 0 ? Math.round((p2pApproved / p2pTotal) * 100) : 88;
+        const p2pTotal = Number(p2pFirst.total_claims || 0);
+        const p2pApproved = Number(p2pFirst.approved_claims || 0);
+        const p2pSuccessRate = p2pTotal > 0 ? Math.round((p2pApproved / p2pTotal) * 100) : 0;
 
-        const deskTotal = deskFirst.total_claims || 0;
-        const deskApproved = deskFirst.approved_claims || 0;
-        const deskSuccessRate = deskTotal > 0 ? Math.round((deskApproved / deskTotal) * 100) : 94;
+        const deskTotal = Number(deskFirst.total_claims || 0);
+        const deskApproved = Number(deskFirst.approved_claims || 0);
+        const deskSuccessRate = deskTotal > 0 ? Math.round((deskApproved / deskTotal) * 100) : 0;
 
         res.render('adminAnalytics', {
             user,
             currentAdminPage: 'analytics',
-            pendingHandoverCount: pendingHandovers[0]?.cnt || 0,
+            pendingHandoverCount: Number(pendingHandovers[0]?.cnt || 0),
             p2p: {
                 total: p2pTotal,
-                approved: p2pApproved || 12,
-                pending: p2pFirst.pending_claims || 0,
-                rejected: p2pFirst.rejected_claims || 0,
+                approved: p2pApproved,
+                pending: Number(p2pFirst.pending_claims || 0),
+                rejected: Number(p2pFirst.rejected_claims || 0),
                 successRate: p2pSuccessRate,
-                avgHours: '4.2 hrs',
-                description: 'Direct student-to-student verification via secret challenge questions & campus peer chats'
+                description: 'Direct campus peer verification via ownership challenges & claim chats'
             },
             centralized: {
                 total: deskTotal,
-                approved: deskApproved || 8,
-                pending: deskFirst.pending_claims || 0,
-                rejected: deskFirst.rejected_claims || 0,
+                approved: deskApproved,
+                pending: Number(deskFirst.pending_claims || 0),
+                rejected: Number(deskFirst.rejected_claims || 0),
                 successRate: deskSuccessRate,
-                avgHours: '1.5 hrs',
-                description: 'Physical security office drop-off with in-person verification & government/student ID checking'
+                description: 'Physical Security Desk drop-off, escalations, and in-person ID verification'
             },
             reports: reportFirst,
-            categories: categoryBreakdown.length > 0 ? categoryBreakdown : [
-                { category: 'Electronics', claim_count: 8 },
-                { category: 'Personal Belongings', claim_count: 5 },
-                { category: 'Documents / Cards', claim_count: 4 },
-                { category: 'Bags & Accessories', claim_count: 3 }
-            ],
+            categories: categoryBreakdown || [],
             msg: req.query.msg || null,
             error: req.query.error || null
         });
@@ -1830,8 +1944,6 @@ module.exports = {
     showEditItemForm,
     updateItemReport,
     showSettings,
-    createGuardianLink,
-    decideGuardianLink,
     updateProfile,
     updateSecurity,
     enableMfa,
